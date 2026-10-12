@@ -19,7 +19,7 @@
     // tok = the random save token this browser keeps, so progress survives a reload.
     hello: m => (int(m.v, 0, 1e6) && str(m.name, 64) && str(m.home || '', 16) && typeof m.look === 'object' && m.look !== null &&
       typeof m.arch === 'string' && own(MM.ARCHETYPES, m.arch) && (m.dim === undefined || own(MM.DIM_BY_ID, m.dim)) && (m.tok === undefined || str(m.tok, 40)) && (m.pvp === undefined || typeof m.pvp === 'boolean'))
-      ? { v: m.v, name: m.name, home: m.home || '', look: m.look, arch: m.arch, dim: m.dim, tok: m.tok, pvp: !!m.pvp } : null,
+      ? { v: m.v, name: m.name, home: m.home || '', look: m.look, arch: m.arch, dim: m.dim, tok: m.tok, pvp: m.pvp !== false } : null,   // fights are on unless you turned them off
     // Where I am (15 times a second). ep = travel epoch, so stale positions from the
     // previous dimension are ignored.
     st: m => (num(m.x, -B, B) && num(m.y, -200, 600) && num(m.z, -B, B) && num(m.r, -10, 10) && int(m.a, 0, 9) && int(m.ep, 0, 1e9))
@@ -38,6 +38,8 @@
     pvp: m => typeof m.on === 'boolean' ? { on: m.on } : null,                 // allow fights with other players who allow them too
     drive: m => (str(m.d, 16) && own(MM.DIM_BY_ID, m.d)) ? { d: m.d } : null, // dimension drive
     door: m => (str(m.l, 16) && own(MM.LANDMARK_BY_ID, m.l)) ? { l: m.l } : null,  // walk through a door
+    // Teams: invite a player, join the team of someone who invited you, or leave.
+    tm: m => (['inv', 'join', 'leave'].includes(m.op) && (m.op === 'leave' || int(m.id, 0, 1e12))) ? { op: m.op, id: m.id | 0 } : null,
     c: m => str(m.text, 300) ? { text: m.text } : null,  // chat
     em: m => int(m.e, 0, 5) ? { e: m.e } : null,       // emote
     rs: () => ({}),                                     // respawn
@@ -70,7 +72,7 @@
   MM.RATE = {
     all: [90, 45], st: [40, 20], f: [12, 6], c: [3, 0.5], cr: [6, 2], g: [6, 2],
     po: [3, 1], ki: [3, 1], ab: [4, 2], em: [4, 1], rs: [3, 1], pi: [5, 1], hello: [1, 0],
-    use: [4, 1], talk: [4, 1], ans: [4, 1], ship: [4, 1], drive: [3, 0.5], door: [3, 1], pvp: [3, 0.5],
+    use: [4, 1], talk: [4, 1], ans: [4, 1], ship: [4, 1], drive: [3, 0.5], door: [3, 1], pvp: [3, 0.5], tm: [4, 0.5],
   };
 
   // Animation states the client reports.

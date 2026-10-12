@@ -1,8 +1,8 @@
 {
- "build": 4,
- "date": "2026-10-12T16:38:37.060Z",
+ "build": 5,
+ "date": "2026-10-12T20:25:53.771Z",
  "game": {
-  "base": "game/4/",
+  "base": "game/5/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -36,13 +36,13 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "fa43c8e18631bac8a693a773071d63181945b870f6ba6949c250ba5db07a33c7",
-    "s": 37465
+    "h": "ccd8a602230a06246836fe63367e116639df187fd16f444779c8b16664e63394",
+    "s": 39017
    },
    {
     "p": "js/dims.js",
-    "h": "e60ec08526242096562acc5321a4ceb74ea1f5f33106c45bdc68e7d09a8e86c2",
-    "s": 133791
+    "h": "023ead2f34aa29a4b7e1ced89056852dabbaaadb9d60bd1830007002dbd4da82",
+    "s": 163321
    },
    {
     "p": "js/fx.js",
@@ -51,13 +51,13 @@
    },
    {
     "p": "js/game.js",
-    "h": "594aafb12f0abed3a097b3b69c08bee4cfb67495f44106558da245b703f50349",
-    "s": 83504
+    "h": "e1d08889684d2d65e4f18ac004f7357219c2d9dcacbb6dc2a0f6a6112f078e17",
+    "s": 87862
    },
    {
     "p": "js/net.js",
-    "h": "b15f3cb13aa5f06d0da5c1e5dff67d4ef1d4e7a43b5d371478976582a9777399",
-    "s": 3508
+    "h": "ea4ec7deeb829ea086d7b41e89024891c1c3c6fe05520f49b649658bc42911f1",
+    "s": 3493
    },
    {
     "p": "js/toon.js",
@@ -76,33 +76,33 @@
    },
    {
     "p": "shared/layouts.js",
-    "h": "d7ecb171765b44451fe9d462e05da69837edafc6b336f617d13f1a3722a01b39",
-    "s": 27400
+    "h": "fba062c2e13119dba09c1bb5abb38da7dab4f25d9890f8dd7ccc72ab0624feb4",
+    "s": 30418
    },
    {
     "p": "shared/protocol.js",
-    "h": "a115538f72cc17bcb4d9f1a4090938fca701be163e315c9f7738f12edd7323d9",
-    "s": 5001
+    "h": "c18d54733739196c07120f554fb658638c9fe51c851f6f528b3ead0af06481c3",
+    "s": 5288
    },
    {
     "p": "shared/rules.js",
-    "h": "70e2614695b34e07f0b4e146a6e9ffe9818739a7cfa6aff38727e435c5b7736d",
-    "s": 48560
+    "h": "0983218e73edee8990cc9922d8b2647c1b4b0fad3dd694661afbfc8685023e13",
+    "s": 57537
    },
    {
     "p": "shared/world.js",
-    "h": "5f589b6fcb1416206f24f18517b12966149d081d7e4a8226bf72d5f7c2a97651",
-    "s": 59430
+    "h": "5f8d1648f0329760848e6f880e15f90c0b12abb508643f5d43d456fdc66129f6",
+    "s": 74241
    },
    {
     "p": "sim/bot.js",
-    "h": "116880c0a6f31d5528dd2ed3ff7030b1d0eedf9116397b93e1dd83a975bb7e15",
-    "s": 13238
+    "h": "9a4c45be12b70d8613ddb0016f2fe09755f8bad15c4590059b6b9f853a32a132",
+    "s": 15876
    },
    {
     "p": "sim/host.js",
-    "h": "c79384ece3316edca040afa4e6af463df01f7a31e3a0a02e80357833748a03a6",
-    "s": 64938
+    "h": "0e21e4caaeef7d72e3779680e874572289ae531012b0e2217dc16fef55c178e7",
+    "s": 72368
    },
    {
     "p": "vendor/three.LICENSE",
@@ -116,7 +116,7 @@
    },
    {
     "p": "version.json",
-    "h": "7f33e4de1b99fc878a9b0f7d0114955eacc90becb52141f4829a71253f3dac1f",
+    "h": "2e45f67b4397d9abe7674faa9865660e0d91dc4e4b21ed25317b847e28e3d64b",
     "s": 12
    }
   ]

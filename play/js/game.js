@@ -102,14 +102,20 @@
   $('stage').addEventListener('pointerup', () => { dragging = false; });
   $('stage').addEventListener('pointercancel', () => { dragging = false; });
 
-  function menuChanged() { previewDirty = true; previewT = 0.05; UI.save('profile', profile); }
+  function menuChanged() { previewDirty = true; previewT = 0.05; UI.save('profile', profile); fillStarts(); }
+  // You can only start where your character lives.
+  function fillStarts() {
+    const sel = $('startDim'), starts = MM.startWorlds(profile.arch);
+    sel.textContent = '';
+    for (const id of starts) sel.append(el('option', { value: id, text: MM.DIM_BY_ID[id].name }));
+    if (!starts.includes(profile.startDim)) profile.startDim = starts[0];
+    sel.value = profile.startDim;
+  }
 
   function initMenu() {
     $('name').value = profile.name;
     $('home').value = profile.home;
-    $('startDim').append(el('option', { value: '', text: 'My home world' }));
-    for (const d of MM.DIMS) $('startDim').append(el('option', { value: d.id, text: d.name }));
-    $('startDim').value = profile.startDim;
+    fillStarts();
     // The Android app (Capacitor) serves the game from inside the app, so there is no server to prefill.
     const inApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     const httpHosted = !inApp && /^https?:$/.test(location.protocol) && !/claude|artifact/.test(location.hostname);
@@ -140,7 +146,7 @@
     meAv: null, players: new Map(), npcs: new Map(), pickups: new Map(), portals: new Map(), turrets: new Map(), alive: [],
     vm, camYaw: 0, camPitch: 0.25, camDist: 6, shake: 0,
     offset: null, lastSnap: 0, stT: 0, fireT: 0, pingT: 0, ping: 0, pop: null, top: [],
-    muted: new Set(), deadBy: '', modal: null, entered: false,
+    muted: new Set(), team: new Set(), teamNames: [], deadBy: '', modal: null, entered: false,
     promptT: 0, promptKey: '', camPropT: 0, camProps: [],
   };
   C.G = G; // for debugging from the console
@@ -172,7 +178,7 @@
     $('loading').hidden = false;
     $('loading').textContent = kind === 'online' ? 'Connecting to ' + (profile.server || location.host) + '…' : 'Opening a portal…';
     const h = {
-      open: () => G.net.send({ t: 'hello', v: MM.VERSION, name: profile.name, home: profile.home, look: profile.look, arch: profile.arch, dim: profile.startDim || undefined, tok: tokenFor(G.net), pvp: !!settings.pvp }),
+      open: () => G.net.send({ t: 'hello', v: MM.VERSION, name: profile.name, home: profile.home, look: profile.look, arch: profile.arch, dim: profile.startDim || undefined, tok: tokenFor(G.net), pvp: settings.pvp !== false }),
       message: onMessage,
       close: reason => leave(reason),
     };
@@ -499,6 +505,7 @@
       case 'em': { const p = G.players.get(e.id); if (p) p.emoteT = 2; break; }
       case 'dodge': { const p = posOf(e.id); if (p) { numAt(p.x, p.y + 2.4, p.z, 'DODGE!', '#5ff8ff', false); sfxAt('dodge', p.x, p.z); } break; }
       case 'kiosk': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1, p.z, '#ffd84d', 25, 6, 0.6, 0.5, 2); break; }
+      case 'timestop': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1.2, p.z, '#8fd8ff', 90, 14, 1.2, 1.4, 0); fx.burst(p.x, p.y + 1.2, p.z, '#ffffff', 30, 8, 0.8, 1.0, 0); } C.sfx('ability'); if (e.id === G.myId) UI.toast('Time stopped. Someone will have noticed.', 3000); break; }
       case 'bite': { const n = G.npcs.get(e.n); if (n) sfxAt('bite', n.x, n.z); break; }
       case 'shrunk': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#b48aff', 20, 4, 0.5, 0.6, 0); sfxAt('shrink', p.x, p.z); } break; }
       case 'say': {
@@ -561,6 +568,21 @@
       if (e.title) fx.burst(me.x, me.y + 1.5, me.z, '#ffd84d', 80, 10, 0.9, 1.2, 2);
     }
     else if (e.k === 'offer') openOffer(e);
+    else if (e.k === 'team') {
+      const was = G.team.size;
+      G.team = new Set(e.ids); G.teamNames = e.names || [];
+      UI.toast(e.ids.length ? 'Team: ' + G.teamNames.join(', ') : was ? 'You left the team.' : '', 3500);
+      if (G.modal === 'board') openBoard();
+    }
+    else if (e.k === 'tminv') {
+      C.sfx('chat', 0.6);
+      openModal('offer', e.name + ' invites you to their team', box => {
+        box.append(el('p', { text: 'Teammates can\'t hurt each other, and when one of you takes a door, a portal station or a ship, the others standing nearby come along. Anyone can follow through an open portal.' }),
+          el('div', { class: 'chips' },
+            el('button', { class: 'btn go', onclick: () => { send({ t: 'tm', op: 'join', id: e.id }); UI.closeModal(); } }, 'Join'),
+            el('button', { class: 'btn', onclick: () => UI.closeModal() }, 'No thanks')));
+      });
+    }
   }
 
   function onYou(y) {
@@ -659,6 +681,7 @@
     mk('turret', '2', 'Turret', () => useGadget('turret'));
     mk('shrink', '3', 'Shrink', () => useGadget('shrink'));
     mk('meeseeks', '4', 'Meeseeks', () => useGadget('meeseeks'));
+    mk('timecrystal', '5', 'Time', () => useGadget('timecrystal'));
     mk('craft', 'C', 'Build', () => openCraft());
     mk('journal', 'J', 'Journal', () => openJournal());
     mk('portal', 'E', 'Portal', () => portalAction());
@@ -674,9 +697,11 @@
       slots[g].querySelector('.n').textContent = y.inv[g] || '';
       slots[g].classList.toggle('off', !(y.inv[g] > 0));
     }
+    // Only Ricks and Evil Morty know how to make a Time Crystal: no slot for everyone else.
+    slots.timecrystal.hidden = !(y.inv.timecrystal > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'timecrystal'));
     const st = G.st;
-    slots.portal.querySelector('.n').textContent = y.chMax ? String(y.ch) : '';
-    slots.portal.classList.toggle('off', !(y.chMax && y.ch > 0) && !nearKiosk() && !(y.ship && st && st.ship && st.ship.drive));
+    slots.portal.querySelector('.n').textContent = y.chMax ? String(y.ch) : y.bor ? String(y.bor) : '';
+    slots.portal.classList.toggle('off', !(y.chMax && y.ch > 0) && !(y.bor > 0) && !nearKiosk() && !y.ship);
     slots.ship.hidden = !(st && st.ship);
     slots.ship.querySelector('span:nth-child(2)').textContent = y.ship ? 'Land' : 'Ship';
     $('tShip').hidden = !(st && st.ship);
@@ -746,13 +771,27 @@
     C.sfx('ability');
   }
   function nearKiosk() { return G.dimId && MM.hasKiosk(G.dimId) && Math.hypot(G.me.x - MM.kioskOf(G.dimId).x, G.me.z - MM.kioskOf(G.dimId).z) < MM.KIOSK_RADIUS; }
+  // How you can travel from here, best first: the station you are standing at, the ship
+  // you are flying, then a portal gun (your own or a borrowed one).
+  function travelModes() {
+    const y = G.you, st = G.st, m = [];
+    if (nearKiosk()) m.push('station');
+    if (y.ship && st && st.ship) m.push('ship');
+    if ((y.chMax && y.ch > 0) || y.bor > 0) m.push('gun');
+    return m;
+  }
+  function travelOpts(mode) {
+    const st = G.st || {};
+    return mode === 'ship' ? { hull: true, engine: !!(st.ship && st.ship.engine), drive: !!(st.ship && st.ship.drive) }
+      : mode === 'gun' ? { gold: !!(G.you.chMax && G.you.ch > 0 && st.gun && st.gun.gold) } : {};
+  }
   function portalAction() {
     if (!canAct()) return;
-    if (G.you.ship && G.st.ship && G.st.ship.drive) return openDims('drive');
-    if (nearKiosk()) return openDims('kiosk');
-    if (!G.you.chMax) { UI.toast('No portal gun in your life (yet). Use the kiosk in the middle, jump into someone\'s portal, or follow your path (J).', 4500); return; }
-    if (G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
-    openDims('gun');
+    const m = travelModes();
+    if (m.length) return openDims(m[0]);
+    if (G.you.chMax && G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
+    UI.toast(MM.DIM_BY_ID[G.dimId].station ? 'Walk up to the ' + MM.kioskOf(G.dimId).name + ' to travel.'
+      : 'No portal gun. Step through someone else\'s portal, fly a ship, find a portal station (the Citadel), borrow Rick\'s gun from his workbench, or build your own (J).', 5000);
   }
   function toggleShip() {
     if (!canAct()) return;
@@ -780,12 +819,11 @@
     if (n) { send({ t: 'talk', n: n.id }); return; }
     const l = nearLandmark();
     if (l) { if (l.door && !tasksAt(l).length) send({ t: 'door', l: l.id }); else openLandmark(l); return; }
-    if (nearKiosk()) openDims('kiosk');
+    if (nearKiosk()) openDims('station');
   }
   // Daily tasks you can do at a landmark: your own life's, plus the ones anyone can do.
   function tasksAt(l) {
-    const A = MM.ARCHETYPES[profile.arch];
-    return Object.keys(MM.TASKS).filter(t => MM.TASKS[t].at === l.id && (MM.TASKS[t].any || A.life.daily.includes(t)));
+    return Object.keys(MM.TASKS).filter(t => MM.isAt(l, MM.TASKS[t].at) && MM.taskFor(t, profile.arch));
   }
   function openLandmark(l) {
     const A = MM.ARCHETYPES[profile.arch];
@@ -826,7 +864,7 @@
     const ids = MM.WORLD_IDS.filter(id => !MM.DIM_BY_ID[id].outsideCurve);
     const out = MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].outsideCurve);
     const spots = [];
-    const rings = [[0.88, 0.85, 7], [0.74, 0.7, 6], [0.6, 0.5, 6]];
+    const rings = [[0.9, 0.88, 10], [0.77, 0.78, 9], [0.64, 0.66, 8], [0.5, 0.5, 6]];
     let k = 0;
     for (const [f, span, n] of rings) for (let i = 0; i < n && k < ids.length; i++, k++) {
       const t = n === 1 ? 0 : -span + (2 * span * i) / (n - 1);
@@ -873,27 +911,41 @@
   }
   function openDims(mode) {
     G.modalMode = mode;
+    const why = id => MM.travelWhy(mode === 'gun' ? 'portal' : mode, G.dimId, id, travelOpts(mode));
     const go = id => {
-      if (mode === 'kiosk') send({ t: 'ki', d: id });
-      else if (mode === 'drive') send({ t: 'drive', d: id });
-      else { send({ t: 'po', d: id }); UI.toast('Portal open. Walk through it!'); }
+      const w = why(id);
+      if (w) { UI.toast(w, 3500); return; }
+      if (mode === 'station') send({ t: 'ki', d: id });
+      else if (mode === 'ship') send({ t: 'drive', d: id });
+      else { send({ t: 'po', d: id }); UI.toast('Portal open. Walk through it! Anyone nearby can follow you.'); }
       UI.closeModal();
     };
-    openModal('dims', mode === 'kiosk' ? 'Portal Kiosk' : mode === 'drive' ? 'Dimension Drive' : 'Portal gun', box => {
+    const S = MM.DIM_BY_ID[G.dimId].station;
+    const title = mode === 'station' ? S.name : mode === 'ship' ? 'Fly your ship' : G.you.chMax && G.you.ch > 0 ? 'Portal gun' : 'Borrowed portal gun';
+    openModal('dims', title, box => {
+      const others = travelModes().filter(x => x !== mode);
+      if (others.length) {
+        const tabs = el('div', { class: 'chips' });
+        for (const o of others) tabs.append(el('button', { class: 'btn', onclick: () => { UI.closeModal(); openDims(o); } }, o === 'station' ? 'Use the station' : o === 'ship' ? 'Fly the ship' : 'Use the portal gun'));
+        box.append(tabs);
+      }
       box.append(curveMap(go));
       for (const outside of [false, true]) {
-        const ids = MM.WORLD_IDS.filter(id => !!MM.DIM_BY_ID[id].outsideCurve === outside && id !== G.dimId);
+        const ids = MM.WORLD_IDS.filter(id => !!MM.DIM_BY_ID[id].outsideCurve === outside && id !== G.dimId && !MM.DIM_BY_ID[id].pocket);
         if (!ids.length) continue;
         const list = el('div', { class: 'list' });
         for (const id of ids) {
-          const d = MM.DIM_BY_ID[id], n = G.pop ? G.pop.d[id] || 0 : 0;
-          list.append(el('div', { class: 'row dim' },
-            el('div', { class: 't' }, el('b', { text: d.name + '  ' + d.code }), el('small', { text: d.blurb + ' · ' + n + ' here' })),
-            el('button', { class: 'btn go', onclick: () => go(id) }, mode === 'gun' ? 'Open' : 'Go')));
+          const d = MM.DIM_BY_ID[id], n = G.pop ? G.pop.d[id] || 0 : 0, w = why(id);
+          list.append(el('div', { class: 'row dim' + (w ? ' locked' : '') },
+            el('div', { class: 't' }, el('b', { text: d.name + '  ' + d.code }), el('small', { text: w || d.blurb + ' · ' + n + ' here' })),
+            el('button', { class: 'btn go', disabled: w ? 'disabled' : null, onclick: () => go(id) }, mode === 'gun' ? 'Open' : mode === 'ship' ? 'Fly' : 'Go')));
         }
         box.append(el('h3', { text: outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
       }
-      box.append(el('p', { class: 'note', text: mode === 'kiosk' ? 'The kiosk sends you straight there.' : mode === 'drive' ? 'Your ship jumps straight there (15 s cooldown).' : 'Opens a portal in front of you for ' + MM.PORTAL_TTL + ' s. Anyone can walk through it, including your enemies.' }));
+      const fee = S && !S.free.includes(profile.arch) ? Object.keys(S.fee).map(k => S.fee[k] + ' ' + MM.MATERIALS[k].name).join(', ') : '';
+      box.append(el('p', { class: 'note', text: mode === 'station' ? 'Step through the station portal' + (fee ? ' for ' + fee : ' (free for you)') + '.'
+        : mode === 'ship' ? 'The Moon is a short hop. Other planets need the Turbo Engine; other dimensions need the Dimension Drive (15 s cooldown).'
+        : 'Opens a portal in front of you for ' + MM.PORTAL_TTL + ' s. Anyone can walk through it, so your friends (and enemies) can follow.' }));
     });
   }
   // The workbench: everything you could ever build, and exactly why you can or can't yet.
@@ -977,11 +1029,18 @@
       box.append(el('h3', { text: 'Chaos leaderboard (everyone online)' }));
       const tb = el('table', { class: 'lb' }, el('tr', null, el('th', { text: '#' }), el('th', { text: 'Variant' }), el('th', { text: 'Chaos' }), el('th', { text: 'KOs' }), el('th', { text: 'Where' })));
       G.top.forEach((r, i) => tb.append(el('tr', null, el('td', { text: String(i + 1) }), el('td', { text: r[0] + ' ' + r[1] + (r[5] ? ' (bot)' : '') }), el('td', { text: String(r[2]) }), el('td', { text: String(r[3]) }), el('td', { text: MM.DIM_BY_ID[r[4]] ? MM.DIM_BY_ID[r[4]].name : '' }))));
-      box.append(tb, el('h3', { text: 'In this dimension' }));
+      box.append(tb);
+      if (G.team.size) {
+        box.append(el('h3', { text: 'Your team' }), el('div', { class: 'row' }, el('div', { class: 't' }, el('b', { text: G.teamNames.join(', ') }),
+          el('small', { text: 'Stand close when someone takes a door, station or ship, and you go too.' })),
+          el('button', { class: 'btn', onclick: () => send({ t: 'tm', op: 'leave' }) }, 'Leave')));
+      }
+      box.append(el('h3', { text: 'In this dimension' }));
       const list = el('div', { class: 'list' });
       for (const [id, p] of G.players) {
-        const muted = G.muted.has(id);
-        list.append(el('div', { class: 'row' }, el('div', { class: 't' }, el('b', { text: p.info.name + ' ' + p.info.home }), el('small', { text: archLabel(p.info) })),
+        const muted = G.muted.has(id), mate = G.team.has(id);
+        list.append(el('div', { class: 'row' }, el('div', { class: 't' }, el('b', { text: (mate ? '★ ' : '') + p.info.name + ' ' + p.info.home }), el('small', { text: archLabel(p.info) })),
+          mate ? '' : el('button', { class: 'btn go', onclick: () => { send({ t: 'tm', op: 'inv', id }); } }, 'Invite'),
           el('button', { class: 'btn', onclick: () => { if (muted) G.muted.delete(id); else G.muted.add(id); openBoard(); } }, muted ? 'Unmute' : 'Mute')));
       }
       if (!G.players.size) list.append(el('p', { class: 'note', text: 'Nobody else here right now.' }));
@@ -994,7 +1053,7 @@
       box.append(
         row('Look sensitivity', el('input', { type: 'range', min: 0.3, max: 2.5, step: 0.05, value: settings.sens, oninput: e => { settings.sens = Number(e.target.value); UI.save('settings', settings); } })),
         row('Volume', el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: settings.volume, oninput: e => { settings.volume = Number(e.target.value); C.setVolume(settings.volume); UI.save('settings', settings); } })),
-        row('Fights', el('div', { class: 'chips' }, ...[[false, 'Off: nobody can hurt you'], [true, 'On: fight others who are on']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String(!!settings.pvp === v), onclick: () => { settings.pvp = v; UI.save('settings', settings); if (G.net) send({ t: 'pvp', on: v }); openMenu(); } }, t)))),
+        row('Fights', el('div', { class: 'chips' }, ...[[true, 'On: anyone with fights on can hurt you'], [false, 'Off: nobody can hurt you']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String((settings.pvp !== false) === v), onclick: () => { settings.pvp = v; UI.save('settings', settings); if (G.net) send({ t: 'pvp', on: v }); openMenu(); } }, t)))),
         row('View', el('div', { class: 'chips' }, ...[['third', 'Third person'], ['first', 'First person']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String(settings.view === v), onclick: () => { setView(v); openMenu(); } }, t)))),
         row('Graphics', el('div', { class: 'chips' }, ...['high', 'low'].map(q => el('button', { class: 'chip', 'aria-pressed': String(settings.quality === q), onclick: () => { settings.quality = q; applyQuality(); resize(); UI.save('settings', settings); openMenu(); } }, q)))),
         row('Options', el('div', { class: 'chips' },
@@ -1049,6 +1108,7 @@
       case 'Digit2': useGadget('turret'); break;
       case 'Digit3': useGadget('shrink'); break;
       case 'Digit4': useGadget('meeseeks'); break;
+      case 'Digit5': useGadget('timecrystal'); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emote(); break;
       case 'Space': e.preventDefault(); if (G.you && G.you.dead && now() >= G.rsAt) send({ t: 'rs' }); break;
@@ -1262,7 +1322,7 @@
           $('prompt').append(b, ' ' + (l.door ? (dest === l.name ? 'Enter ' + dest : l.name + ' → ' + dest) : l.name));
           $('tTalk').textContent = l.door && !tasksAt(l).length ? 'GO' : 'USE';
         }
-        else if (nk) { $('prompt').append(b, ' Portal Kiosk: travel to any dimension'); $('tTalk').textContent = 'KIOSK'; }
+        else if (nk) { $('prompt').append(b, ' ' + MM.kioskOf(G.dimId).name + ': travel to another dimension'); $('tTalk').textContent = 'TRAVEL'; }
         updateHotbar();
       }
     }
@@ -1302,7 +1362,8 @@
       const sp = Math.hypot(p.x - p.px, p.z - p.pz) / Math.max(dt, 1e-3);
       p.speed += (sp - p.speed) * Math.min(1, dt * 10);
       p.px = p.x; p.pz = p.z;
-      if (s.hp !== p.hp || !!(s.fx & 4096) !== p.tag.fight) { p.hp = s.hp; p.tag.draw(p.hp, !!(s.fx & 4096)); }
+      const mate = G.team.has(p.id);
+      if (s.hp !== p.hp || !!(s.fx & 4096) !== p.tag.fight || mate !== p.tag.mate) { p.hp = s.hp; p.tag.draw(p.hp, !!(s.fx & 4096), mate); }
       p.emoteT = Math.max(0, p.emoteT - dt);
       const d = Math.hypot(p.x - G.me.x, p.z - G.me.z);
       p.av.root.visible = d < fogFar + 10;
@@ -1523,12 +1584,12 @@
   }
   function vrPortal(id) {
     if (!canAct() || id === G.dimId) return;
-    if (G.you.ship && G.st.ship && G.st.ship.drive) { send({ t: 'drive', d: id }); return; }
-    if (nearKiosk()) { send({ t: 'ki', d: id }); return; }
-    if (!G.you.chMax) { vr.say('No portal gun in your life (yet). Find a kiosk.'); return; }
-    if (G.you.ch <= 0) { vr.say('Portal gun is recharging.'); return; }
-    send({ t: 'po', d: id });
-    vr.say('Portal open to ' + MM.DIM_BY_ID[id].name + '. Walk through it!');
+    const m = travelModes()[0];
+    if (!m) { vr.say(G.you.chMax ? 'Portal gun is recharging.' : 'No portal gun. Find a station, a ship, or someone else\'s portal.'); return; }
+    const w = MM.travelWhy(m === 'gun' ? 'portal' : m, G.dimId, id, travelOpts(m));
+    if (w) { vr.say(w); return; }
+    send(m === 'station' ? { t: 'ki', d: id } : m === 'ship' ? { t: 'drive', d: id } : { t: 'po', d: id });
+    if (m === 'gun') vr.say('Portal open to ' + MM.DIM_BY_ID[id].name + '. Walk through it!');
   }
   renderer.setAnimationLoop(frame);
 })();
