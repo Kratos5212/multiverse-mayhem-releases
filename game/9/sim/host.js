@@ -414,8 +414,8 @@
             const step = Math.min(l, speed * dt);
             let nx = n.x + dx / l * step, nz = n.z + dz / l * step;
             [nx, nz] = MM.collideProps(this.dimId, nx, nz, T.r, null);
-            const lim = Math.min(MM.WORLD_HALF - 15, MM.boundOf(this.dimId) - 0.8);
-            n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-lim, Math.min(lim, nz));
+            const lim = Math.min(MM.WORLD_HALF - 15, MM.boundOf(this.dimId) - 0.8), limZ = Math.min(MM.WORLD_HALF - 15, MM.boundZOf(this.dimId) - 0.8);
+            n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-limZ, Math.min(limZ, nz));
             n.r = Math.atan2(dx, dz);
           }
         }
@@ -610,9 +610,15 @@
       const prog = cleanProgress(m.arch, saved);
       if (prog.inv.grenade === undefined || (!saved && !prog.inv.grenade)) prog.inv.grenade = 1;
       for (const g of MM.GADGET_IDS) if (!prog.inv[g]) prog.inv[g] = prog.inv[g] || 0;
+      // One of each variant: only one Rick C-137 (or Morty Y-231...) at a time. A taken code
+      // gets you a fresh one from the same letter.
+      const asked = MM.sanitizeHome(m.home);
+      let home = asked;
+      const taken = h => [...this.players.values()].some(o => o.arch === m.arch && o.home === h);
+      if (taken(home)) { const L = home.replace(/[^A-Z]/g, '') || 'X'; do home = L + '-' + (1 + Math.floor(Math.random() * 999)); while (taken(home)); }
       const p = {
         id: this.nextId++, conn: c.conn, bot: c.bot, token,
-        name: MM.sanitizeName(m.name), home: MM.sanitizeHome(m.home), look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
+        name: MM.sanitizeName(m.name), home, look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
         prog, inv: prog.inv, st: null,
         inst: null, ep: 0, x: 0, y: 0, z: 0, r: 0, a: 0, lastSt: this.time, strikes: 0,
         hp: A.hp, maxHp: A.hp, dead: false, respawnAt: 0, ship: false,
@@ -630,7 +636,8 @@
       this.send(p, { t: 'hi', id: p.id, name: this.name, cap: this.cap, dims: MM.DIM_IDS, tok: token, you: { name: p.name, home: p.home, arch: p.arch } });
       this.log(`join ${p.name} (${p.id}) as ${p.arch}${p.bot ? ' [bot]' : ''}${saved ? ' (saved progress)' : ''}`);
       // You start in your own world: the one your character lives in.
-      const starts = MM.startWorlds(m.arch);
+      const starts = MM.startWorlds(m.arch, p.home);
+      if (p.home !== asked && !p.bot) this.toast(p, A.name + ' ' + asked + ' is already here, so you are ' + A.name + ' ' + p.home + '.');
       this.travel(p, m.dim && starts.includes(m.dim) ? m.dim : starts[0], null, null, true);
     }
 
@@ -648,7 +655,7 @@
     info(p) {
       const up = p.prog.up;
       return { id: p.id, name: p.name, home: p.home, look: p.look, arch: p.arch, bot: p.bot, title: p.prog.title || '',
-        gear: { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers } };
+        gear: { ratsuit: !!up.ratsuit, wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs } };
     }
 
     // ----- Life progress -----
@@ -764,8 +771,8 @@
       const dt = Math.min(1.0, Math.max(0.05, now - p.lastSt));
       const kb = now < p.kbUntil;
       const allowed = this.speedOf(p) * dt * 1.5 + 1.5 + (kb ? 30 * dt + 3 : 0);
-      const lim = MM.boundOf(p.inst.dimId);
-      const x = Math.max(-lim, Math.min(lim, m.x)), z = Math.max(-lim, Math.min(lim, m.z));
+      const lim = MM.boundOf(p.inst.dimId), limZ = MM.boundZOf(p.inst.dimId);
+      const x = Math.max(-lim, Math.min(lim, m.x)), z = Math.max(-limZ, Math.min(limZ, m.z));
       const moved = Math.hypot(x - p.x, z - p.z);
       const ground = MM.heightAt(p.inst.dimId, x, z);
       const g = p.inst.dim.gravity;
@@ -818,7 +825,7 @@
 
     onFire(p, m) {
       const now = this.time;
-      if (p.dead || now < p.cdFire || now < p.fx.sob) return;
+      if (p.dead || now < p.cdFire || now < p.fx.sob || MM.helpless(p.arch, p.prog.up)) return;
       const wid = this.weaponOf(p), w = MM.WEAPONS[wid];
       p.cdFire = now + w.cd * 0.9;
       p.fx.prot = 0;
@@ -1031,6 +1038,7 @@
     // (or took off someone you knocked out). Gold portals are the only way past the Curve.
     onPortal(p, d) {
       const now = this.time;
+      if (MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       if (p.dead || !MM.DIM_BY_ID[d]) return;
       const own = p.st.gun && p.charges > 0;
       if (!own && !(p.borrow > 0)) { this.toast(p, 'You need a portal gun. Build one, or borrow (steal) Rick\'s.'); return; }
@@ -1078,6 +1086,7 @@
 
     // ----- Ship -----
     onShip(p, on) {
+      if (on && MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       if (p.dead || !p.st.ship || p.ship === on) return;
       p.ship = on;
       p.kbUntil = this.time + 1;     // stepping out mid-air: let the fall happen
@@ -1104,6 +1113,7 @@
     onCraft(p, id) {
       const R = MM.RECIPES[id];
       if (p.dead || !R) return;
+      if (MM.helpless(p.arch, p.prog.up) && id !== 'ratsuit') { this.toast(p, MM.HELPLESS_TEXT); return; }
       const why = MM.canKnow(p.arch, p.prog, id);
       if (why) { this.toast(p, why); return; }
       if (R.at) {
@@ -1121,7 +1131,7 @@
         this.restat(p);
         if (id === 'gunbuild') { p.charges = p.st.gun.charges; this.toast(p, 'You built a portal gun! Press E to use it.'); }
         if (id === 'hull') this.toast(p, 'Your ship is ready. Press B to board it.');
-        if (['wings', 'jetpack', 'engine', 'lasers', 'hull'].includes(id)) p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
+        if (['wings', 'jetpack', 'engine', 'lasers', 'hull', 'cyberarm', 'cyberlegs', 'ratsuit'].includes(id)) p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
       }
       for (const k in cost) p.inv[k] -= cost[k];
       this.priv(p, { k: 'built', r: id });
@@ -1129,6 +1139,7 @@
     }
 
     onGadget(p, m) {
+      if (MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       const inst = p.inst, g = m.g;
       if (p.dead || p.ship || this.time < p.fx.sob || !(p.inv[g] > 0)) return;
       if (g === 'grenade') {
@@ -1169,6 +1180,7 @@
 
     // ----- Daily life at landmarks -----
     onUse(p, lid, taskId) {
+      if (MM.helpless(p.arch, p.prog.up)) { const l = MM.LANDMARK_BY_ID[lid]; if (l && l.door) this.onDoor(p, lid); else this.toast(p, MM.HELPLESS_TEXT); return; }
       const l = MM.LANDMARK_BY_ID[lid];
       if (p.dead || !l || l.dim !== p.inst.dimId || this.time < p.cdUse) return;
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2) return;
@@ -1387,7 +1399,8 @@
     }
     stats() {
       const d = {};
-      for (const id of MM.DIM_IDS) d[id] = 0;
+      for (const id of MM.DIM_IDS) if (!MM.HOME_RE.test(id)) d[id] = 0;   // home dimensions only when someone is there
+      for (const p of this.players.values()) if (p.inst && !(p.inst.dimId in d)) d[p.inst.dimId] = 0;
       let bots = 0;
       for (const p of this.players.values()) { if (p.inst) d[p.inst.dimId]++; if (p.bot) bots++; }
       return { total: this.players.size, bots, d, instances: this.instances.size };

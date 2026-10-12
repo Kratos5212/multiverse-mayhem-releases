@@ -7,7 +7,17 @@
   MM.VERSION = 4;
   // Monsters notice you within AGGRO_RANGE metres and stop chasing beyond LEASH of their home.
   // Where a character can start: their home world (and, for some, another place they live).
-  MM.startWorlds = arch => { const A = MM.ARCHETYPES[arch]; return (A.homes || [A.home]).filter(d => MM.DIM_BY_ID ? MM.DIM_BY_ID[d] : true); };
+  // Where a character can start: their home dimension's Earth first (for Earth folk with a
+  // home code), then the other places they live. Only C-137 folk start on the show's Earth.
+  MM.startWorlds = (arch, home) => {
+    const A = MM.ARCHETYPES[arch];
+    let list = (A.homes || [A.home]).filter(d => MM.DIM_BY_ID ? MM.DIM_BY_ID[d] : true);
+    if (home && MM.homeDimId && MM.EARTH_ARCHS.includes(arch)) {
+      const h = MM.homeDimId(home);
+      list = [h].concat(list.filter(d => d !== h && d !== 'suburbia'));
+    }
+    return list;
+  };
   MM.TEAM_MAX = 8; MM.TEAM_REACH = 14;
   MM.AGGRO_RANGE = 9;
   MM.LEASH = 26;               // protocol version; client and server must match
@@ -179,6 +189,12 @@
     fluid:    { cat: 'gadget', name: 'Portal Fluid', cost: { c: 2 }, gun: true, desc: 'Refills one portal gun charge right away.' },
     timecrystal: { cat: 'gadget', name: 'Time Crystal', cost: { c: 5, m: 2 }, max: 1, desc: 'Press 5: freeze time around you for 4 s. Illegal for third-dimensional beings, so the Time Cops will come for you.' },
     meeseeks: { cat: 'gadget', name: 'Meeseeks Box', cost: { k: 3, s: 1 }, max: 2, desc: 'Press it (4): a Mr. Meeseeks pops out and fights for you for 30 s.' },
+    // Rick's own body upgrades (only Ricks know how): robot limbs and a built-in scanner.
+    // Pickle Rick's rat suit, built from rat parts and scrap (in a sewer, anywhere really).
+    ratsuit:   { cat: 'self', name: 'Rat Suit', cost: { g: 3, s: 4 }, onlyFor: ['picklerick'], desc: 'Rat legs, rat arms, wires and spite. Now you can do more than roll.' },
+    cyberarm:  { cat: 'self', name: 'Cybernetic Arm', cost: { c: 6, s: 8, p: 3 }, at: 'garage', onlyFor: ['genius'], desc: 'A robot arm: +35% damage, and your punches and shots hit harder.' },
+    cyberlegs: { cat: 'self', name: 'Cybernetic Legs', cost: { c: 6, s: 8, g: 2 }, at: 'garage', onlyFor: ['genius'], needs: 'cyberarm', desc: 'Robot legs: run 25% faster and jump 35% higher.' },
+    scanner:   { cat: 'self', name: 'Scanner Implant', cost: { c: 4, p: 2 }, at: 'garage', onlyFor: ['genius'], desc: 'Press X to scan whatever you look at: what it is, how dangerous, what it is made of.' },
     megabrain: { cat: 'self', name: 'Mega Seed Smarts', cost: { m: 4, c: 2 }, at: 'garage', desc: 'Abilities recharge 30% faster and you hit 10% harder.' },
     cloak:    { cat: 'self', name: 'Citadel Cloak', cost: { k: 8, p: 3 }, at: 'council', desc: 'Monsters and turrets lose track of you 3 s after you stop fighting.' },
     armor1:   { cat: 'self', name: 'Bio-Armor I', cost: { g: 4, s: 4 }, at: 'forge', desc: '+25 max health. Grown, not built.' },
@@ -222,7 +238,7 @@
       portal: { charges: 3, recharge: 14 }, knows: '*', discount: 2 / 3,
       ability: { id: 'shield', name: 'Science Shield', cd: 16, dur: 4 },
       blurb: 'Smartest being in any dimension. Owns a portal gun, builds anything, but is fragile and has a terrible attitude.',
-      perk: 'Knows every recipe and pays a third less. Portal gun with 3 charges.',
+      perk: 'Knows every recipe and pays a third less. Portal gun with 3 charges that can leave the Central Finite Curve.',
       life: { normal: 'Grandpa Rick', breakout: 'Rickest Rick', daily: ['tinker', 'dinner', 'council'] },
       steps: [
         { name: 'Tinker time', desc: "Tinker in Rick's Garage once.", goal: { type: 'use', task: 'tinker', n: 1 } },
@@ -343,12 +359,12 @@
       ],
     },
     trooper: {
-      name: 'Federation Officer', hp: 120, speed: 7, jump: 8.5, weapon: 'rifle', home: 'federation',
+      name: 'Federation Officer', hp: 120, speed: 7, jump: 8.5, weapon: 'rifle', fly: true, home: 'federation',   // Gromflomites fly on their insect wings
       temper: { fights: 'defend', hunts: ['genius', 'birdfolk', 'squanchy'] }, homes: ['federation'],
       portal: null, knows: ['grenade', 'turret', 'blaster1', 'engine', 'lasers'], start: ['hull'],
       ability: { id: 'cuff', name: 'Stun Cuffs', cd: 12 },
       blurb: 'Enforcer of an interplanetary bureaucracy. Comes with a patrol ship and a lot of paperwork.',
-      perk: 'Starts with a ship (B to board). Stun Cuffs freeze whoever is in front of you.',
+      perk: 'Flies on insect wings (hold Space) and starts with a ship (B to board). Stun Cuffs freeze whoever is in front of you.',
       life: { normal: 'Loyal Officer', breakout: 'Rogue Officer', daily: ['report', 'dock'] },
       steps: [
         { name: 'Paperwork', desc: 'File a patrol report at the Bazaar Shipyard.', goal: { type: 'use', task: 'report', n: 1 } },
@@ -419,14 +435,14 @@
     picklerick: {
       name: 'Pickle Rick', hp: 60, speed: 6, jump: 11, weapon: 'slap', home: 'suburbia',
       temper: { fights: 'often', chaos: 0.3 }, homes: ['suburbia'],
-      portal: null, knows: ['grenade', 'legs1', 'armor1', 'armor2', 'blaster1'], discount: 2 / 3,
+      portal: null, knows: ['ratsuit', 'grenade', 'legs1', 'armor1', 'armor2', 'blaster1'], discount: 2 / 3,
       ability: { id: 'roll', name: 'Pickle Roll', cd: 8, dur: 2.5 },
       blurb: 'A genius who turned himself into a pickle to get out of family therapy. Tiny, green, and furious.',
-      perk: 'Builds a third cheaper. Starts weak; rat-part upgrades (armor, legs) make him dangerous.',
+      perk: 'A pickle can only roll. Build the Rat Suit (C, anywhere, from goo and scrap) for rat legs and arms, and then fight dirty. Builds a third cheaper.',
       life: { normal: 'Pickle on the Floor', breakout: 'Pickle Rick!', daily: ['tinker'] },
       steps: [
-        { name: 'Roll for it', desc: 'Smash 15 props.', goal: { type: 'smash', n: 15 } },
-        { name: 'Rat parts', desc: 'Build Spring Legs at Rick\'s Garage.', goal: { type: 'craft', r: 'legs1' }, grants: ['jetpack', 'turret', 'blaster2'] },
+        { name: 'Rat parts', desc: 'Roll around, collect goo and scrap, and build the Rat Suit (C).', goal: { type: 'craft', r: 'ratsuit' }, grants: ['turret'] },
+        { name: 'Roll for it', desc: 'Smash 15 props.', goal: { type: 'smash', n: 15 }, grants: ['jetpack', 'blaster2'] },
         { name: 'Pickle Rick!', desc: 'Defeat 10 monsters.', goal: { type: 'kill', n: 10 }, grants: ['gunbuild', 'guncap1', 'fluid', 'hull', 'engine', 'lasers', 'drive'], title: true },
       ],
     },
@@ -458,11 +474,15 @@
 
   MM.hasGun = (arch, up) => !!(MM.ARCHETYPES[arch].portal || up.gunbuild);
 
+  // A Pickle Rick without his rat suit is a pickle: he can roll, talk, and build the suit.
+  MM.helpless = (arch, up) => arch === 'picklerick' && !(up && up.ratsuit);
+  MM.HELPLESS_TEXT = "You're a pickle. You can only roll around. Build the Rat Suit (C) from goo and scrap.";
   // Can this character build this recipe at all (lore + path), ignoring cost and place?
   // Returns null if yes, or the reason why not.
   MM.canKnow = function (arch, prog, id) {
     const A = MM.ARCHETYPES[arch], R = MM.RECIPES[id];
     if (!R) return 'Unknown recipe';
+    if (R.onlyFor && !R.onlyFor.includes(arch)) return 'Only ' + R.onlyFor.map(a => MM.ARCHETYPES[a].name).join(' or ') + ' knows how to build this.';
     if (A.knows !== '*' && !A.knows.includes(id) && !prog.grants.includes(id) && !MM.COMMON.includes(id)) return 'Not part of your life yet. Follow your path (J) to unlock it.';
     if (R.gun && !MM.hasGun(arch, prog.up)) return 'Needs a portal gun.';
     if (R.nogun && MM.hasGun(arch, prog.up)) return 'You already have a portal gun.';
@@ -486,10 +506,11 @@
     const A = MM.ARCHETYPES[arch];
     const s = {
       maxHp: A.hp + (up.armor1 ? 25 : 0) + (up.armor2 ? 25 : 0) + (up.armor3 ? 30 : 0),
-      speed: A.speed * (up.legs1 ? 1.15 : 1) * (up.legs2 ? 1.15 : 1),
-      jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1),
+      speed: A.speed * (up.legs1 ? 1.15 : 1) * (up.legs2 ? 1.15 : 1) * (up.cyberlegs ? 1.25 : 1),
+      jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1) * (up.cyberlegs ? 1.35 : 1),
       fly: A.fly || up.wings ? 'wings' : up.jetpack ? 'jet' : null,
-      dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1),
+      dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1) * (up.cyberarm ? 1.35 : 1),
+      scanner: !!up.scanner,
       cdMult: up.megabrain ? 0.7 : 1,
       cloak: !!up.cloak,
       gun: null, ship: null,
@@ -500,8 +521,9 @@
       s.gun = { charges: base.charges + (up.guncap1 ? 1 : 0) + (up.guncap2 ? 1 : 0), recharge: base.recharge * (up.gunfast ? 0.65 : 1) };
     }
     if (up.hull) s.ship = { speed: up.engine ? 30 : 19, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive };
-    // Evil Morty already escaped the Curve once; everyone else needs the golden fluid.
-    if (s.gun) s.gun.gold = arch === 'evilmorty' || !!up.curvebreaker;
+    // Rick helped build the Curve and can step outside it; Evil Morty broke out of it. Anyone
+    // else needs the golden fluid.
+    if (s.gun) s.gun.gold = arch === 'genius' || arch === 'evilmorty' || !!up.curvebreaker;
     return s;
   };
 

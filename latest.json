@@ -1,8 +1,8 @@
 {
- "build": 8,
- "date": "2026-10-12T22:00:32.918Z",
+ "build": 9,
+ "date": "2026-10-12T22:28:23.646Z",
  "game": {
-  "base": "game/8/",
+  "base": "game/9/",
   "files": [
    {
     "p": "assets/interiors/smith.mmg",
@@ -36,8 +36,8 @@
    },
    {
     "p": "index.html",
-    "h": "40cc88e0eb47f1ba6593598cc9ff8ca5823cbed69a0b0c34b519cd6735edcfe7",
-    "s": 27196
+    "h": "9cc03cbd49aac2551dd581c5b379fdbfd761773f18255f883daa3f1e85213f78",
+    "s": 28191
    },
    {
     "p": "js/audio.js",
@@ -46,13 +46,13 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "886c588dba37a0430d046d43c93823cd9e986cffb8b68185980c9f9846099d01",
-    "s": 49759
+    "h": "3e36c47b758717f2c22e59c37667e7186fd73366d34f394f3a29ba5937b0cf32",
+    "s": 58070
    },
    {
     "p": "js/dims.js",
-    "h": "d2fa97c0970871dc987f94e01c2b7529f0a530ab67ae8bc56d50493a19692794",
-    "s": 165774
+    "h": "e9fbd06506a39002f98cfbe1bd667048cd3c08e736d7384cec4a53c55d816e55",
+    "s": 167043
    },
    {
     "p": "js/fx.js",
@@ -61,8 +61,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "e974abd2ca02199099c7661d1bcc2c34eb8b2ed18637f50604d0a3225a9e341b",
-    "s": 93678
+    "h": "b05ea5012c49e961dc3c9a43dd823a8906d5040e1dc30b2bba96914ab107dc7a",
+    "s": 101938
    },
    {
     "p": "js/mmg.js",
@@ -76,13 +76,13 @@
    },
    {
     "p": "js/toon.js",
-    "h": "5d21dba07622624082494064422d79dfe9092ae40666380d16db5114e594faea",
-    "s": 12956
+    "h": "3cb10b3a9679ecd7e7db03b50729598abfe4e2480772b62d3eeeb7e5037e78cd",
+    "s": 14096
    },
    {
     "p": "js/ui.js",
-    "h": "42a26fef37b0bceb33f72e090ae15461a217ae88811fe46961794a0df486db1f",
-    "s": 18285
+    "h": "fee4627f5cb0970d2d5269f9aeb6f45c94344b80e5828c991bb7b4ee8fed0d1c",
+    "s": 18405
    },
    {
     "p": "js/vr.js",
@@ -101,13 +101,13 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "0d815ddb9d1ca2d6e575d91757457c21dbcbe186c566dc0a4c83c356eea48029",
-    "s": 58123
+    "h": "ecaca2cee1a0b3ed8833c42635ad560ba2debccca677bbb3963db53dd9bc79fd",
+    "s": 60327
    },
    {
     "p": "shared/world.js",
-    "h": "0516dc778c5e92b3045db683a378a2624c1b398b542e0a1d5b34767c84330f9c",
-    "s": 76585
+    "h": "c246e64bf7a128e3945b0ac4b40c1e0f55669a107923f9df8eeab2cf01dee52a",
+    "s": 85267
    },
    {
     "p": "sim/bot.js",
@@ -116,8 +116,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "febca8176cd47cce337056e5308264c9cabfb8613eb23d1f6d8624533c064355",
-    "s": 72474
+    "h": "62efc8aedc3b3919de71f6d25aa12edd986e7e595a5389665ef586eda714c037",
+    "s": 73921
    },
    {
     "p": "vendor/three.LICENSE",
@@ -131,7 +131,7 @@
    },
    {
     "p": "version.json",
-    "h": "fda390e1e9b9e8b317bb5f8c7352b1c61a25b3d98f414803e9bdf22fb73c1cc1",
+    "h": "5f3faea937b0b28b293725a5f90913e7aa0b91e51ae789e78246d2f893e1f8f0",
     "s": 12
    }
   ]
