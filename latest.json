@@ -1,8 +1,8 @@
 {
- "build": 2,
- "date": "2026-10-12T15:42:43.610Z",
+ "build": 3,
+ "date": "2026-10-12T16:08:09.519Z",
  "game": {
-  "base": "game/2/",
+  "base": "game/3/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -26,8 +26,8 @@
    },
    {
     "p": "index.html",
-    "h": "4fdf93422103874fd0f4916f43798b4e640ba6ee4beea8af2cbc60066a8063c6",
-    "s": 23418
+    "h": "922a91429c58a057ecb84367e596fbf09857d07683f0116bbf910487bdf9f62d",
+    "s": 23816
    },
    {
     "p": "js/audio.js",
@@ -36,8 +36,8 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "e8825ccec5e31b7e87a33b6c475404e27dde9a6b83aff12bc80efc097b630b71",
-    "s": 37225
+    "h": "4b0718db2080019c747920611b9ebbd67c5778a64469c16c42d171d546f0a90e",
+    "s": 37442
    },
    {
     "p": "js/dims.js",
@@ -51,8 +51,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "fdc2d2a75d2746a54b9c18fb5309c0e6915ba9a0cccb56ad98bc0478616883d8",
-    "s": 82683
+    "h": "1ec3c76b3977b861242ab7309152fee9100b9dbed71baf30102ab1e66c7163c0",
+    "s": 83108
    },
    {
     "p": "js/net.js",
@@ -76,13 +76,13 @@
    },
    {
     "p": "shared/protocol.js",
-    "h": "70a8b11d6e0113af4c0c8136f8aff5799e21f74591ac18d15faf3e87505683d9",
-    "s": 4784
+    "h": "a115538f72cc17bcb4d9f1a4090938fca701be163e315c9f7738f12edd7323d9",
+    "s": 5001
    },
    {
     "p": "shared/rules.js",
-    "h": "1df861b9457c9d6e803f9488004c9125213b37e7da30f28866e9bc6e344f2140",
-    "s": 46798
+    "h": "04ab4cbf97e4477f1667cc9244f8542c07851714ba6d62fccbc82f90155dfe7f",
+    "s": 46933
    },
    {
     "p": "shared/world.js",
@@ -91,13 +91,13 @@
    },
    {
     "p": "sim/bot.js",
-    "h": "8cde11cb1668cede8616f62506f5a347660064500ad405a62a30aa4b7b312174",
-    "s": 13477
+    "h": "116880c0a6f31d5528dd2ed3ff7030b1d0eedf9116397b93e1dd83a975bb7e15",
+    "s": 13238
    },
    {
     "p": "sim/host.js",
-    "h": "edb85fb72b81da7a02433a97c01f1786cb03f6c5213186c9059e810c6fb5a3a2",
-    "s": 63493
+    "h": "c79384ece3316edca040afa4e6af463df01f7a31e3a0a02e80357833748a03a6",
+    "s": 64938
    },
    {
     "p": "vendor/three.LICENSE",
@@ -111,7 +111,7 @@
    },
    {
     "p": "version.json",
-    "h": "9fd40538b3389221134373232ba392a6c83b48484c89eb547ffb8084e0f88676",
+    "h": "5a51c30f04fecfba340cc7cdd5164b683659aedac2e3eda97accd9475e5aa51d",
     "s": 12
    }
   ]
