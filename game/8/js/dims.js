@@ -1549,6 +1549,12 @@
       s.add(P.box, '#c8302a', [1.2, 4.9, 0.17], null, [2.6, 0.5, 0.02], true);
       s.add(P.box, '#f4f4f4', [1.2, 4.2, 0.17], null, [2.2, 0.3, 0.02]);
     },
+    // A glowing ring on the floor: something to do here (inside rooms built elsewhere).
+    lm_marker(s) {
+      const ring = new T.TorusGeometry(0.55, 0.05, 6, 32);
+      s.add(ring, '#ffd84d', [0, 0.03, 0], [Math.PI / 2, 0, 0], null, true);
+      ring.dispose();
+    },
     // Ruben lies in a striped event tent; Anatomy Park's gate is a sign over his tummy.
     lm_anatomytent(s) {
       for (let i = 0; i < 12; i++) {
@@ -1820,6 +1826,24 @@
   }
 
   // ---------- Terrain ----------
+  // A hand-painted grain laid over the ground colours: short brush strokes and specks,
+  // almost white so it only shades the colour a little, tiled every few metres.
+  const grain = (function () {
+    const N = 256, cv = document.createElement('canvas'); cv.width = cv.height = N;
+    const g = cv.getContext('2d'), r = MM.rng(4242);
+    g.fillStyle = '#f4f4f4'; g.fillRect(0, 0, N, N);
+    for (let i = 0; i < 900; i++) {
+      const x = r() * N, y = r() * N, l = 3 + r() * 7, a = -1.2 - r() * 0.7, v = 190 + Math.floor(r() * 45);
+      g.strokeStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; g.lineWidth = 1 + r() * 1.4; g.lineCap = 'round';
+      for (const dx of [0, -N, N]) for (const dy of [0, -N, N]) { g.beginPath(); g.moveTo(x + dx, y + dy); g.lineTo(x + dx + Math.cos(a) * l, y + dy + Math.sin(a) * l); g.stroke(); }
+    }
+    for (let i = 0; i < 500; i++) { const v = 255 - Math.floor(r() * 25); g.fillStyle = 'rgb(' + v + ',' + v + ',' + v + ')'; g.fillRect(r() * N, r() * N, 2, 2); }
+    const t = new T.CanvasTexture(cv);
+    t.wrapS = t.wrapT = T.RepeatWrapping;
+    t.anisotropy = 4;
+    return t;
+  })();
+  const terrainMat = new T.MeshToonMaterial({ vertexColors: true, gradientMap: C.gradientMap, map: grain });
   function makeTerrain(dim) {
     const size = MM.WORLD_HALF * 2 + 120, seg = 150;
     const g = new T.PlaneGeometry(size, size, seg, seg);
@@ -1854,7 +1878,10 @@
     }
     g.setAttribute('color', new T.BufferAttribute(cols, 3));
     g.computeVertexNormals();
-    const m = new T.Mesh(g, C.toonMat);
+    // Tile the grain about every 5 m.
+    const uv = g.attributes.uv, rep = size / 5;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * rep, uv.getY(i) * rep);
+    const m = new T.Mesh(g, terrainMat);
     return m;
   }
 
@@ -1965,7 +1992,21 @@
 
   // ---------- Rooms (the garage and the dimensions under it) ----------
   function makeRoom(dim) {
-    const R = dim.room, s = new C.Shape(), w = R.w, d = R.d, h = R.h;
+    const R = dim.room;
+    if (R.mesh) {
+      // A room built elsewhere (Mojulo): its walls, floor and furniture come in as one mesh with
+      // the light baked in. We add a ceiling and a warm lamp for the characters.
+      const g = new T.Group();
+      C.loadMMG(R.mesh).then(geo => { const m = new T.Mesh(geo, C.mmgMat); m.name = 'roomMesh'; g.add(m); }).catch(e => console.warn('room mesh', e));
+      const ceil = new T.Mesh(new T.PlaneGeometry(R.w + 0.6, R.d + 0.6), new T.MeshBasicMaterial({ color: '#efe6d6' }));   // one-sided: seen from below only
+      ceil.rotation.x = Math.PI / 2; ceil.position.y = R.h + 0.02;
+      g.add(ceil);
+      const lamp = new T.PointLight('#fff1d0', 0.6, 40);
+      lamp.position.set(0, R.h - 1, 0);
+      g.add(lamp);
+      return g;
+    }
+    const s = new C.Shape(), w = R.w, d = R.d, h = R.h;
     s.add(P.box, dim.ground[0], [0, -0.1, 0], null, [w, 0.2, d]);
     // Floor planks / tiles for a bit of texture.
     if (R.style === 'garage') for (let i = 1; i < 4; i++) s.add(P.box, '#7e7e78', [0, 0.004, -d / 2 + i * d / 4], null, [w, 0.008, 0.06]);   // concrete joints
