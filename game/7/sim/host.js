@@ -93,7 +93,8 @@
       this.emptySince = host.time;
       this.event = null;
       this.nextEvent = host.time + 60 + Math.random() * 90;
-      for (const [type, count] of this.dim.npc) for (let i = 0; i < count; i++) this.spawnNpc(type, false);
+      // [type, count] or [type, count, x, z] for someone who lives at a particular spot.
+      for (const [type, count, x, z] of this.dim.npc) for (let i = 0; i < count; i++) this.spawnNpc(type, false, x !== undefined ? { at: { x: x + (Math.random() - 0.5) * 6, z: z + (Math.random() - 0.5) * 6 } } : null);
       for (const k in this.dim.pickups) for (let i = 0; i < this.dim.pickups[k]; i++) this.spawnPickup(k, false);
     }
 
@@ -317,6 +318,10 @@
         // Locals you hit hit back (if they are the fighting kind).
         if (!n.T.hostile && n.T.human && Math.random() < 0.5) { n.angry = owner.id; n.angryUntil = this.host.time + 15; }
         if (n.T.hostile) { n.angry = owner.id; n.angryUntil = this.host.time + 12; }
+        // Police, Secret Service and Marines protect people (and each other).
+        if (!n.T.hostile && (n.T.human || n.T.guard)) for (const g of this.npcs.values()) {
+          if (g.T.guard && !(g.owner && g.ownerUntil > this.host.time) && dist2(g.x, g.z, n.x, n.z) < 40 * 40) { g.angry = owner.id; g.angryUntil = this.host.time + 25; }
+        }
       }
       this.ev({ k: 'dmg', n: n.id, d: dmg });
       if (n.hp > 0) return;
@@ -535,6 +540,7 @@
       this.save(p);
       if (p.token && this.tokens.get(p.token) === p) this.tokens.delete(p.token);
       if (p.inst) { p.inst.players.delete(p.id); p.inst.ev({ k: 'leave', id: p.id }); p.inst.emptySince = this.time; }
+      this.leaveTeam(p);
       this.players.delete(p.id);
       this.log(`leave ${p.name} (${p.id})`);
     }
@@ -584,6 +590,7 @@
         case 'pvp': p.pvp = m.on; this.toast(p, m.on ? 'Fights on: players who also turned fights on can hurt you, and you them.' : 'Fights off: no other player can hurt you.'); break;
         case 'drive': this.onDrive(p, m.d); break;
         case 'door': this.onDoor(p, m.l); break;
+        case 'tm': this.onTeam(p, m); break;
       }
     }
 
@@ -605,7 +612,7 @@
       for (const g of MM.GADGET_IDS) if (!prog.inv[g]) prog.inv[g] = prog.inv[g] || 0;
       const p = {
         id: this.nextId++, conn: c.conn, bot: c.bot, token,
-        name: MM.sanitizeName(m.name), home: MM.sanitizeHome(m.home), look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: !!m.pvp,
+        name: MM.sanitizeName(m.name), home: MM.sanitizeHome(m.home), look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
         prog, inv: prog.inv, st: null,
         inst: null, ep: 0, x: 0, y: 0, z: 0, r: 0, a: 0, lastSt: this.time, strikes: 0,
         hp: A.hp, maxHp: A.hp, dead: false, respawnAt: 0, ship: false,
@@ -622,7 +629,9 @@
       if (token) this.tokens.set(token, p);
       this.send(p, { t: 'hi', id: p.id, name: this.name, cap: this.cap, dims: MM.DIM_IDS, tok: token, you: { name: p.name, home: p.home, arch: p.arch } });
       this.log(`join ${p.name} (${p.id}) as ${p.arch}${p.bot ? ' [bot]' : ''}${saved ? ' (saved progress)' : ''}`);
-      this.travel(p, m.dim && MM.DIM_BY_ID[m.dim] ? m.dim : A.home, null, null, true);
+      // You start in your own world: the one your character lives in.
+      const starts = MM.startWorlds(m.arch);
+      this.travel(p, m.dim && starts.includes(m.dim) ? m.dim : starts[0], null, null, true);
     }
 
     restat(p) {
@@ -846,6 +855,7 @@
     // when both of them have turned fights on. Monsters, the world and yourself still can.
     canHurt(src, p) {
       if (!src || src === p || !src.A) return true;   // monsters, hazards, yourself
+      if (src.team && src.team === p.team) return false;   // never your own team
       return !!(src.pvp && p.pvp);
     }
 
@@ -872,6 +882,8 @@
       if (src && src !== p) {
         src.kills++; src.prog.chaos += 5;
         this.progress(src, 'ko');
+        // Knock out someone with a portal gun and you can grab a charge from it.
+        if (src.A && p.st.gun && p.charges > 0 && !src.st.gun) { p.charges--; src.borrow = (src.borrow || 0) + 1; this.toast(src, 'You grabbed their portal gun for one jump (E).'); this.dirty(src); }
         if (p.arch === 'beanling') { src.fx.guilt = this.time + 10; this.toast(src, 'You feel terrible about that.'); }
       }
       inst.ev({ k: 'kill', v: p.id, by: src ? src.id : 0, w: how || '' });
@@ -950,6 +962,58 @@
       }
     }
 
+    // ----- Teams -----
+    // Up to 8 players. Teammates can't hurt each other, see each other on the map, and
+    // anyone standing near you comes along when you take a door, a station or your ship.
+    onTeam(p, m) {
+      const now = this.time;
+      if (m.op === 'leave') { this.leaveTeam(p); return; }
+      const o = this.players.get(m.id);
+      if (!o || o === p) return;
+      if (m.op === 'inv') {
+        if (o.inst !== p.inst) { this.toast(p, 'They need to be in the same place as you.'); return; }
+        if (p.team && p.team === o.team) return;
+        if (p.team && p.team.ids.size >= MM.TEAM_MAX) { this.toast(p, 'Your team is full.'); return; }
+        (p.invites || (p.invites = new Map())).set(o.id, now + 60);
+        this.priv(o, { k: 'tminv', id: p.id, name: p.name + ' ' + p.home });
+        this.toast(p, 'Invited ' + o.name + '.');
+      } else if (m.op === 'join') {
+        const t = o.invites && o.invites.get(p.id);
+        if (!t || t < now) { this.toast(p, 'That invite ran out.'); return; }
+        o.invites.delete(p.id);
+        if (!o.team) { o.team = { ids: new Set([o.id]) }; }
+        if (o.team.ids.size >= MM.TEAM_MAX) { this.toast(p, 'That team is full.'); return; }
+        this.leaveTeam(p);
+        p.team = o.team; p.team.ids.add(p.id);
+        this.teamChanged(p.team);
+      }
+    }
+    leaveTeam(p) {
+      const T = p.team;
+      if (!T) return;
+      T.ids.delete(p.id); p.team = null;
+      this.priv(p, { k: 'team', ids: [] });
+      if (T.ids.size === 1) { const last = this.players.get([...T.ids][0]); if (last) { last.team = null; this.priv(last, { k: 'team', ids: [] }); } T.ids.clear(); }
+      else this.teamChanged(T);
+    }
+    teamChanged(T) {
+      const ids = [...T.ids], names = ids.map(id => { const q = this.players.get(id); return q ? q.name + ' ' + q.home : '?'; });
+      for (const id of ids) { const q = this.players.get(id); if (q) this.priv(q, { k: 'team', ids, names }); }
+    }
+    // Teammates within reach come along (doors, stations, ships). Portals don't need
+    // this: anyone can walk through an open portal.
+    bringTeam(p, from, ox, oz) {
+      if (!p.team) return;
+      for (const id of p.team.ids) {
+        const q = this.players.get(id);
+        if (!q || q === p || q.dead || q.inst !== from || dist2(q.x, q.z, ox, oz) > MM.TEAM_REACH * MM.TEAM_REACH) continue;
+        if (q.ship) { q.ship = false; from.ev({ k: 'ship', id: q.id, on: false }); }
+        from.ev({ k: 'kiosk', id: q.id });
+        this.travel(q, p.inst.dimId, { x: p.x + (Math.random() - 0.5) * 4, z: p.z + (Math.random() - 0.5) * 4 }, p.inst);
+        this.toast(q, p.name + ' took the team along.');
+      }
+    }
+
     // Walking through a door (into the garage, down to the lab, into the cellar, back out).
     onDoor(p, lid) {
       const l = MM.LANDMARK_BY_ID[lid];
@@ -957,19 +1021,27 @@
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2) return;
       p.cdUse = this.time + 1;
       if (p.ship && MM.DIM_BY_ID[l.door.dim].interior) { this.toast(p, 'Park your ship first (B).'); return; }
+      const from = p.inst, ox = p.x, oz = p.z;
       p.inst.ev({ k: 'kiosk', id: p.id });
       this.travel(p, l.door.dim, { x: l.door.x, z: l.door.z });
+      this.bringTeam(p, from, ox, oz);
     }
 
+    // Portals need a portal gun: your own, or one you borrowed from Rick's workbench
+    // (or took off someone you knocked out). Gold portals are the only way past the Curve.
     onPortal(p, d) {
       const now = this.time;
-      if (!p.st.gun || p.dead || p.charges <= 0 || d === p.inst.dimId || MM.DIM_BY_ID[d].hidden) return;
-      p.charges--;
-      if (!p.chargeAt) p.chargeAt = now + p.st.gun.recharge;
+      if (p.dead || !MM.DIM_BY_ID[d]) return;
+      const own = p.st.gun && p.charges > 0;
+      if (!own && !(p.borrow > 0)) { this.toast(p, 'You need a portal gun. Build one, or borrow (steal) Rick\'s.'); return; }
+      const why = MM.travelWhy('portal', p.inst.dimId, d, { gold: !!(own && p.st.gun.gold) });
+      if (why) { this.toast(p, why); return; }
+      if (own) { p.charges--; if (!p.chargeAt) p.chargeAt = now + p.st.gun.recharge; }
+      else p.borrow--;
       const fx = Math.sin(p.r), fz = Math.cos(p.r);
       let x = p.x + fx * 3.2, z = p.z + fz * 3.2;
       [x, z] = MM.collideProps(p.inst.dimId, x, z, 1.2, null);
-      this.openPortalPair(p.inst, x, z, p.r + Math.PI, d, p.look.portalColor, p.id);
+      this.openPortalPair(p.inst, x, z, p.r + Math.PI, d, own ? (p.st.gun.gold && MM.DIM_BY_ID[d].outsideCurve ? '#ffcc33' : p.look.portalColor) : '#39ff6a', p.id);
       this.dirty(p);
     }
 
@@ -985,15 +1057,23 @@
       dest.ev({ k: 'po+', po: dest.portalRow(b) });
     }
 
+    // Portal stations: the Citadel's public portals and Federation customs. Pay the fee
+    // (Ricks, Mortys and the Federation's own ride free) and step through.
     onKiosk(p, d) {
-      const now = this.time;
-      if (p.dead || d === p.inst.dimId || now < p.cdKiosk || !MM.hasKiosk(p.inst.dimId) || MM.DIM_BY_ID[d].hidden) return;
-      const K = MM.kioskOf(p.inst.dimId);
-      if (dist2(p.x, p.z, K.x, K.z) > MM.KIOSK_RADIUS * MM.KIOSK_RADIUS) return;
+      const now = this.time, S = MM.DIM_BY_ID[p.inst.dimId].station;
+      if (p.dead || !S || now < p.cdKiosk || !MM.DIM_BY_ID[d]) return;
+      if (dist2(p.x, p.z, S.x, S.z) > MM.KIOSK_RADIUS * MM.KIOSK_RADIUS) return;
+      const why = MM.travelWhy('station', p.inst.dimId, d, {});
+      if (why) { this.toast(p, why); return; }
+      const fee = S.free.includes(p.arch) ? {} : S.fee;
+      for (const k in fee) if ((p.inv[k] || 0) < fee[k]) { this.toast(p, 'The ' + S.name + ' costs ' + fee[k] + ' ' + MM.MATERIALS[k].name + '.'); return; }
+      for (const k in fee) p.inv[k] -= fee[k];
       p.cdKiosk = now + 3;
+      const from = p.inst, ox = p.x, oz = p.z;
       p.inst.ev({ k: 'kiosk', id: p.id });
-      const K2 = MM.kioskOf(d);
-      this.travel(p, d, { x: K2.x + (Math.random() - 0.5) * 6, z: K2.z + 5 + Math.random() * 3 });
+      this.travel(p, d, null);
+      this.bringTeam(p, from, ox, oz);
+      this.dirty(p);
     }
 
     // ----- Ship -----
@@ -1004,12 +1084,19 @@
       p.inst.ev({ k: 'ship', id: p.id, on });
       this.dirty(p);
     }
+    // Flying somewhere: the Moon is a short hop, other planets in this universe need
+    // the Turbo Engine, and other dimensions need the Dimension Drive.
     onDrive(p, d) {
       const now = this.time;
-      if (p.dead || !p.ship || !p.st.ship.drive || d === p.inst.dimId || now < p.cdDrive || MM.DIM_BY_ID[d].hidden) return;
+      if (p.dead || !p.ship || !MM.DIM_BY_ID[d] || now < p.cdDrive) return;
+      const sh = p.st.ship;
+      const why = MM.travelWhy('ship', p.inst.dimId, d, { hull: true, engine: sh.engine, drive: sh.drive });
+      if (why) { this.toast(p, why); return; }
       p.cdDrive = now + 15;
+      const from = p.inst, ox = p.x, oz = p.z;
       p.inst.ev({ k: 'warp', id: p.id });
       this.travel(p, d, null);
+      this.bringTeam(p, from, ox, oz);   // teammates near the ship ride along as passengers
     }
 
     // ----- Crafting -----
@@ -1050,6 +1137,21 @@
         this.fireProjectile(inst, { owner: p.id, kind: 'shrink', x: p.x + m.dx * 0.7, y: p.y + 1.35 + m.dy * 0.7, z: p.z + m.dz * 0.7, dx: m.dx, dy: m.dy, dz: m.dz, speed: 65, range: 70, dmg: 5, rad: 0.35 });
       } else if (g === 'meeseeks') {
         this.summonMeeseeks(p, 1, 30);
+      } else if (g === 'timecrystal') {
+        // Everything near you stops. Then a Time Cop shows up, very annoyed, to take you in.
+        const now = this.time;
+        for (const o of inst.players.values()) if (o !== p && !o.dead && dist2(o.x, o.z, p.x, p.z) < 14 * 14 && this.canHurt(p, o)) { o.fx.cuff = now + 4; this.dirty(o); }
+        for (const n of inst.npcs.values()) if (dist2(n.x, n.z, p.x, p.z) < 14 * 14) n.stun = now + 4;
+        inst.ev({ k: 'timestop', id: p.id });
+        this.later(2.5, () => {
+          if (this.players.get(p.id) !== p || p.inst !== inst || p.dead) return;
+          let x = p.x + Math.sin(p.r + 2.5) * 5, z = p.z + Math.cos(p.r + 2.5) * 5;
+          [x, z] = MM.collideProps(inst.dimId, x, z, 0.8, null);
+          const n = inst.spawnNpc('timecop', true, { at: { x, z }, until: now + 70 });
+          n.angry = p.id; n.angryUntil = now + 65;
+          inst.ev({ k: 'say', n: n.id, by: p.id, text: pick(['Freezing time? You? You third-dimensional ass!', 'Time Cops! You are under arrest for messing with time.', 'Time Prison. Forever. Let us go.']) });
+          this.toast(p, 'A Time Cop is after you. Run, or fight a fourth-dimensional being.');
+        });
       } else if (g === 'turret') {
         let mine = 0;
         for (const t of inst.turrets.values()) if (t.owner === p.id) mine++;
@@ -1071,7 +1173,7 @@
       if (p.dead || !l || l.dim !== p.inst.dimId || this.time < p.cdUse) return;
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2) return;
       p.cdUse = this.time + 1;
-      const mine = Object.keys(MM.TASKS).filter(t => MM.TASKS[t].at === lid && (MM.TASKS[t].any || p.A.life.daily.includes(t)));
+      const mine = Object.keys(MM.TASKS).filter(t => MM.isAt(l, MM.TASKS[t].at) && MM.taskFor(t, p.arch));
       const id = taskId && mine.includes(taskId) ? taskId : mine[0];
       if (!id) { if (l.door) this.onDoor(p, lid); else this.toast(p, 'Nothing for you to do at the ' + l.name + '. You could still build things here (C).'); return; }
       const T = MM.TASKS[id], wall = this.wall();
@@ -1081,7 +1183,16 @@
       for (const k in T.give) p.inv[k] = (p.inv[k] || 0) + T.give[k] * mult;
       if (T.heal) p.hp = p.maxHp;
       if (T.summon) this.summonMeeseeks(p, 1, 45);
-      this.priv(p, { k: 'task', id, text: T.text, give: T.give, mult });
+      if (T.effect === 'borrowgun') { p.borrow = 2; this.dirty(p); }   // Rick's gun: two charges, no recharging
+      let text = T.text;
+      // Earth TVs are normal until a Rick "fixes" them with Xanthenite (for this copy of the world).
+      if (T.effect === 'fixtv') p.inst.cable = this.time + 600;
+      if (id === 'watchtv' && p.inst.cable > this.time) text = pick(['Interdimensional cable! Ball Fondlers, then Real Fake Doors, then a man who is also a pizza.', 'Two Brothers. The plot is a lot. You cannot look away.', 'Ants in my Eyes Johnson! He cannot see a thing. Prices so low.']);
+      if (T.effect === 'tunnels') {
+        const inst = p.inst;
+        this.later(1.5, () => { if (p.inst === inst && !p.dead) { const n = inst.spawnNpc('meatblob', true, { at: { x: p.x + 4, z: p.z + 4 }, until: this.time + 60 }); n.angry = p.id; n.angryUntil = this.time + 50; } });
+      }
+      this.priv(p, { k: 'task', id, text, give: T.give, mult });
       p.inst.ev({ k: 'em', id: p.id, e: 0 });
       this.progress(p, 'use', id);
     }
@@ -1207,7 +1318,7 @@
     youState(p) {
       const now = this.time;
       return { t: 'y', hp: Math.max(0, Math.round(p.hp)), max: p.maxHp, inv: p.inv,
-        ch: p.charges, chMax: p.st.gun ? p.st.gun.charges : 0, chIn: p.chargeAt ? r2(p.chargeAt - now) : 0,
+        ch: p.charges, chMax: p.st.gun ? p.st.gun.charges : 0, bor: p.borrow || 0, chIn: p.chargeAt ? r2(p.chargeAt - now) : 0,
         ab: r2(Math.max(0, p.cdAb - now)), chaos: p.prog.chaos, kills: p.kills, deaths: p.deaths, dead: p.dead,
         rsIn: p.dead ? r2(Math.max(0, p.respawnAt - now)) : 0, fx: this.fxBits(p, now), ship: p.ship };
     }

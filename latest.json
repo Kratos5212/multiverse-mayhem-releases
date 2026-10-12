@@ -1,8 +1,8 @@
 {
- "build": 6,
- "date": "2026-10-12T21:39:40.988Z",
+ "build": 7,
+ "date": "2026-10-12T21:44:30.168Z",
  "game": {
-  "base": "game/6/",
+  "base": "game/7/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -36,8 +36,8 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "b02d8a8e79d565c144bb7b3c95d217fb1f4b7d27655fd60cb577e21327b84a05",
-    "s": 47630
+    "h": "2bfdc825194283d8db0ac33eecf1542ded7b7bdb8d47adba132c842126faabaf",
+    "s": 48912
    },
    {
     "p": "js/dims.js",
@@ -86,8 +86,8 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "0983218e73edee8990cc9922d8b2647c1b4b0fad3dd694661afbfc8685023e13",
-    "s": 57537
+    "h": "5f8c7b226a6471cd45060a46e719c19eb7bfc530ae3f1b7379e81fd1c2cac4a7",
+    "s": 57531
    },
    {
     "p": "shared/world.js",
@@ -116,7 +116,7 @@
    },
    {
     "p": "version.json",
-    "h": "f38d03dd0ad867aba848e890062d8907801e053b22ee485010c44cb51816557b",
+    "h": "83f4bcd62438b243e0771561d16969b249ec2cdbe387bfc4d32ba3d01140e660",
     "s": 12
    }
   ]
