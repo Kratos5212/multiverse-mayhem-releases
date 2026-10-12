@@ -1,8 +1,8 @@
 {
- "build": 5,
- "date": "2026-10-12T20:25:53.771Z",
+ "build": 6,
+ "date": "2026-10-12T21:39:40.988Z",
  "game": {
-  "base": "game/5/",
+  "base": "game/6/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -26,8 +26,8 @@
    },
    {
     "p": "index.html",
-    "h": "d64df561e10f9180d53e57923f934137e87d292ac49d0fbc0e34fd83af0e5a37",
-    "s": 23858
+    "h": "4bfe67e929441178163c93649ec759194ff8d287cfcfdd75896e6ed586004a38",
+    "s": 27162
    },
    {
     "p": "js/audio.js",
@@ -36,23 +36,23 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "ccd8a602230a06246836fe63367e116639df187fd16f444779c8b16664e63394",
-    "s": 39017
+    "h": "b02d8a8e79d565c144bb7b3c95d217fb1f4b7d27655fd60cb577e21327b84a05",
+    "s": 47630
    },
    {
     "p": "js/dims.js",
-    "h": "023ead2f34aa29a4b7e1ced89056852dabbaaadb9d60bd1830007002dbd4da82",
-    "s": 163321
+    "h": "9805bcad9cd1eaa80c468b060389504d4f5265b23a1acb2bb464596d716a5300",
+    "s": 164729
    },
    {
     "p": "js/fx.js",
-    "h": "5f96c4f052d3588e7e44d80275d28f470d07b4c81dec673af0ac74c068d97858",
-    "s": 8167
+    "h": "cca3b3fc32041c912350df46f2f83acd97607bd4b90edcc6411d3934e6c1d884",
+    "s": 10587
    },
    {
     "p": "js/game.js",
-    "h": "e1d08889684d2d65e4f18ac004f7357219c2d9dcacbb6dc2a0f6a6112f078e17",
-    "s": 87862
+    "h": "9412112089252c443c8a5ec715ce8eca411b9ce716eb6146b9361fc9756d7e38",
+    "s": 93415
    },
    {
     "p": "js/net.js",
@@ -61,13 +61,13 @@
    },
    {
     "p": "js/toon.js",
-    "h": "f27e9316394888ca890b8839578e9c07f78491b9b4319038dd7a5ab824f4ca00",
-    "s": 12198
+    "h": "5d21dba07622624082494064422d79dfe9092ae40666380d16db5114e594faea",
+    "s": 12956
    },
    {
     "p": "js/ui.js",
-    "h": "9a7568d304685f350c37f7c1a818cfc292e2578b3c61b1090240dcd5f283f8f2",
-    "s": 16474
+    "h": "42a26fef37b0bceb33f72e090ae15461a217ae88811fe46961794a0df486db1f",
+    "s": 18285
    },
    {
     "p": "js/vr.js",
@@ -116,7 +116,7 @@
    },
    {
     "p": "version.json",
-    "h": "2e45f67b4397d9abe7674faa9865660e0d91dc4e4b21ed25317b847e28e3d64b",
+    "h": "f38d03dd0ad867aba848e890062d8907801e053b22ee485010c44cb51816557b",
     "s": 12
    }
   ]
