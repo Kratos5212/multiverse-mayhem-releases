@@ -1,0 +1,126 @@
+{
+ "build": 1,
+ "date": "2026-10-12T15:25:48.093Z",
+ "game": {
+  "base": "game/1/",
+  "files": [
+   {
+    "p": "fonts/fonts.css",
+    "h": "29692b1c0433857845ccb0982065efc8d4b20c7f112f1bf1566de5c58a1894d3",
+    "s": 877
+   },
+   {
+    "p": "fonts/Fredoka-latin-ext.woff2",
+    "h": "18a1723c878c0d8acc2e45a108fd62fbb976e408337804afa2908982fac13e2a",
+    "s": 4576
+   },
+   {
+    "p": "fonts/Fredoka-latin.woff2",
+    "h": "99d6c78e043710d4f83ed90716779798b7b04eb690f73e0ad0e8f32d1f0e98c2",
+    "s": 29732
+   },
+   {
+    "p": "fonts/OFL-Fredoka.txt",
+    "h": "5c9e7eee5c6b25f4b05b8d53b2e470ea4962f9ced742d044a98f7d95d1375bab",
+    "s": 4388
+   },
+   {
+    "p": "index.html",
+    "h": "6de27c8118b9418770d6c505ac88bb0e190684f8f2bff941e6b49476f01df2c5",
+    "s": 23172
+   },
+   {
+    "p": "js/audio.js",
+    "h": "a2eb5f960151443d05d14effcf6a2bac75c97601b6f92aed23cccfe17d53a919",
+    "s": 4118
+   },
+   {
+    "p": "js/avatar.js",
+    "h": "5631063eb03f39451206632c4ee6ed1e5ed8065146887851744e44a8c7bcfa71",
+    "s": 37205
+   },
+   {
+    "p": "js/dims.js",
+    "h": "bb76cf6d15ec80e9c405bf06ac23ab5804e473fe4011e4bc9acd8784431ac20b",
+    "s": 105902
+   },
+   {
+    "p": "js/fx.js",
+    "h": "5f96c4f052d3588e7e44d80275d28f470d07b4c81dec673af0ac74c068d97858",
+    "s": 8167
+   },
+   {
+    "p": "js/game.js",
+    "h": "f24e7cd22760e914041f27b31de4118c4ec72dc87bf43aed0ed5c94e85f79f7f",
+    "s": 80273
+   },
+   {
+    "p": "js/net.js",
+    "h": "b15f3cb13aa5f06d0da5c1e5dff67d4ef1d4e7a43b5d371478976582a9777399",
+    "s": 3508
+   },
+   {
+    "p": "js/toon.js",
+    "h": "f27e9316394888ca890b8839578e9c07f78491b9b4319038dd7a5ab824f4ca00",
+    "s": 12198
+   },
+   {
+    "p": "js/ui.js",
+    "h": "9a7568d304685f350c37f7c1a818cfc292e2578b3c61b1090240dcd5f283f8f2",
+    "s": 16474
+   },
+   {
+    "p": "shared/protocol.js",
+    "h": "70a8b11d6e0113af4c0c8136f8aff5799e21f74591ac18d15faf3e87505683d9",
+    "s": 4784
+   },
+   {
+    "p": "shared/rules.js",
+    "h": "1df861b9457c9d6e803f9488004c9125213b37e7da30f28866e9bc6e344f2140",
+    "s": 46798
+   },
+   {
+    "p": "shared/world.js",
+    "h": "1313fbd2890869bda465f6b46bc033b5f7fa7419139b3734b4bdf5031ef2d685",
+    "s": 51314
+   },
+   {
+    "p": "sim/bot.js",
+    "h": "8cde11cb1668cede8616f62506f5a347660064500ad405a62a30aa4b7b312174",
+    "s": 13477
+   },
+   {
+    "p": "sim/host.js",
+    "h": "edb85fb72b81da7a02433a97c01f1786cb03f6c5213186c9059e810c6fb5a3a2",
+    "s": 63493
+   },
+   {
+    "p": "vendor/three.LICENSE",
+    "h": "852e0e8699169bf9f6fdc6bda3e682d078dcbc738b5d33e74df594721bff271d",
+    "s": 1081
+   },
+   {
+    "p": "vendor/three.min.js",
+    "h": "8a5f7249903b54d30f79f708699d2fed2d6a1d0741a4cd41377d1f01bb5a2271",
+    "s": 608081
+   },
+   {
+    "p": "version.json",
+    "h": "59e8937fd590eb1fa3c4afb64e78d21707354372f88286931b445279d91058ae",
+    "s": 12
+   }
+  ]
+ },
+ "android": {
+  "versionCode": 1,
+  "apk": "android/MultiverseMayhem.apk",
+  "sha256": "8c2dc5ae89003614864bd0fefaa713affd3347ab7badd858481e2c8cafabb502",
+  "size": 4492330
+ },
+ "windows": {
+  "version": 1,
+  "exe": "windows/MultiverseMayhem.exe",
+  "sha256": "87d0b5866dc5498ef776d563efed6df657481ce69d1d390f2fe08e0a92e7484a",
+  "size": 7838720
+ }
+}
