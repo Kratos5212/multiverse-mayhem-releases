@@ -1,8 +1,8 @@
 {
- "build": 1,
- "date": "2026-10-12T15:25:48.093Z",
+ "build": 2,
+ "date": "2026-10-12T15:42:43.610Z",
  "game": {
-  "base": "game/1/",
+  "base": "game/2/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -26,8 +26,8 @@
    },
    {
     "p": "index.html",
-    "h": "6de27c8118b9418770d6c505ac88bb0e190684f8f2bff941e6b49476f01df2c5",
-    "s": 23172
+    "h": "4fdf93422103874fd0f4916f43798b4e640ba6ee4beea8af2cbc60066a8063c6",
+    "s": 23418
    },
    {
     "p": "js/audio.js",
@@ -36,8 +36,8 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "5631063eb03f39451206632c4ee6ed1e5ed8065146887851744e44a8c7bcfa71",
-    "s": 37205
+    "h": "e8825ccec5e31b7e87a33b6c475404e27dde9a6b83aff12bc80efc097b630b71",
+    "s": 37225
    },
    {
     "p": "js/dims.js",
@@ -51,8 +51,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "f24e7cd22760e914041f27b31de4118c4ec72dc87bf43aed0ed5c94e85f79f7f",
-    "s": 80273
+    "h": "fdc2d2a75d2746a54b9c18fb5309c0e6915ba9a0cccb56ad98bc0478616883d8",
+    "s": 82683
    },
    {
     "p": "js/net.js",
@@ -68,6 +68,11 @@
     "p": "js/ui.js",
     "h": "9a7568d304685f350c37f7c1a818cfc292e2578b3c61b1090240dcd5f283f8f2",
     "s": 16474
+   },
+   {
+    "p": "js/vr.js",
+    "h": "8d492c6d1cefdb39e5d75fc71cfe7d5ff0646d1db6684bf86229fa3847c1d744",
+    "s": 11038
    },
    {
     "p": "shared/protocol.js",
@@ -106,7 +111,7 @@
    },
    {
     "p": "version.json",
-    "h": "59e8937fd590eb1fa3c4afb64e78d21707354372f88286931b445279d91058ae",
+    "h": "9fd40538b3389221134373232ba392a6c83b48484c89eb547ffb8084e0f88676",
     "s": 12
    }
   ]
