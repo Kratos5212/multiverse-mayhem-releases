@@ -25,8 +25,8 @@
       // Bug head: long, with big compound eyes, mandibles and antennae.
       s.add(P.sphere, skin, [0, 0, 0.05 * R], null, [R * 0.85, R * 1.25, R * 1.0]);
       for (const sx of [-1, 1]) {
-        s.add(P.sphere, '#1d1a2e', [sx * R * 0.55, R * 0.22, R * 0.55], null, [R * 0.42, R * 0.5, R * 0.36]);
-        s.add(P.sphereLo, '#8a86c0', [sx * R * 0.48, R * 0.38, R * 0.82], null, [R * 0.1, R * 0.1, R * 0.05], true);
+        s.add(P.sphere, '#b8302a', [sx * R * 0.55, R * 0.22, R * 0.55], null, [R * 0.42, R * 0.5, R * 0.36]);   // red compound eyes
+        s.add(P.sphereLo, '#ff9a8a', [sx * R * 0.48, R * 0.38, R * 0.82], null, [R * 0.1, R * 0.1, R * 0.05], true);
         s.add(P.cone, shade(skin, 0.7), [sx * R * 0.22, -R * 0.9, R * 0.6], [Math.PI - 0.4, 0, sx * 0.5], [R * 0.12, R * 0.45, R * 0.12]);
         s.add(P.cylLo, shade(skin, 0.8), [sx * R * 0.3, R * 1.3, R * 0.2], [0.5, 0, -sx * 0.4], [R * 0.04, R * 0.8, R * 0.04]);
         s.add(P.sphereLo, shade(skin, 0.8), [sx * R * 0.5, R * 1.65, R * 0.45], null, [R * 0.1, R * 0.1, R * 0.1]);
@@ -425,7 +425,7 @@
   // ---------- First-person arm ----------
   // Your right arm as you see it in first person: the forearm points forward (+z) from the
   // shoulder at the origin, with the gun's barrel lined up along it.
-  C.buildViewArm = function (look, arch) {
+  C.buildViewArm = function (look, arch, outline) {
     const L = MM.sanitizeLook(look);
     const A = MM.ARCHETYPES[arch] || MM.ARCHETYPES.genius;
     const species = L.species, h = L.height, w = L.width, top = L.top;
@@ -449,7 +449,7 @@
     } else if (species === 'birdfolk') {
       for (let i = -1; i <= 1; i++) s.add(P.cone, '#e8e2d0', [i * 0.04, 0.02, len + 0.1], [Math.PI / 2, 0, 0], [0.025, 0.14, 0.025]);
     }
-    return C.meshOf(s.build(), 0.03);
+    return C.meshOf(s.build(), outline || 0.03);
   };
 
   // ---------- Animation ----------
@@ -592,15 +592,17 @@
     const sp = new T.Sprite(mat);
     sp.scale.set(2.6, 0.65, 1);
     sp.renderOrder = 10;
-    const tag = { sprite: sp, hp: -1, draw(hp) {
-      if (hp === tag.hp) return;
-      tag.hp = hp;
+    // fight: draw crossed swords, for players who have fights (PvP) turned on.
+    const tag = { sprite: sp, hp: -1, fight: false, draw(hp, fight) {
+      if (fight === undefined) fight = tag.fight;
+      if (hp === tag.hp && fight === tag.fight) return;
+      tag.hp = hp; tag.fight = fight;
       const g = cv.getContext('2d');
       g.clearRect(0, 0, 512, 128);
       g.font = '700 44px "Fredoka", "Trebuchet MS", sans-serif';
       g.textAlign = 'center'; g.textBaseline = 'middle';
       g.lineWidth = 9; g.strokeStyle = 'rgba(0,0,0,0.85)';
-      const label = name + (home ? '  ' + home : '');
+      const label = (fight ? '⚔ ' : '') + name + (home ? '  ' + home : '');
       g.strokeText(label, 256, 42); g.fillStyle = color || '#ffffff'; g.fillText(label, 256, 42);
       if (sub) { g.font = '600 26px "Fredoka", sans-serif'; g.lineWidth = 6; g.strokeText(sub, 256, 78); g.fillStyle = '#d6e4ff'; g.fillText(sub, 256, 78); }
       if (hp >= 0) {

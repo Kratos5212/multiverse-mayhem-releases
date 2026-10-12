@@ -1,8 +1,8 @@
 {
- "build": 3,
- "date": "2026-10-12T16:08:09.519Z",
+ "build": 4,
+ "date": "2026-10-12T16:38:37.060Z",
  "game": {
-  "base": "game/3/",
+  "base": "game/4/",
   "files": [
    {
     "p": "fonts/fonts.css",
@@ -26,8 +26,8 @@
    },
    {
     "p": "index.html",
-    "h": "922a91429c58a057ecb84367e596fbf09857d07683f0116bbf910487bdf9f62d",
-    "s": 23816
+    "h": "d64df561e10f9180d53e57923f934137e87d292ac49d0fbc0e34fd83af0e5a37",
+    "s": 23858
    },
    {
     "p": "js/audio.js",
@@ -36,13 +36,13 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "4b0718db2080019c747920611b9ebbd67c5778a64469c16c42d171d546f0a90e",
-    "s": 37442
+    "h": "fa43c8e18631bac8a693a773071d63181945b870f6ba6949c250ba5db07a33c7",
+    "s": 37465
    },
    {
     "p": "js/dims.js",
-    "h": "bb76cf6d15ec80e9c405bf06ac23ab5804e473fe4011e4bc9acd8784431ac20b",
-    "s": 105902
+    "h": "e60ec08526242096562acc5321a4ceb74ea1f5f33106c45bdc68e7d09a8e86c2",
+    "s": 133791
    },
    {
     "p": "js/fx.js",
@@ -51,8 +51,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "1ec3c76b3977b861242ab7309152fee9100b9dbed71baf30102ab1e66c7163c0",
-    "s": 83108
+    "h": "594aafb12f0abed3a097b3b69c08bee4cfb67495f44106558da245b703f50349",
+    "s": 83504
    },
    {
     "p": "js/net.js",
@@ -75,19 +75,24 @@
     "s": 11038
    },
    {
+    "p": "shared/layouts.js",
+    "h": "d7ecb171765b44451fe9d462e05da69837edafc6b336f617d13f1a3722a01b39",
+    "s": 27400
+   },
+   {
     "p": "shared/protocol.js",
     "h": "a115538f72cc17bcb4d9f1a4090938fca701be163e315c9f7738f12edd7323d9",
     "s": 5001
    },
    {
     "p": "shared/rules.js",
-    "h": "04ab4cbf97e4477f1667cc9244f8542c07851714ba6d62fccbc82f90155dfe7f",
-    "s": 46933
+    "h": "70e2614695b34e07f0b4e146a6e9ffe9818739a7cfa6aff38727e435c5b7736d",
+    "s": 48560
    },
    {
     "p": "shared/world.js",
-    "h": "1313fbd2890869bda465f6b46bc033b5f7fa7419139b3734b4bdf5031ef2d685",
-    "s": 51314
+    "h": "5f589b6fcb1416206f24f18517b12966149d081d7e4a8226bf72d5f7c2a97651",
+    "s": 59430
    },
    {
     "p": "sim/bot.js",
@@ -111,7 +116,7 @@
    },
    {
     "p": "version.json",
-    "h": "5a51c30f04fecfba340cc7cdd5164b683659aedac2e3eda97accd9475e5aa51d",
+    "h": "7f33e4de1b99fc878a9b0f7d0114955eacc90becb52141f4829a71253f3dac1f",
     "s": 12
    }
   ]
