@@ -142,7 +142,14 @@ input[type=range] { width: 100%; accent-color: var(--portal); }
 .slot .n { position: absolute; top: 2px; right: 4px; color: var(--gold); font-size: 12px; -webkit-text-stroke: .5px #000; }
 .slot .cd, #tbtns .cd { position: absolute; inset: 0; border-radius: inherit; background: conic-gradient(rgba(0,0,0,.68) calc(var(--p, 0) * 1%), transparent 0); pointer-events: none; }
 .slot.off { opacity: .42; }
-.s-grenade svg { color: #ffb43a; } .s-turret svg { color: #c9d1d9; } .s-shrink svg { color: #b48aff; } .s-meeseeks svg { color: #7ec8f0; } .s-timecrystal svg { color: #8fd8ff; }
+.s-grenade svg { color: #ffb43a; } .s-turret svg { color: #c9d1d9; } .s-shrink svg { color: #b48aff; } .s-meeseeks svg { color: #7ec8f0; } .s-timecrystal svg { color: #8fd8ff; } .s-freeze svg { color: #bfeaff; } .s-items svg { color: #ffd84d; }
+.row .emo { font-size: 26px; width: 34px; text-align: center; flex: none; }
+.coll { display: grid; grid-template-columns: repeat(auto-fill, minmax(92px, 1fr)); gap: 8px; }
+.coll .cc { display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 8px 4px; border-radius: 10px; background: rgba(255,255,255,0.06); text-align: center; }
+.coll .cc .emo { font-size: 28px; }
+.coll .cc small { font-size: 11px; line-height: 1.2; }
+.coll .cc i { font-size: 10px; opacity: 0.6; font-style: normal; line-height: 1.2; }
+.coll .cc.no .emo { opacity: 0.35; font-weight: 700; }
 .s-craft svg { color: var(--gold); } .s-journal svg { color: #f4f7ff; } .s-portal svg { color: var(--portal); } .s-ship svg { color: var(--cyan); } .s-ab svg { color: var(--pink); }
 .s-ab { background: linear-gradient(#4a2a6a, #24163a); }
 #res span { font-size: 13px; }
@@ -167,6 +174,14 @@ input[type=range] { width: 100%; accent-color: var(--portal); }
 #tracker b { color: var(--gold); }
 #tracker small { color: var(--muted); font-size: 11px; }
 #tracker:empty { display: none; }
+/* Rick's scanner readout: a green holo-panel. */
+#scan { position: absolute; top: 16%; right: 16px; width: min(320px, 80vw); background: rgba(4,24,18,.86); border: 2px solid #39ff6a; border-radius: 10px; box-shadow: 0 0 18px rgba(57,255,106,.35), inset 0 0 22px rgba(57,255,106,.12); padding: 10px 12px; font: 600 13px/1.4 ui-monospace, Menlo, Consolas, monospace; color: #b8ffcc; }
+#scan b { display: block; color: #39ff6a; font-size: 15px; letter-spacing: .04em; text-transform: uppercase; margin-bottom: 4px; }
+#scan .r { display: flex; justify-content: space-between; gap: 8px; border-top: 1px dashed rgba(57,255,106,.25); padding: 2px 0; }
+#scan .r span:first-child { color: #6fd890; }
+#scan .q { margin-top: 6px; color: #e4ffe8; font-style: italic; font-family: var(--font); font-weight: 500; }
+#scan.show { animation: scanin .35s ease-out; }
+@keyframes scanin { from { clip-path: inset(0 0 100% 0); } to { clip-path: inset(0 0 0 0); } }
 #banner { position: absolute; top: 22%; left: 50%; transform: translateX(-50%); width: min(560px, 90vw); text-align: center; background: rgba(11,15,30,.9); border: 3px solid #000; border-radius: 18px; box-shadow: 0 5px 0 #000; padding: 12px 16px; display: flex; flex-direction: column; gap: 4px; }
 #banner b { font-size: 24px; color: var(--portal); -webkit-text-stroke: 1px #000; }
 #banner.show { animation: pop .3s ease-out; }
@@ -209,6 +224,7 @@ input[type=range] { width: 100%; accent-color: var(--portal); }
 .list { display: grid; gap: 8px; }
 .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; background: var(--panel2); border: 3px solid #000; border-radius: 12px; padding: 8px 10px; }
 .row .t { min-width: 0; }
+.row .emo + .t { flex: 1; }
 .row .t b { display: block; }
 .row .t small { color: var(--muted); }
 .row.dim b { color: var(--portal); }
@@ -278,6 +294,7 @@ table.lb th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
   <div id="dimBadge" class="badge"><b id="dimName"></b><small id="dimInfo"></small></div>
   <div id="tracker" class="badge"></div>
   <div id="banner" hidden></div>
+  <div id="scan" hidden aria-live="polite"></div>
   <div id="netWarn" hidden></div>
   <div id="topRight">
     <div id="score" class="badge">Chaos <b id="chaos">0</b> · KOs <b id="kos">0</b></div>
@@ -327,10 +344,13 @@ table.lb th { color: var(--muted); font-size: 12px; text-transform: uppercase; }
 <script src="shared/rules.js"></script>
 <script src="shared/world.js"></script>
 <script src="shared/layouts.js"></script>
+<script src="shared/interiors.js"></script>
+<script src="shared/curios.js"></script>
 <script src="shared/protocol.js"></script>
 <script src="sim/host.js"></script>
 <script src="sim/bot.js"></script>
 <script src="js/toon.js"></script>
+<script src="js/mmg.js"></script>
 <script src="js/avatar.js"></script>
 <script src="js/dims.js"></script>
 <script src="js/fx.js"></script>

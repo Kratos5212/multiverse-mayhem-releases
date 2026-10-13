@@ -188,7 +188,49 @@
       ground: ['#8a7a5a', '#9a8a6a', '#6a5a4a'], accent: '#ffd84d',
       props: [['biggear', 24], ['pipe', 20], ['gearhouse', 14]], npc: [['gearperson', 12]], pickups: { s: 16 }, mat: 's',
     },
-    // ----- Outside the Central Finite Curve: realities where Rick is not the smartest -----
+    // ----- Even more of the multiverse -----
+    {
+      id: 'snakeplanet', flat: 120, name: 'Snake Planet', code: 'SN-4', seed: 4554, gravity: 22, amp: 5, scale: 0.013,
+      blurb: 'A jungle world of snakes, from "Rattlestar Ricklactica". Snake jazz in the clubs, snake huts in the trees, and snakes from the future who want to change the past.',
+      sky: ['#3aa86a', '#e8f0b0'], fog: '#b8d890', fogFar: 220, sun: '#fff6d0', ambient: '#a8c890',
+      ground: ['#5a8a3a', '#6a9a42', '#a8964a'], accent: '#c8e04a',
+      props: [['snakehut', 18], ['fern', 46], ['jungletree', 34], ['rock', 18]],
+      npc: [['snakefolk', 14]], pickups: { s: 8, g: 6, c: 2 }, mat: 'g',
+    },
+    {
+      id: 'giantland', flat: 140, name: 'Giant World', code: 'GT-2', seed: 2662, gravity: 24, amp: 4, scale: 0.01,
+      blurb: 'Up the beanstalk, from "Meeseeks and Destroy". Everything is enormous: mugs, boots, forks and the giants who own them. Do not let one fall down the stairs.',
+      sky: ['#9ad0ff', '#ffffff'], fog: '#e8f4ff', fogFar: 260, sun: '#ffffff', ambient: '#d0e4ff',
+      ground: ['#f4f6fa', '#e4eaf2', '#d8e0ec'], accent: '#8ad84a',   // a floor of cloud
+      props: [['giantmug', 10], ['giantboot', 10], ['giantfork', 12], ['beanstalk', 8], ['cloudpuff', 30]],
+      npc: [['giant', 7]], pickups: { s: 14, f: 4 }, mat: 's',
+    },
+    {
+      id: 'atlantis', flat: 130, name: 'Atlantis', code: 'AT-1', seed: 1919, gravity: 9, amp: 6, scale: 0.012,
+      blurb: "Mr. Nimbus's sunken city. Columns, coral, kelp, and a sea king who very much controls the police.",
+      sky: ['#0a3a6a', '#2a8ac8'], fog: '#1a5a8a', fogFar: 150, sun: '#c8f0ff', ambient: '#5aa0d0',
+      ground: ['#c8b88a', '#b8a878', '#8aa890'], accent: '#5ff8e0',
+      props: [['coral', 40], ['kelp', 50], ['column', 22], ['shell', 16]],
+      npc: [['merfolk', 12], ['seamonster', 4]], pickups: { c: 10, s: 4 }, mat: 'c',
+    },
+    {
+      id: 'dreamworld', name: 'The Dream World', code: 'ZZZ', seed: 6116, gravity: 16, amp: 9, scale: 0.012,
+      blurb: 'Inside someone\'s dream, from "Lawnmower Dog". Doors float, clocks melt, the school hallway goes on forever, and Scary Terry is somewhere behind you.',
+      sky: ['#2a0a4a', '#ff8ad0'], fog: '#5a2a7a', fogFar: 200, sun: '#ffd8f8', ambient: '#b88ae0',
+      ground: ['#5a3a8a', '#7a4aa0', '#3a2a6a'], accent: '#ffe066',
+      props: [['floatdoor', 24], ['meltclock', 16], ['locker', 30], ['dreamstair', 10]],
+      npc: [['dreamer', 8], ['scaryterry', 2]], pickups: { p: 10, f: 4 }, mat: 'p',
+    },
+    // ----- Other times: the same Earth, earlier, or split in two -----
+    {
+      id: 'dinoearth', timeline: true, name: 'Earth, 65 million years ago', code: 'C-137 −65M', seed: 6565, gravity: 24, amp: 10, scale: 0.012,
+      blurb: 'Before the asteroid. Giant ferns, smoking volcanoes, raptors, and the dinosaurs, who are smarter and kinder than anyone gives them credit for ("JuRicksic Mort").',
+      sky: ['#ff9a5a', '#ffe8b0'], fog: '#d8a878', fogFar: 230, sun: '#fff0c8', ambient: '#d8a080',
+      ground: ['#4a8a3a', '#5a9a42', '#7a6a3a'], accent: '#ff5a2a',
+      props: [['fern', 60], ['volcano', 4], ['dinoegg', 14], ['jungletree', 30], ['rock', 24]],
+      npc: [['dinosaur', 6], ['raptor', 7]], pickups: { m: 2, g: 6, s: 6 }, mat: 'g',
+    },
+
     {
       id: 'beyond', flat: 150, name: 'Beyond the Curve', code: 'Ω', seed: 9119, gravity: 22, amp: 2, scale: 0.01, outsideCurve: true,
       blurb: 'Where Evil Morty went. Past the wall of the Central Finite Curve: infinite universes, and not one Rick in charge.',
@@ -271,6 +313,36 @@
       ground: ['#5fae3e', '#78c24b', '#4c9636'], accent: '#ffd84d',
       extra: [['moviesign', 4]], npc: [['neighbor', 10], ['paparazzi', 4]], pickups: { s: 18, k: 2 }, mat: 'k',
     },
+    {
+      id: 'splitearth', variantOf: 'suburbia', timeline: true, name: 'Earth C-137, split timeline', code: 'C-137 ½',
+      blurb: 'From "A Rickle in Time": Summer and Morty froze time and the timeline came apart. Two versions of every moment, grey static at the edges, and Time Cops everywhere.',
+      sky: ['#5a5a6a', '#c8c8d8'], fog: '#9a9aaa', fogFar: 170, sun: '#e8e8ff', ambient: '#9a9ab0',
+      ground: ['#6a7a6a', '#7a8a7a', '#5a6a5a'], accent: '#8fd8ff', glitch: true,
+      extra: [['timeshard', 26]], npc: [['neighbor', 7], ['timecop', 1]], pickups: { s: 14, c: 4 }, mat: 'c',
+    },
+    {
+      id: 'doofusearth', variantOf: 'suburbia', name: 'Earth J19ζ7', code: 'J19ζ7',
+      blurb: "Doofus Rick's dimension. Everyone is nice, the lawns are perfect, and the Rick here makes his own pants and is very proud of them.",
+      sky: ['#8ad0ff', '#fffaf0'], fog: '#f0f4ff', fogFar: 230, sun: '#fffbe8', ambient: '#c8dcff',
+      ground: ['#6ac84a', '#7ad85a', '#5ab83e'], accent: '#ffb0d0',
+      extra: [['flowerbed', 30]], npc: [['neighbor', 12]], pickups: { s: 18, k: 3 }, mat: 'k',
+    },
+    // ----- Inside the Smith house (built with Mojulo, see assets/interiors) -----
+    {
+      id: 'smithhouse', name: 'Smith House', code: 'C-137', seed: 139, gravity: 24, interior: true, hidden: true, bound: 7.0, boundZ: 5.3,
+      blurb: 'The living room, the dining room where nobody talks, and the kitchen. The TV gets every channel in the multiverse.',
+      sky: ['#2a2a30', '#2a2a30'], fog: '#2a2a30', fogFar: 400, sun: '#fff4e0', ambient: '#c0b8a8',
+      ground: ['#b88a5a', '#a87a4a', '#c89a6a'], accent: '#ffd84d', spawn: { x: -4.5, z: -3.6 },
+      // The rooms come from a Mojulo floor plan (34 x 26 ft, 1 ft = 0.427 m here). walls: the
+      // inside walls for collision, as [x1, z1, x2, z2] segments with gaps where the doors are.
+      room: { w: 14.5, d: 11.1, h: 4.27, mesh: 'assets/interiors/smith.mmg' },
+      walls: [
+        [0.43, 5.55, 0.43, 3.69], [0.43, 2.29, 0.43, -2.71], [0.43, -4.11, 0.43, -5.55],   // living | dining, hall | kitchen
+        [-7.25, -1.28, -2.83, -1.28], [-1.43, -1.28, 0.43, -1.28],                           // hall | living room
+        [0.43, 0.43, 3.14, 0.43], [4.54, 0.43, 7.25, 0.43],                                 // kitchen | dining
+      ],
+      props: [], npc: [], pickups: {}, mat: 's',
+    },
     // ----- Rick's garage and what's under it: small indoor dimensions -----
     {
       id: 'rickgarage', name: "Rick's Garage", code: 'C-137', seed: 137, gravity: 24, interior: true, hidden: true, bound: 7.9,
@@ -304,21 +376,25 @@
   MM.DIM_BY_ID = {};
   for (const d of MM.DIMS) MM.DIM_BY_ID[d.id] = d;
   // Alternate Earths share the home street plan (same seed, same streets) with their own twist.
-  for (const d of MM.DIMS) if (d.variantOf) {
+  function fillVariant(d) {
     const B = MM.DIM_BY_ID[d.variantOf];
     for (const k of ['seed', 'gravity', 'amp', 'scale', 'streets', 'spawn', 'flat']) if (d[k] === undefined) d[k] = B[k];
     d.props = (B.props || []).concat(d.extra || []);
     // The same buildings stand here too (minus the doors into this Earth's garage and the
     // highways): the Smith house, the school, the hospital. Tasks there work the same.
-    for (const l of MM.LANDMARKS.slice()) if (l.dim === d.variantOf && !l.door) {
-      const c = Object.assign({}, l, { id: d.id + '_' + l.id, alias: l.id, dim: d.id });
+    for (const l of MM.LANDMARKS.slice()) if (l.dim === d.variantOf && !/^hw_/.test(l.id) && l.id !== 'anatomyentry' && l.id !== 'chalkdoor') {
+      const c = Object.assign({}, l, { id: d.id + '_' + l.id, alias: l.id, dim: d.id, door: undefined });
       MM.LANDMARKS.push(c); MM.LANDMARK_BY_ID[c.id] = c;
     }
   }
+  for (const d of MM.DIMS) if (d.variantOf) fillVariant(d);
+  MM.fillVariant = fillVariant;
   MM.DIM_IDS = MM.DIMS.map(d => d.id);
   // Dimensions you can portal or kiosk to (the garage and its rooms are reached through doors).
   MM.WORLD_IDS = MM.DIMS.filter(d => !d.hidden).map(d => d.id);
   MM.boundOf = dimId => MM.DIM_BY_ID[dimId].bound || MM.WORLD_HALF;
+  // Rooms that aren't square have their own north-south limit.
+  MM.boundZOf = dimId => MM.DIM_BY_ID[dimId].boundZ || MM.boundOf(dimId);
   // Outdoor worlds have a public kiosk; indoor ones only if they declare one (Blips and Chitz does).
   // ---------- Getting around, the way the show does it ----------
   // space: worlds in the same universe (ships fly between them). near: a short hop (Earth
@@ -444,6 +520,34 @@
     voidcrystal: { r: 0.8, h: 3.5, hp: 60, drop: { c: 2 } },
     curvepillar: { r: 1.3, h: 12, hp: 300, drop: { c: 2, s: 2 } },
     storefront:  { r: 5.0, h: 6.5, hp: 220, drop: { s: 4, k: 1 } },
+    lm_marker:   { r: 0.3, h: 0.1, hp: 9999, drop: {} },
+    // Snake Planet, the Dream World, Giant World, Atlantis, the dinosaurs' Earth
+    snakehut:    { r: 3.0, h: 6, hp: 120, drop: { s: 3 } },
+    fern:        { r: 1.0, h: 3.2, hp: 15, drop: { g: 1 }, arch: true },
+    jungletree:  { r: 1.0, h: 11, hp: 90, drop: { s: 2 } },
+    volcano:     { r: 16, h: 30, hp: 99999, drop: {} },
+    dinoegg:     { r: 0.9, h: 2.2, hp: 40, drop: { g: 2 } },
+    giantmug:    { r: 4.0, h: 9, hp: 300, drop: { s: 5 } },
+    giantboot:   { r: 3.5, h: 8, hp: 300, drop: { s: 5 } },
+    giantfork:   { r: 0.8, h: 14, hp: 200, drop: { s: 4 } },
+    beanstalk:   { r: 1.4, h: 30, hp: 99999, drop: {} },
+    cloudpuff:   { r: 2.6, h: 2.5, hp: 20, drop: { f: 1 }, arch: true },
+    coral:       { r: 1.4, h: 3.4, hp: 40, drop: { c: 1 } },
+    kelp:        { r: 0.6, h: 7, hp: 15, drop: { g: 1 }, arch: true },
+    column:      { r: 1.0, h: 9, hp: 220, drop: { s: 3 } },
+    shell:       { r: 1.6, h: 2.0, hp: 60, drop: { c: 2 } },
+    floatdoor:   { r: 0.6, h: 4, hp: 40, drop: { p: 1 }, arch: true },
+    meltclock:   { r: 1.8, h: 4.5, hp: 60, drop: { c: 1 } },
+    locker:      { r: 1.2, h: 2.4, hp: 50, drop: { s: 2 } },
+    dreamstair:  { r: 2.4, h: 9, hp: 150, drop: { p: 2 }, arch: true },
+    timeshard:   { r: 0.7, h: 3.5, hp: 40, drop: { c: 1 }, arch: true },
+    flowerbed:   { r: 1.4, h: 0.8, hp: 10, drop: { f: 1 }, arch: true },
+    lm_snakeclub:   { r: 8, h: 8, hp: 9999, drop: {} },
+    lm_dinocouncil: { r: 10, h: 10, hp: 9999, drop: {} },
+    lm_giantcastle: { r: 14, h: 26, hp: 9999, drop: {} },
+    lm_nimbuspalace:{ r: 12, h: 16, hp: 9999, drop: {} },
+    lm_dreamschool: { r: 10, h: 9, hp: 9999, drop: {} },
+    lm_timerift:    { r: 4, h: 9, hp: 9999, drop: {} },
     // The rest of Earth and the alternate Earths
     skyscraper:  { r: 6.5, h: 34, hp: 700, drop: { s: 6, c: 1 } },
     apartment:   { r: 6.0, h: 16, hp: 420, drop: { s: 5 } },
@@ -607,6 +711,22 @@
       talk: ['Hangar 4? Weather balloon. All of them are weather balloons.', 'We reverse-engineered a toaster from Gazorpazorp. It judges you.', 'Do you know a Rick? Asking for the government.'],
       moods: { line: 50, gift: 14, trade: 12, errand: 12, buff: 6 } },
     // ----- Alternate Earths -----
+    catfolk: { name: 'Cat Person', hp: 35, speed: 3, hostile: false, dmg: 0, drop: { f: 1, s: 1 }, r: 0.6, h: 1.8,
+      human: { species: ['cat'], top: ['polo', 'sweater', 'tshirt', 'vest'], acc: ['none', 'none', 'cap'], look: { hair: 'bald' } }, names: ['Mittens', 'Gary Whiskers', 'Purrla', 'Doug Felix'],
+      talk: ['Everyone here is a cat. Yes, even the mailman.', 'Your face is so smooth. It is upsetting.', 'Nap first, apocalypse later.'],
+      moods: { line: 50, gift: 12, trade: 10, errand: 12, buff: 8, angry: 4, dance: 3 } },
+    robotfolk: { name: 'Robot Neighbor', hp: 60, speed: 2.6, hostile: false, dmg: 0, drop: { c: 2, s: 1 }, r: 0.6, h: 1.9,
+      human: { species: ['robot'], top: ['none', 'vest'], acc: ['none', 'antennae'] }, names: ['Unit 7', 'Gary-Bot', 'BRENDA-9', 'Toaster Todd'],
+      talk: ['GREETINGS, ORGANIC. YOUR LAWN IS NON-COMPLIANT.', 'I was programmed to love my family. I do. Mostly.', 'BEEP. That was a joke. Laugh now.'],
+      moods: { line: 55, gift: 10, trade: 12, errand: 12, buff: 6, angry: 5 } },
+    alienfolk: { name: 'Alien Neighbor', hp: 40, speed: 2.8, hostile: false, dmg: 0, drop: { p: 1, s: 1 }, r: 0.6, h: 1.9,
+      human: { species: ['alien'], top: ['polo', 'sweater', 'tshirt'], acc: ['antennae', 'none', 'goggles'] }, names: ['Zorb', 'Glip Glop', 'Krevin', 'Shleebie'],
+      talk: ['On this Earth the aliens won. We are very nice about it.', 'Do you also have two hearts? No? Huh.', 'The humans here live in a zoo. A nice zoo.'],
+      moods: { line: 50, gift: 12, trade: 12, errand: 12, buff: 8 } },
+    blobfolk: { name: 'Blob Neighbor', hp: 45, speed: 2.2, hostile: false, dmg: 0, drop: { g: 2 }, r: 0.7, h: 1.6,
+      human: { species: ['blob'], top: ['none', 'tshirt'], acc: ['none', 'tophat'] }, names: ['Gloop', 'Blorp Smith', 'Sloosh', 'Goo Gary'],
+      talk: ['We all melted a while ago. It is fine. It is warm.', 'Please do not step on my feet. Any of them.', 'Glorp.'],
+      moods: { line: 55, gift: 12, trade: 8, errand: 12, buff: 8 } },
     fascistsoldier: { name: 'Fascist Trooper', hp: 60, speed: 4.2, hostile: true, dmg: 10, drop: { p: 2, s: 2 }, r: 0.6, h: 1.9,
       human: { species: ['human'], top: ['armor'], acc: ['cap'], colors: { topColor: '#3a3a40', shirtColor: '#3a3a40', pantsColor: '#2a2a30', accColor: '#b5243c' } } },
     shrimpfolk: { name: 'Shrimp Person', hp: 35, speed: 2.8, hostile: false, dmg: 0, drop: { g: 2, s: 1 }, r: 0.6, h: 1.8,
@@ -630,6 +750,37 @@
       talk: ['You broke time, you third-dimensional ass. Time Prison. Forever.', 'Do you know how many timelines I had to stitch up today?', 'Get your timeline straight before I put a collar on it.',
         'Time Court is in session. You lose.', 'Ass. Ass ass ass. Time-ass.'],
       moods: { line: 70, angry: 20, buff: 5, gift: 5 } },
+    snakefolk: { name: 'Snake', hp: 30, speed: 3.2, hostile: false, dmg: 0, drop: { g: 2 }, r: 0.6, h: 1.0,
+      names: ['Sss-Steve', 'Hissandra', 'Slitherin\' Sam', 'Coily', 'Mister Fangs'],
+      talk: ['Sss. Sss sss.', 'Ssssss? SSS! Sss.', '*rattles approvingly*', 'Sss sss sss-sss. (It sounds like jazz.)', 'Ssss... (It is looking at your neck. Probably nothing.)'],
+      moods: { line: 55, gift: 12, trade: 8, errand: 12, buff: 6, dance: 7 } },
+    snaketerm: { name: 'Snake Terminator', hp: 90, speed: 4.6, hostile: true, dmg: 13, drop: { c: 3, s: 3 }, r: 0.7, h: 1.2 },
+    dinosaur: { name: 'Dinosaur', hp: 400, speed: 2.4, hostile: false, dmg: 0, drop: { m: 1, g: 4 }, r: 2.2, h: 6,
+      names: ['Elder Longneck', 'Gentle Bronto', 'Professor Ankylo', 'Grand Stego'],
+      talk: ['We once had a utopia, little mammal. Then a rock fell. It happens.', 'We have solved hunger, war and taxes. Would you like a pamphlet?', 'Rick? Ah yes. The rude one.',
+        'Please do not step on the eggs. They are going to be philosophers.', 'In the future we return to save your planet. You are welcome, in advance.'],
+      moods: { line: 55, gift: 18, trade: 6, errand: 10, buff: 11 } },
+    raptor: { name: 'Raptor', hp: 50, speed: 6.2, hostile: true, dmg: 10, drop: { g: 2 }, r: 0.7, h: 1.4 },
+    giant: { name: 'Giant', hp: 320, speed: 2.6, hostile: false, dmg: 30, drop: { s: 8, f: 2 }, r: 1.6, h: 5.4,
+      human: { species: ['human'], top: ['vest', 'sweater', 'tshirt'], acc: ['none', 'none', 'cap'], height: [1.0, 1.2], scale: 2.8 },
+      names: ['Big Doug', 'Mrs. Giant', 'Gerald the Giant', 'Fee-Fi-Phil'],
+      talk: ['FEE FI FO... no, that is a stereotype. Hello.', 'Watch the stairs. My husband fell down them once and the court case took ages.', 'You are SO tiny. Like a little salt shaker with legs.',
+        'Have you seen my fork? It is the size of a house.', 'Morty? Is that you? You owe us for the funeral.'],
+      moods: { line: 55, gift: 12, trade: 8, errand: 12, buff: 6, angry: 7 } },
+    merfolk: { name: 'Atlantean', hp: 40, speed: 3.4, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8, fly: 0.6,
+      names: ['Coraline', 'Finnley', 'Barnacle Bob', 'Pearl', 'Ripple'],
+      talk: ['Mr. Nimbus controls the sea. And the police. Mostly the police.', 'Bubbles mean "hello" here. Or "help". Context.', 'Do not trust the surface. Do not trust Rick. Especially do not trust Rick.', 'Ever seen a sunken city? You are standing in one.'],
+      moods: { line: 55, gift: 14, trade: 8, errand: 12, buff: 8, follow: 3 } },
+    seamonster: { name: 'Sea Beast', hp: 110, speed: 4.4, hostile: true, dmg: 14, drop: { c: 3, g: 2 }, r: 1.3, h: 1.6, fly: 1.4 },
+    dreamer: { name: 'Dream Figure', hp: 30, speed: 2.8, hostile: false, dmg: 0, drop: { p: 2 }, r: 0.6, h: 1.8,
+      human: { species: ['human'], top: ['sweater', 'polo', 'tshirt'], acc: ['none', 'goggles', 'cap'], eyes: ['sleepy'] },
+      names: ['Your Teacher (in his underwear)', 'A Faceless Cheerleader', 'Someone You Knew', 'Mr. Goldenfold'],
+      talk: ['Did you study for the test? There was a test.', 'Why are your teeth falling out? Do not look.', 'Wake up. Wake up. WAKE UP.', 'This is not your dream. Whose dream is this?'],
+      moods: { line: 60, gift: 10, trade: 6, errand: 8, buff: 8, prank: 8 } },
+    scaryterry: { name: 'Scary Terry', hp: 160, speed: 5.0, hostile: true, dmg: 16, drop: { p: 4, m: 1 }, r: 0.7, h: 2.0,
+      human: { species: ['human'], top: ['sweater'], acc: ['cap'], look: { hair: 'bald', brow: 'angry', mouth: 'grin', face: 'long', height: 1.15, width: 0.9, head: 1.0,
+        skin: '#b0583e', topColor: '#2a6a3a', shirtColor: '#c83a3a', pantsColor: '#5a3a2a', shoeColor: '#2a1a12', accColor: '#3a2a1a' } },
+      names: ['Scary Terry'] },
     gazorpian: { name: 'Gazorpian', hp: 90, speed: 4.2, hostile: true, dmg: 14, drop: { g: 3, s: 2 }, r: 1.2, h: 2.6 },
     froopy: { name: 'Froopy', hp: 30, speed: 2.8, hostile: false, dmg: 0, drop: { f: 2 }, r: 0.7, h: 1.4,
       names: ['Fluffle', 'Snoob', 'Mister Wobbs', 'Bloop', 'Gentle Toot'],
@@ -732,6 +883,18 @@
       { id: 'occupation', name: 'Federation Patrol', text: 'The Federation is cracking down on Planet Squanch.', spawn: [['fedguard', 7]], dur: 90 },
     ],
     gazorp: [{ id: 'brutes', name: 'Brute Stampede', text: 'A pack of Gazorpians is on the rampage.', spawn: [['gazorpian', 6]], dur: 80 }],
+    snakeplanet: [
+      { id: 'snakewar', name: 'Snakes from the Future', text: 'Snake Terminators have come back in time. The snakes need help.', spawn: [['snaketerm', 7]], dur: 90 },
+      { id: 'snakejazz', name: 'Snake Jazz Night', text: 'Ssss-ss-sss. Everyone is in a good mood, and generous.', loot: ['g', 12], talkBoost: 1, dur: 60 },
+    ],
+    dinoearth: [{ id: 'raptors', name: 'Raptor Pack', text: 'A pack of raptors is hunting. The dinosaurs are disappointed in them.', spawn: [['raptor', 8]], dur: 80 },
+      { id: 'meteor', name: 'Meteor Shower', text: 'Little rocks before the big one. Mega Seeds are falling with them.', loot: ['m', 4], dur: 45 }],
+    giantland: [{ id: 'giantmarket', name: 'Giant Market Day', text: 'Giants are selling giant things for tiny prices.', loot: ['s', 14], talkBoost: 1, dur: 60 }],
+    atlantis: [{ id: 'tide', name: 'The Tide Turns', text: 'Mr. Nimbus is in a good mood. The current is full of crystals.', loot: ['c', 12], dur: 50 },
+      { id: 'kraken', name: 'Sea Beasts', text: 'Something big swam in from the trench.', spawn: [['seamonster', 6]], dur: 80 }],
+    dreamworld: [{ id: 'nightmare', name: 'Nightmare', text: 'You can run, but you cannot hide. Scary Terry brought friends.', spawn: [['scaryterry', 3]], dur: 70 },
+      { id: 'lucid', name: 'Lucid Dream', text: 'You know you are dreaming. Everything is easier.', loot: ['p', 12], talkBoost: 1, dur: 50 }],
+    splitearth: [{ id: 'fracture', name: 'Time Fracture', text: 'The timeline split again. Time Cops are cracking down.', spawn: [['timecop', 2]], dur: 70 }],
     froopy: [{ id: 'sugar', name: 'Sugar Rush', text: 'It is raining candy. And feathers. Do not ask.', loot: ['f', 12], talkBoost: 1, dur: 50 }],
     anatomy: [{ id: 'outbreak', name: 'Outbreak', text: 'The diseases have escaped containment. Again.', spawn: [['bacteria', 9]], dur: 90 }],
     pizzaworld: [{ id: 'delivery', name: 'Rush Hour', text: 'Everyone is delivering everyone. Grab a slice.', loot: ['s', 12], talkBoost: 1, dur: 50 }],
@@ -874,10 +1037,11 @@
       const kit = MM.makeLayoutKit(dimId, r, add, free);
       layout(kit);
       layoutCache[dimId] = { roads: kit.roads, plazas: kit.plazas };
-    } else for (const [type, count] of dim.props) {
-      const t = MM.PROPS[type];
+    } else for (const [type, n] of dim.props) {
+      // Open worlds got bigger: a few more things to fill the extra ground.
+      const t = MM.PROPS[type], count = MM.boundOf(dimId) >= MM.WORLD_HALF ? Math.round(n * 1.3) : n;
       for (let i = 0, tries = 0; i < count && tries < count * 40; tries++) {
-        const span = Math.min(145, MM.boundOf(dimId) - 3);
+        const span = Math.min(MM.WORLD_HALF - 28, MM.boundOf(dimId) - 3);
         const x = (r() * 2 - 1) * span, z = (r() * 2 - 1) * span;
         const s = 0.8 + r() * 0.5;
         if (dim.streets && (onRoad(x) || onRoad(z))) continue;
@@ -904,8 +1068,19 @@
   MM.randomSpot = function (dimId, rand, minR, maxR) {
     const rr = rand || Math.random;
     const props = MM.genProps(dimId);
-    const bound = MM.boundOf(dimId);
+    const bound = MM.boundOf(dimId), D = MM.DIM_BY_ID[dimId];
+    if (D.walls) {
+      // Inside a building: anywhere in the rooms, clear of the walls.
+      const bz = MM.boundZOf(dimId);
+      for (let k = 0; k < 30; k++) {
+        const x = (rr() * 2 - 1) * bound * 0.85, z = (rr() * 2 - 1) * bz * 0.85;
+        const [wx, wz] = MM.collideWalls(dimId, x, z, 0.8);
+        if (wx === x && wz === z) return { x, y: 0, z };
+      }
+      return { x: D.spawn.x, y: 0, z: D.spawn.z };
+    }
     if (bound < 60) { minR = Math.min(minR || 15, bound * 0.2); maxR = Math.min(maxR || 140, bound * 0.85); }
+    else maxR = Math.min(maxR || 140, bound - 25);
     for (let k = 0; k < 30; k++) {
       const a = rr() * Math.PI * 2, d = (minR || 15) + rr() * ((maxR || 140) - (minR || 15));
       const x = Math.cos(a) * d, z = Math.sin(a) * d;
@@ -918,20 +1093,136 @@
 
   // Push a circle (x, z, radius) out of solid props. Used by clients for walking
   // and by the server for NPCs. Arches can be walked through.
+  // Buildings collide as their real footprint (a box in the model's own frame: [x0, x1, z0, z1],
+  // front = +z), turned and scaled like the prop. Everything else is a circle.
+  const BOX = {
+    house: [-5.95, 5.95, -4.8, 5.4], house2: [-9, 4.95, -5.05, 5.4], doghouse: [-2.55, 2.55, -2.55, 2.55], farmhouse: [-3.95, 3.95, -3.55, 4.6],
+    barn: [-4.5, 8.55, -6.3, 6.3], cityblock: [-3.7, 3.7, -3.7, 3.7], fedtower: [-4.5, 4.5, -4.5, 4.5], prisonblock: [-5.2, 5.2, -3.2, 3.2],
+    gearhouse: [-3.22, 3.22, -3.09, 3.3], storefront: [-4.7, 4.7, -3.7, 3.9], skyscraper: [-5.7, 5.7, -5.7, 5.7], apartment: [-5.2, 5.2, -5.2, 5.6],
+    officeblock: [-7.8, 7.8, -5.8, 6.4], hangar: [-7.6, 7.6, -9, 9.1], humanhouse: [-2.32, 2.32, -2.9, 2.9], factory: [-6, 6, -5, 5.11],
+    lm_home: [-6.7, 6.7, -5.3, 6.4], lm_garage: [-4.95, 4.95, -5.05, 5.2], lm_school: [-9.3, 9.3, -4.8, 5.2], lm_hospital: [-7.15, 7.15, -5.15, 5.4],
+    lm_office: [-5.7, 5.7, -4.2, 4.6], lm_forge: [-6.1, 6.1, -5.5, 5.5], lm_shipyard: [-8, 8, -8, 8], lm_market: [-5.85, 5.85, -5.41, 6],
+    lm_refinery: [-7, 7, -7, 7], lm_council: [-9, 9, -9, 9], lm_daycare: [-5.8, 7.04, -4.8, 6.5], lm_palace: [-9.34, 9.34, -5, 7.02],
+    lm_gooble: [-7.2, 7.2, -5.2, 7.65], lm_fakedoors: [-4.7, 4.7, -3.7, 3.9], lm_antsjohnson: [-4.7, 4.7, -3.7, 3.9], lm_plumbusline: [-6, 6, -5, 5.11],
+    lm_mall: [-11.5, 11.5, -7.25, 10.6], lm_shoneys: [-5.9, 5.9, -4.4, 4.6], lm_needful: [-4.25, 4.25, -4.25, 4.7], lm_wong: [-5.7, 5.7, -4.7, 5.2],
+    lm_tvstore: [-5.2, 5.2, -4.2, 4.35], lm_whitehouse: [-12.3, 12.3, -5.8, 9.6], lm_capitol: [-15.5, 15.5, -7.5, 9.5], lm_sonicstage: [-9, 9, -5, 5],
+    lm_hangar: [-7.6, 7.6, -9, 9.2], snakehut: [-2.8, 2.8, -2.8, 2.8], lm_snakeclub: [-7.5, 7.5, -5, 5], lm_dinocouncil: [-9, 9, -9, 9],
+    lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5],
+  };
+  for (const k in BOX) if (MM.PROPS[k]) MM.PROPS[k].box = BOX[k];
+  MM.PROPS.lm_highway.arch = true;   // a gantry over the road: walk (and drive) under it
+  // How far from its centre a prop can block (its circle, or its box's far corner).
+  MM.propReach = p => { const T = MM.PROPS[p.type]; if (!T.box) return p.r; if (!T.boxR) { const [x0, x1, z0, z1] = T.box; T.boxR = Math.hypot(Math.max(-x0, x1), Math.max(-z0, z1)); } return T.boxR * (p.s || 1); };
+  // Push a circle (x, z, rad) out of prop p. Returns [x, z], moved or not.
+  MM.pushOutOfProp = function (p, x, z, rad) {
+    const T = MM.PROPS[p.type];
+    if (T.box) {
+      const c = Math.cos(p.rot), s = Math.sin(p.rot), dx = x - p.x, dz = z - p.z, k = p.s || 1;
+      let lx = (dx * c - dz * s) / k, lz = (dx * s + dz * c) / k;
+      const r = rad / k, [x0, x1, z0, z1] = T.box;
+      if (lx > x0 - r && lx < x1 + r && lz > z0 - r && lz < z1 + r) {
+        const pen = [lx - (x0 - r), (x1 + r) - lx, lz - (z0 - r), (z1 + r) - lz], m = Math.min(...pen);
+        if (m === pen[0]) lx = x0 - r; else if (m === pen[1]) lx = x1 + r; else if (m === pen[2]) lz = z0 - r; else lz = z1 + r;
+        return [p.x + (lx * c + lz * s) * k, p.z + (-lx * s + lz * c) * k];
+      }
+      return [x, z];
+    }
+    const dx = x - p.x, dz = z - p.z, min = p.r + rad, d2 = dx * dx + dz * dz;
+    if (d2 < min * min && d2 > 1e-6) { const d = Math.sqrt(d2); return [p.x + dx / d * min, p.z + dz / d * min]; }
+    return [x, z];
+  };
+  // Inside walls of a room (segments [x1, z1, x2, z2]): push a circle of radius rad out of them.
+  MM.collideWalls = function (dimId, x, z, rad) {
+    const W = MM.DIM_BY_ID[dimId].walls;
+    if (!W) return [x, z];
+    for (const [x1, z1, x2, z2] of W) {
+      const dx = x2 - x1, dz = z2 - z1, l2 = dx * dx + dz * dz || 1;
+      const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / l2));
+      const px = x1 + dx * t, pz = z1 + dz * t, ex = x - px, ez = z - pz, d2 = ex * ex + ez * ez, m = rad + 0.12;
+      if (d2 < m * m) {
+        let ux = ex, uz = ez, d = Math.sqrt(d2);
+        if (d < 1e-6) { const l = Math.sqrt(l2); ux = -dz / l; uz = dx / l; d = 1; }   // exactly on the wall: step off sideways
+        x = px + ux / d * m; z = pz + uz / d * m;
+      }
+    }
+    return [x, z];
+  };
   MM.collideProps = function (dimId, x, z, rad, alive) {
     const props = MM.genProps(dimId);
     for (const p of props) {
       if (alive && !alive[p.id]) continue;
       if (MM.PROPS[p.type].arch) continue;
-      const dx = x - p.x, dz = z - p.z, min = p.r + rad;
-      const d2 = dx * dx + dz * dz;
-      if (d2 < min * min && d2 > 1e-6) {
-        const d = Math.sqrt(d2);
-        x = p.x + dx / d * min; z = p.z + dz / d * min;
-      }
+      const reach = MM.propReach(p) + rad;
+      if (Math.abs(x - p.x) > reach || Math.abs(z - p.z) > reach) continue;
+      [x, z] = MM.pushOutOfProp(p, x, z, rad);
     }
     return [x, z];
   };
+
+  // ---------- Personal home dimensions ----------
+  // Every character comes from a dimension, like Rick C-137. Your home code (Y-231, J-19...)
+  // is a real place: an alternate Earth made from the code, the same for everyone, with its
+  // own twist. C-137 is the show's Earth (suburbia). Earth folk start in theirs.
+  MM.EARTH_ARCHS = ['genius', 'sidekick', 'teen', 'surgeon', 'joe', 'evilmorty'];
+  MM.homeDimId = code => {
+    const c = String(code || '').toUpperCase().replace(/[^A-Z0-9]/g, '');
+    return c === 'C137' || !c ? 'suburbia' : 'h_' + c;
+  };
+  MM.HOME_RE = /^h_[A-Z]{1,2}[0-9]{1,4}$/;
+  const pretty = c => c.replace(/^([A-Z]+)([0-9]+)$/, '$1-$2');
+  const shift = (hex, h, sat, light) => { const c = parseInt(hex.slice(1), 16); const r = (c >> 16) / 255, g = (c >> 8 & 255) / 255, b = (c & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn; let hh = 0, ss = d ? d / (1 - Math.abs(2 * l - 1)) : 0;
+    if (d) hh = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    hh = ((hh * 60 + h) % 360 + 360) % 360; ss = Math.max(0, Math.min(1, ss * sat)); const L = Math.max(0, Math.min(1, l * light));
+    const C2 = (1 - Math.abs(2 * L - 1)) * ss, X = C2 * (1 - Math.abs((hh / 60) % 2 - 1)), m = L - C2 / 2;
+    const [a, b2, c2] = hh < 60 ? [C2, X, 0] : hh < 120 ? [X, C2, 0] : hh < 180 ? [0, C2, X] : hh < 240 ? [0, X, C2] : hh < 300 ? [X, 0, C2] : [C2, 0, X];
+    return '#' + [a, b2, c2].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join(''); };
+  // The ways an Earth can have gone, all from the show.
+  const TWISTS = [
+    { k: 'plain', blurb: 'Another Earth where the Smiths live. It is almost exactly like the others. Almost.', npc: [['neighbor', 10], ['schoolkid', 4]] },
+    { k: 'plain', blurb: 'An Earth one tiny decision away from C-137. Nobody here can tell which decision.', npc: [['neighbor', 10], ['cop', 2]] },
+    { k: 'cronen', blurb: 'The love potion happened here too. The neighbours are Cronenbergs now.', sky: ['#3d0a1c', '#c4485f'], ground: ['#c9576b', '#e07a85', '#9c3a4e'], npc: [['meatblob', 6], ['fleshmonk', 3]], extra: [['fleshpillar', 18], ['eyestalk', 14], ['pustule', 14]] },
+    { k: 'fascist', blurb: 'A fascist Earth: grey skies, banners, and a Rick in a robe somewhere in charge.', sky: ['#6a6e78', '#b8b0a8'], ground: ['#5a6a4a', '#647454', '#506040'], npc: [['fascistsoldier', 7], ['neighbor', 4]], extra: [['banner', 24], ['watchtower', 5]] },
+    { k: 'shrimp', blurb: 'An Earth where everyone evolved from shrimp.', sky: ['#ff9f86', '#ffe2d4'], npc: [['shrimpfolk', 12]], extra: [['shrimpstatue', 5]] },
+    { k: 'teddy', blurb: 'An Earth of teddy bear people.', npc: [['teddyfolk', 12]], extra: [['teddystatue', 5], ['honeypot', 12]] },
+    { k: 'cats', blurb: 'An Earth where everybody is a cat. The Smiths too.', npc: [['catfolk', 12]], extra: [['tennisball', 10]] },
+    { k: 'robots', blurb: 'An Earth run by robots who very much want you to have a nice day.', sky: ['#7a9ab8', '#d8e8f4'], ground: ['#8a9a9a', '#96a6a6', '#7a8a8a'], npc: [['robotfolk', 12], ['butterbot', 2]], extra: [['antenna', 12], ['biggear', 4]] },
+    { k: 'aliens', blurb: 'An Earth where the aliens won, and the humans are kept as pets.', sky: ['#5ff8c8', '#e8fff0'], npc: [['alienfolk', 10], ['doghuman', 4]], extra: [['mushroom', 16], ['crystal', 10]] },
+    { k: 'blobs', blurb: 'An Earth where everyone is a friendly puddle.', npc: [['blobfolk', 12]], extra: [['pustule', 10]] },
+    { k: 'candy', blurb: 'A sugar-coated Earth. The lawns are candyfloss. Do not lick the mailbox.', sky: ['#ffb0e0', '#fff0fa'], ground: ['#ffb6dc', '#ffd0ec', '#f4a0d0'], npc: [['neighbor', 8], ['froopy', 4]], extra: [['lollipop', 16], ['cottontree', 14], ['candyrock', 8]] },
+    { k: 'jungle', blurb: 'An Earth the jungle took back. The houses are still there, somewhere under the leaves.', ground: ['#3e8a2e', '#4a9a36', '#367a28'], npc: [['neighbor', 6], ['seedbeast', 3]], extra: [['seedtree', 22], ['fungus', 16], ['thornbush', 10]] },
+    { k: 'night', blurb: 'An Earth where the sun went out. Everyone just got used to it.', sky: ['#0b0f1e', '#1e2440'], fog: '#1a2034', ground: ['#2e4a2e', '#365436', '#283e28'], npc: [['neighbor', 8], ['cop', 3]], extra: [['lamp', 20]] },
+    { k: 'pizza', blurb: 'An Earth where the furniture and the pizza are people, and the people are the furniture.', npc: [['pizzaperson', 5], ['chairperson', 4], ['phoneperson', 3]], extra: [['giantchair', 6], ['pizzabox', 8]] },
+    { k: 'wasteland', blurb: 'An Earth after the bombs. Raiders, scrap towers and a lot of sand.', sky: ['#e8a860', '#f8e0b0'], ground: ['#c8a46a', '#d8b47a', '#b8945a'], npc: [['raider', 6], ['neighbor', 3]], extra: [['wreck', 12], ['cactus', 12], ['scraptower', 6]] },
+    { k: 'dogs', blurb: 'An Earth where the dogs took over, like Snowball wanted.', npc: [['dogcitizen', 8], ['doghuman', 4]], extra: [['doghouse', 10], ['bigbone', 6]] },
+  ];
+  const hashStr = str => { let h = 2166136261; for (let i = 0; i < str.length; i++) { h ^= str.charCodeAt(i); h = Math.imul(h, 16777619); } return h >>> 0; };
+  let homes = 0;
+  MM.ensureHomeDim = function (id) {
+    if (byId[id]) return byId[id];
+    if (!MM.HOME_RE.test(id) || homes >= 5000) return undefined;
+    homes++;
+    const code = id.slice(2), r = MM.rng(hashStr(code)), B = byId.suburbia;
+    const tw = TWISTS[Math.floor(r() * TWISTS.length)], hue = Math.round((r() - 0.5) * 70);
+    const d = {
+      id, variantOf: 'suburbia', home: true, name: 'Earth ' + pretty(code), code: pretty(code), seed: 1000 + (hashStr(code) % 90000),
+      blurb: tw.blurb, twist: tw.k,
+      sky: tw.sky || B.sky.map(c => shift(c, hue, 1, 1)), fog: tw.fog || shift(B.fog, hue, 1, 1), fogFar: B.fogFar, sun: B.sun, ambient: shift(B.ambient, hue, 1, 1),
+      ground: tw.ground || B.ground.map(c => shift(c, hue * 0.6, 0.8 + r() * 0.4, 0.9 + r() * 0.2)), accent: B.accent,
+      extra: tw.extra || [], npc: tw.npc, pickups: { s: 16, c: 2, k: 2 }, mat: 's', space: id,
+    };
+    MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
+    fillVariant(d);
+    return d;
+  };
+  // Looking up a home dimension by id makes it (deterministically) the first time.
+  const byId = MM.DIM_BY_ID;
+  const make = k => { if (typeof k === 'string' && !(k in byId) && MM.HOME_RE.test(k)) MM.ensureHomeDim(k); };
+  MM.DIM_BY_ID = new Proxy(byId, {
+    get(t, k) { make(k); return t[k]; },
+    has(t, k) { make(k); return k in t; },
+    getOwnPropertyDescriptor(t, k) { make(k); return Object.getOwnPropertyDescriptor(t, k); },
+  });
 
   if (typeof module !== 'undefined' && module.exports) module.exports = MM;
 })(typeof globalThis !== 'undefined' ? globalThis : this);

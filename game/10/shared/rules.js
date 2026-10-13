@@ -7,14 +7,24 @@
   MM.VERSION = 4;
   // Monsters notice you within AGGRO_RANGE metres and stop chasing beyond LEASH of their home.
   // Where a character can start: their home world (and, for some, another place they live).
-  MM.startWorlds = arch => { const A = MM.ARCHETYPES[arch]; return (A.homes || [A.home]).filter(d => MM.DIM_BY_ID ? MM.DIM_BY_ID[d] : true); };
+  // Where a character can start: their home dimension's Earth first (for Earth folk with a
+  // home code), then the other places they live. Only C-137 folk start on the show's Earth.
+  MM.startWorlds = (arch, home) => {
+    const A = MM.ARCHETYPES[arch];
+    let list = (A.homes || [A.home]).filter(d => MM.DIM_BY_ID ? MM.DIM_BY_ID[d] : true);
+    if (home && MM.homeDimId && MM.EARTH_ARCHS.includes(arch)) {
+      const h = MM.homeDimId(home);
+      list = [h].concat(list.filter(d => d !== h && d !== 'suburbia'));
+    }
+    return list;
+  };
   MM.TEAM_MAX = 8; MM.TEAM_REACH = 14;
   MM.AGGRO_RANGE = 9;
   MM.LEASH = 26;               // protocol version; client and server must match
   MM.TICK = 1 / 30;             // server simulation step (seconds)
   MM.SNAP_EVERY = 2;            // a snapshot every 2 ticks = 15 per second
   MM.INSTANCE_CAP = 64;         // players per dimension instance (servers can raise it)
-  MM.WORLD_HALF = 170;          // playable area is -170..170 on x and z
+  MM.WORLD_HALF = 200;          // playable area is -200..200 on x and z
   MM.RESPAWN_TIME = 4;
   MM.SPAWN_PROTECT = 3;
 
@@ -36,7 +46,11 @@
   // can only be built at a particular one.
   MM.LANDMARKS = [
     // rot: which way the front faces (PI/2 = toward +x). The Smith house and Rick's garage stand side by side on one lot.
-    { id: 'home', dim: 'suburbia', name: 'Smith House', x: -14, z: 25, r: 7, h: 10, model: 'lm_home', rot: Math.PI / 2 },
+    { id: 'home', dim: 'suburbia', name: 'Smith House', x: -14, z: 25, r: 7, h: 10, model: 'lm_home', rot: Math.PI / 2, door: { dim: 'smithhouse', x: -4.69, z: -4.2 } },
+    // Inside the Smith house (a Mojulo floor plan: see assets/interiors). Spots marked with a ring.
+    { id: 'smithexit', dim: 'smithhouse', name: 'Front door', x: -4.69, z: -4.95, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'suburbia', x: -5.5, z: 25 } },
+    { id: 'smithtv', dim: 'smithhouse', name: 'The couch (interdimensional cable)', x: -3.41, z: 1.6, r: 0.8, h: 1.2, model: 'lm_marker' },
+    { id: 'smithtable', dim: 'smithhouse', name: 'Dining table', x: 3.84, z: 1.9, r: 0.8, h: 1.2, model: 'lm_marker' },
     { id: 'garage', dim: 'suburbia', name: "Rick's Garage", x: -14.5, z: 12.5, r: 5.5, h: 6.5, model: 'lm_garage', rot: Math.PI / 2, door: { dim: 'rickgarage', x: -2, z: 4 } },
     { id: 'school', dim: 'suburbia', name: 'Harry Herpson High', x: 30, z: 22, r: 8.5, h: 8, model: 'lm_school', rot: Math.PI / 2, sign: { text: 'HARRY HERPSON HIGH SCHOOL', y: 6.95, z: 4.62, w: 9.5 } },
     { id: 'hospital', dim: 'suburbia', name: 'Horse Hospital', x: 30, z: -22, r: 7, h: 8, model: 'lm_hospital', rot: Math.PI / 2, sign: { text: 'HORSE HOSPITAL', y: 7.0, z: 5.1, w: 8 } },
@@ -88,6 +102,13 @@
     { id: 'pentagon', dim: 'dc', name: 'The Pentagon', x: 100, z: -40, r: 20, h: 7, model: 'lm_pentagon', rot: -Math.PI / 2 },
     // ----- Area 51 -----
     { id: 'sonicstage', dim: 'area51', name: 'The Sonic Stage', x: 0, z: -40, r: 12, h: 9, model: 'lm_sonicstage', rot: 0 },
+    // ----- Snake Planet, Giant World, Atlantis, the Dream World, other times -----
+    { id: 'snakeclub', dim: 'snakeplanet', name: 'The Snake Jazz Club', x: 0, z: -34, r: 8, h: 8, model: 'lm_snakeclub', rot: 0 },
+    { id: 'dinocouncil', dim: 'dinoearth', name: 'The Dinosaur Council', x: 30, z: -30, r: 10, h: 10, model: 'lm_dinocouncil' },
+    { id: 'giantcastle', dim: 'giantland', name: "The Giants' Castle", x: 0, z: -60, r: 14, h: 26, model: 'lm_giantcastle', rot: 0 },
+    { id: 'nimbuspalace', dim: 'atlantis', name: "Mr. Nimbus's Palace", x: 0, z: -45, r: 12, h: 16, model: 'lm_nimbuspalace', rot: 0 },
+    { id: 'dreamschool', dim: 'dreamworld', name: 'Dream High School (it never ends)', x: 0, z: -40, r: 10, h: 9, model: 'lm_dreamschool', rot: 0 },
+    { id: 'timerift', dim: 'splitearth', name: 'The Time Rift', x: 22, z: 0, r: 4, h: 9, model: 'lm_timerift' },
     { id: 'hangar51', dim: 'area51', name: 'Hangar 18', x: 60, z: 10, r: 13, h: 10, model: 'lm_hangar', rot: -Math.PI / 2, sign: { text: 'HANGAR 18', y: 8.2, z: 9.6, w: 6 } },
   ];
   // Highways between the parts of Earth. Each part has an on-ramp to every other part,
@@ -127,14 +148,20 @@
     tour:    { at: 'monument', any: true, name: 'Ride up the Washington Monument', cd: 120, give: { s: 1 }, text: 'A very tall view of a very flat city. You spot three portals and a Secret Service agent pretending not to.' },
     congress:{ at: 'capitol', any: true, name: 'Sit in on Congress', cd: 200, give: { k: 2 }, text: 'Four hours of shouting. One bill passed. It was about portals, and it was confusing.' },
     warroom: { at: 'pentagon', any: true, name: 'Sit in the war room', cd: 240, give: { p: 2, k: 1 }, text: 'Generals pointing at a big screen. The big screen is pointing at your house.' },
+    snakejazz:  { at: 'snakeclub', any: true, name: 'Listen to snake jazz', cd: 150, heal: 1, give: { g: 2, s: 1 }, text: 'Ssss-ss-ss-sssss. Ss-ss. You do not understand it, and that is the point.' },
+    dinotalk:   { at: 'dinocouncil', any: true, name: 'Ask the Dinosaur Council for wisdom', cd: 240, give: { m: 1, c: 2 }, text: 'They explained universal healthcare, then gave you a seed "for later". They are very patient with mammals.' },
+    giantcourt: { at: 'giantcastle', any: true, name: "Sit in on the giants' court", cd: 200, give: { k: 3, s: 3 }, text: 'The case: a tiny man pushed a giant down the stairs. The jury has questions. You kept your head down.' },
+    nimbus:     { at: 'nimbuspalace', any: true, name: 'Get an audience with Mr. Nimbus', cd: 200, heal: 1, give: { c: 3 }, text: '"I control the sea. And the police." He let you leave with some crystals and your dignity, mostly.' },
+    dreamtest:  { at: 'dreamschool', any: true, name: 'Take the test you never studied for', cd: 150, give: { p: 3 }, text: 'Every question is about a class you never took. You passed anyway. Dreams are like that.' },
+    timerift:   { at: 'timerift', any: true, name: 'Stitch the time rift', cd: 240, give: { c: 3, m: 1 }, text: 'You held the two timelines together until they clicked. A Time Cop nodded at you. Once.' },
     schwifty:{ at: 'sonicstage', any: true, name: 'Get Schwifty for the Cromulons', cd: 300, give: { m: 2, k: 2 }, text: 'SHOW ME WHAT YOU GOT! You took off your pants and your panties and the giant heads in the sky approved.' },
     hangar:  { at: 'hangar51', any: true, name: 'Look inside Hangar 18', cd: 200, give: { c: 3 }, text: 'Weather balloons. Lots of weather balloons. One of them waved.' },
     tinker:  { at: 'garage', name: 'Tinker in the garage', cd: 120, give: { s: 3, c: 1 }, text: 'You built something, took it apart, and kept the good bits.' },
     school:  { at: 'school', name: 'Sit through class', cd: 150, give: { s: 2 }, text: 'Algebra. Again. You pocketed some scrap from shop class.' },
     surgery: { at: 'hospital', name: 'Operate on a horse', cd: 150, give: { s: 3, c: 1 }, heal: 1, text: 'The horse will live. Probably. It looked grateful.' },
     jobhunt: { at: 'office', name: 'Look for a job', cd: 120, give: { s: 1 }, text: 'They said they would call you. They will not call you.' },
-    tv:      { at: 'home', name: 'Watch interdimensional TV', cd: 90, heal: 1, give: {}, text: 'A show about a man who is also a ball. You feel restored.' },
-    dinner:  { at: 'home', name: 'Family dinner', cd: 180, heal: 1, give: { s: 2 }, text: 'Everyone argued. The mashed potatoes were good, though.' },
+    tv:      { at: 'smithtv', any: true, name: 'Watch interdimensional TV', cd: 90, heal: 1, give: {}, text: 'A show about a man who is also a ball. You feel restored.' },
+    dinner:  { at: 'smithtable', name: 'Family dinner', cd: 180, heal: 1, give: { s: 2 }, text: 'Everyone argued. The mashed potatoes were good, though.' },
     hug:     { at: 'home', name: 'Visit an old friend', cd: 120, heal: 1, give: { s: 2 }, text: 'They swear they have known you for years. It was lovely.' },
     forge:   { at: 'forge', name: 'Feed the forge', cd: 120, give: { g: 3 }, text: 'You fed it. It fed you back. Do not think about it.' },
     haggle:  { at: 'market', name: 'Haggle at the black market', cd: 120, give: { p: 2 }, text: 'You sold a "genuine" moon rock. It was a regular rock.' },
@@ -174,7 +201,14 @@
     shrink:   { cat: 'gadget', name: 'Shrink Ray Shot', cost: { s: 4, c: 2 }, max: 3, desc: 'One shot that shrinks the target to half size for 8 s.' },
     fluid:    { cat: 'gadget', name: 'Portal Fluid', cost: { c: 2 }, gun: true, desc: 'Refills one portal gun charge right away.' },
     timecrystal: { cat: 'gadget', name: 'Time Crystal', cost: { c: 5, m: 2 }, max: 1, desc: 'Press 5: freeze time around you for 4 s. Illegal for third-dimensional beings, so the Time Cops will come for you.' },
+    freeze:   { cat: 'gadget', name: 'Freeze Ray Shot', cost: { s: 3, c: 2 }, max: 3, desc: 'Press 6: one shot that freezes whoever it hits solid for a few seconds.' },
     meeseeks: { cat: 'gadget', name: 'Meeseeks Box', cost: { k: 3, s: 1 }, max: 2, desc: 'Press it (4): a Mr. Meeseeks pops out and fights for you for 30 s.' },
+    // Rick's own body upgrades (only Ricks know how): robot limbs and a built-in scanner.
+    // Pickle Rick's rat suit, built from rat parts and scrap (in a sewer, anywhere really).
+    ratsuit:   { cat: 'self', name: 'Rat Suit', cost: { g: 3, s: 4 }, onlyFor: ['picklerick'], desc: 'Rat legs, rat arms, wires and spite. Now you can do more than roll.' },
+    cyberarm:  { cat: 'self', name: 'Cybernetic Arm', cost: { c: 6, s: 8, p: 3 }, at: 'garage', onlyFor: ['genius'], desc: 'A robot arm: +35% damage, and your punches and shots hit harder.' },
+    cyberlegs: { cat: 'self', name: 'Cybernetic Legs', cost: { c: 6, s: 8, g: 2 }, at: 'garage', onlyFor: ['genius'], needs: 'cyberarm', desc: 'Robot legs: run 25% faster and jump 35% higher.' },
+    scanner:   { cat: 'self', name: 'Scanner Implant', cost: { c: 4, p: 2 }, at: 'garage', onlyFor: ['genius'], desc: 'Press X to scan whatever you look at: what it is, how dangerous, what it is made of.' },
     megabrain: { cat: 'self', name: 'Mega Seed Smarts', cost: { m: 4, c: 2 }, at: 'garage', desc: 'Abilities recharge 30% faster and you hit 10% harder.' },
     cloak:    { cat: 'self', name: 'Citadel Cloak', cost: { k: 8, p: 3 }, at: 'council', desc: 'Monsters and turrets lose track of you 3 s after you stop fighting.' },
     armor1:   { cat: 'self', name: 'Bio-Armor I', cost: { g: 4, s: 4 }, at: 'forge', desc: '+25 max health. Grown, not built.' },
@@ -197,7 +231,7 @@
     drive:    { cat: 'ship', name: 'Dimension Drive', cost: { c: 6, g: 4, p: 6, f: 4 }, at: 'shipyard', needs: 'engine', desc: 'Fly your ship straight into any dimension.' },
   };
   MM.RECIPE_IDS = Object.keys(MM.RECIPES);
-  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal'];
+  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal', 'freeze'];
   // Recipes everyone knows, whoever they are.
   MM.COMMON = ['meeseeks', 'megabrain'];
   MM.CATS = { gadget: 'Gadgets', self: 'You', gun: 'Portal gun', ship: 'Ship' };
@@ -218,7 +252,7 @@
       portal: { charges: 3, recharge: 14 }, knows: '*', discount: 2 / 3,
       ability: { id: 'shield', name: 'Science Shield', cd: 16, dur: 4 },
       blurb: 'Smartest being in any dimension. Owns a portal gun, builds anything, but is fragile and has a terrible attitude.',
-      perk: 'Knows every recipe and pays a third less. Portal gun with 3 charges.',
+      perk: 'Knows every recipe and pays a third less. Portal gun with 3 charges that can leave the Central Finite Curve.',
       life: { normal: 'Grandpa Rick', breakout: 'Rickest Rick', daily: ['tinker', 'dinner', 'council'] },
       steps: [
         { name: 'Tinker time', desc: "Tinker in Rick's Garage once.", goal: { type: 'use', task: 'tinker', n: 1 } },
@@ -339,12 +373,12 @@
       ],
     },
     trooper: {
-      name: 'Federation Officer', hp: 120, speed: 7, jump: 8.5, weapon: 'rifle', home: 'federation',
+      name: 'Federation Officer', hp: 120, speed: 7, jump: 8.5, weapon: 'rifle', fly: true, home: 'federation',   // Gromflomites fly on their insect wings
       temper: { fights: 'defend', hunts: ['genius', 'birdfolk', 'squanchy'] }, homes: ['federation'],
       portal: null, knows: ['grenade', 'turret', 'blaster1', 'engine', 'lasers'], start: ['hull'],
       ability: { id: 'cuff', name: 'Stun Cuffs', cd: 12 },
       blurb: 'Enforcer of an interplanetary bureaucracy. Comes with a patrol ship and a lot of paperwork.',
-      perk: 'Starts with a ship (B to board). Stun Cuffs freeze whoever is in front of you.',
+      perk: 'Flies on insect wings (hold Space) and starts with a ship (B to board). Stun Cuffs freeze whoever is in front of you.',
       life: { normal: 'Loyal Officer', breakout: 'Rogue Officer', daily: ['report', 'dock'] },
       steps: [
         { name: 'Paperwork', desc: 'File a patrol report at the Bazaar Shipyard.', goal: { type: 'use', task: 'report', n: 1 } },
@@ -415,14 +449,14 @@
     picklerick: {
       name: 'Pickle Rick', hp: 60, speed: 6, jump: 11, weapon: 'slap', home: 'suburbia',
       temper: { fights: 'often', chaos: 0.3 }, homes: ['suburbia'],
-      portal: null, knows: ['grenade', 'legs1', 'armor1', 'armor2', 'blaster1'], discount: 2 / 3,
+      portal: null, knows: ['ratsuit', 'grenade', 'legs1', 'armor1', 'armor2', 'blaster1'], discount: 2 / 3,
       ability: { id: 'roll', name: 'Pickle Roll', cd: 8, dur: 2.5 },
       blurb: 'A genius who turned himself into a pickle to get out of family therapy. Tiny, green, and furious.',
-      perk: 'Builds a third cheaper. Starts weak; rat-part upgrades (armor, legs) make him dangerous.',
+      perk: 'A pickle can only roll. Build the Rat Suit (C, anywhere, from goo and scrap) for rat legs and arms, and then fight dirty. Builds a third cheaper.',
       life: { normal: 'Pickle on the Floor', breakout: 'Pickle Rick!', daily: ['tinker'] },
       steps: [
-        { name: 'Roll for it', desc: 'Smash 15 props.', goal: { type: 'smash', n: 15 } },
-        { name: 'Rat parts', desc: 'Build Spring Legs at Rick\'s Garage.', goal: { type: 'craft', r: 'legs1' }, grants: ['jetpack', 'turret', 'blaster2'] },
+        { name: 'Rat parts', desc: 'Roll around, collect goo and scrap, and build the Rat Suit (C).', goal: { type: 'craft', r: 'ratsuit' }, grants: ['turret'] },
+        { name: 'Roll for it', desc: 'Smash 15 props.', goal: { type: 'smash', n: 15 }, grants: ['jetpack', 'blaster2'] },
         { name: 'Pickle Rick!', desc: 'Defeat 10 monsters.', goal: { type: 'kill', n: 10 }, grants: ['gunbuild', 'guncap1', 'fluid', 'hull', 'engine', 'lasers', 'drive'], title: true },
       ],
     },
@@ -449,16 +483,20 @@
     const A = MM.ARCHETYPES[arch];
     const up = {};
     for (const r of A.start || []) up[r] = 1;
-    return { up, step: 0, grants: [], cnt: { use: {}, dims: [], crafted: [], kill: {}, kills: 0, ko: 0, talk: 0, smash: 0, errand: 0 }, errands: [], tasks: {}, inv: { s: 0, c: 0, g: 0, p: 0, f: 0, m: 0, k: 0 }, chaos: 0 };
+    return { up, step: 0, grants: [], cnt: { use: {}, dims: [], crafted: [], kill: {}, kills: 0, ko: 0, talk: 0, smash: 0, errand: 0 }, errands: [], tasks: {}, inv: { s: 0, c: 0, g: 0, p: 0, f: 0, m: 0, k: 0 }, found: [], chaos: 0 };
   };
 
   MM.hasGun = (arch, up) => !!(MM.ARCHETYPES[arch].portal || up.gunbuild);
 
+  // A Pickle Rick without his rat suit is a pickle: he can roll, talk, and build the suit.
+  MM.helpless = (arch, up) => arch === 'picklerick' && !(up && up.ratsuit);
+  MM.HELPLESS_TEXT = "You're a pickle. You can only roll around. Build the Rat Suit (C) from goo and scrap.";
   // Can this character build this recipe at all (lore + path), ignoring cost and place?
   // Returns null if yes, or the reason why not.
   MM.canKnow = function (arch, prog, id) {
     const A = MM.ARCHETYPES[arch], R = MM.RECIPES[id];
     if (!R) return 'Unknown recipe';
+    if (R.onlyFor && !R.onlyFor.includes(arch)) return 'Only ' + R.onlyFor.map(a => MM.ARCHETYPES[a].name).join(' or ') + ' knows how to build this.';
     if (A.knows !== '*' && !A.knows.includes(id) && !prog.grants.includes(id) && !MM.COMMON.includes(id)) return 'Not part of your life yet. Follow your path (J) to unlock it.';
     if (R.gun && !MM.hasGun(arch, prog.up)) return 'Needs a portal gun.';
     if (R.nogun && MM.hasGun(arch, prog.up)) return 'You already have a portal gun.';
@@ -482,10 +520,11 @@
     const A = MM.ARCHETYPES[arch];
     const s = {
       maxHp: A.hp + (up.armor1 ? 25 : 0) + (up.armor2 ? 25 : 0) + (up.armor3 ? 30 : 0),
-      speed: A.speed * (up.legs1 ? 1.15 : 1) * (up.legs2 ? 1.15 : 1),
-      jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1),
+      speed: A.speed * (up.legs1 ? 1.15 : 1) * (up.legs2 ? 1.15 : 1) * (up.cyberlegs ? 1.25 : 1),
+      jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1) * (up.cyberlegs ? 1.35 : 1),
       fly: A.fly || up.wings ? 'wings' : up.jetpack ? 'jet' : null,
-      dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1),
+      dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1) * (up.cyberarm ? 1.35 : 1),
+      scanner: !!up.scanner,
       cdMult: up.megabrain ? 0.7 : 1,
       cloak: !!up.cloak,
       gun: null, ship: null,
@@ -496,8 +535,9 @@
       s.gun = { charges: base.charges + (up.guncap1 ? 1 : 0) + (up.guncap2 ? 1 : 0), recharge: base.recharge * (up.gunfast ? 0.65 : 1) };
     }
     if (up.hull) s.ship = { speed: up.engine ? 30 : 19, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive };
-    // Evil Morty already escaped the Curve once; everyone else needs the golden fluid.
-    if (s.gun) s.gun.gold = arch === 'evilmorty' || !!up.curvebreaker;
+    // Rick helped build the Curve and can step outside it; Evil Morty broke out of it. Anyone
+    // else needs the golden fluid.
+    if (s.gun) s.gun.gold = arch === 'genius' || arch === 'evilmorty' || !!up.curvebreaker;
     return s;
   };
 
@@ -564,7 +604,7 @@
     birdfolk: { species: 'birdfolk', hair: 'mohawk', brow: 'angry', eyes: 'normal', mouth: 'flat', face: 'long', top: 'armor', acc: 'none', height: 1.25, width: 1.0, head: 1.0, skin: '#e8c49a', hairColor: '#b8642e', topColor: '#6b4a2b', shirtColor: '#c9a77a', pantsColor: '#5a3a20', shoeColor: '#2a2a2a', accColor: '#444444', portalColor: '#ffd84d' },
     beanling: { species: 'beanling', hair: 'bald', brow: 'none', eyes: 'wide', mouth: 'grin', face: 'round', top: 'none', acc: 'tophat', height: 1.15, width: 1.0, head: 1.0, skin: '#ffd447', hairColor: '#2a2a2a', topColor: '#ffd447', shirtColor: '#ffd447', pantsColor: '#ffd447', shoeColor: '#ffd447', accColor: '#2a2a2a', portalColor: '#39ff6a' },
     mutant: { species: 'blob', hair: 'bald', brow: 'none', eyes: 'three', mouth: 'open', face: 'wide', top: 'none', acc: 'none', height: 1.15, width: 1.2, head: 0.9, skin: '#e07a85', hairColor: '#7a2a3a', topColor: '#e07a85', shirtColor: '#e07a85', pantsColor: '#a0303b', shoeColor: '#6b4630', accColor: '#444444', portalColor: '#ff5a3a' },
-    trooper: { species: 'insect', hair: 'bald', brow: 'none', eyes: 'normal', mouth: 'flat', face: 'long', top: 'armor', acc: 'none', height: 1.18, width: 1.0, head: 1.0, skin: '#6f8a5a', hairColor: '#2a2a2a', topColor: '#e4e8ee', shirtColor: '#e4e8ee', pantsColor: '#3a62a8', shoeColor: '#2a2a2a', accColor: '#e2483d', portalColor: '#5ff8ff' },
+    trooper: { species: 'insect', hair: 'bald', brow: 'none', eyes: 'normal', mouth: 'flat', face: 'long', top: 'armor', acc: 'none', height: 1.18, width: 1.0, head: 1.0, skin: '#6f8a5a', hairColor: '#2a2a2a', topColor: '#d8e4ea', shirtColor: '#d8e4ea', pantsColor: '#8aa2b4', shoeColor: '#2a3440', accColor: '#e2483d', portalColor: '#5ff8ff' },
     hive: { species: 'human', hair: 'bob', brow: 'normal', eyes: 'sleepy', mouth: 'grin', face: 'round', top: 'sweater', acc: 'none', height: 1.12, width: 0.82, head: 0.96, skin: '#f6dcc4', hairColor: '#f2e2a0', topColor: '#5fd6b0', shirtColor: '#5fd6b0', pantsColor: '#2a2a2a', shoeColor: '#2a2a2a', accColor: '#444444', portalColor: '#c49bff' },
     meeseeks: { species: 'human', hair: 'bald', brow: 'none', eyes: 'dots', mouth: 'open', face: 'long', top: 'none', acc: 'none', height: 1.3, width: 0.78, head: 1.2, skin: '#6ec4f0', hairColor: '#6ec4f0', topColor: '#6ec4f0', shirtColor: '#6ec4f0', pantsColor: '#6ec4f0', shoeColor: '#6ec4f0', accColor: '#444444', portalColor: '#5ff8ff' },
     squanchy: { species: 'cat', hair: 'bald', brow: 'none', eyes: 'wide', mouth: 'grin', face: 'round', top: 'none', acc: 'none', height: 1.0, width: 1.05, head: 1.2, skin: '#c98a4a', hairColor: '#8a5a2a', topColor: '#c98a4a', shirtColor: '#c98a4a', pantsColor: '#c98a4a', shoeColor: '#8a5a2a', accColor: '#444444', portalColor: '#ffd84d' },

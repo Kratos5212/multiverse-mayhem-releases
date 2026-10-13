@@ -62,7 +62,9 @@
     if (raw.inv && typeof raw.inv === 'object') {
       for (const k of MM.MAT_IDS) p.inv[k] = num(raw.inv[k], 9999);
       for (const g of MM.GADGET_IDS) p.inv[g] = Math.min(MM.RECIPES[g].max, num(raw.inv[g], 99));
+      for (const q of MM.CURIO_IDS) if (raw.inv['q:' + q]) p.inv['q:' + q] = num(raw.inv['q:' + q], 99);
     }
+    if (Array.isArray(raw.found)) p.found = MM.CURIO_IDS.filter(q => raw.found.includes(q));
     p.chaos = num(raw.chaos, 1e9);
     return p;
   }
@@ -94,8 +96,10 @@
       this.event = null;
       this.nextEvent = host.time + 60 + Math.random() * 90;
       // [type, count] or [type, count, x, z] for someone who lives at a particular spot.
-      for (const [type, count, x, z] of this.dim.npc) for (let i = 0; i < count; i++) this.spawnNpc(type, false, x !== undefined ? { at: { x: x + (Math.random() - 0.5) * 6, z: z + (Math.random() - 0.5) * 6 } } : null);
+      const bx = MM.boundOf(this.dimId) - 0.8, bz = MM.boundZOf(this.dimId) - 0.8, cl = (v, b) => Math.max(-b, Math.min(b, v));
+      for (const [type, count, x, z] of this.dim.npc) for (let i = 0; i < count; i++) this.spawnNpc(type, false, x !== undefined ? { at: { x: cl(x + (Math.random() - 0.5) * 6, bx), z: cl(z + (Math.random() - 0.5) * 6, bz) } } : null);
       for (const k in this.dim.pickups) for (let i = 0; i < this.dim.pickups[k]; i++) this.spawnPickup(k, false);
+      for (let i = MM.curioCount(this.dimId); i > 0; i--) this.spawnPickup('q:' + MM.pickCurio(this.dimId), false);
     }
 
     ev(e) { this.out.push(e); }
@@ -104,7 +108,7 @@
     spawnNpc(type, announce, opts) {
       opts = opts || {};
       const T = MM.NPCS[type];
-      const s = opts.at ? { x: opts.at.x, z: opts.at.z, y: MM.heightAt(this.dimId, opts.at.x, opts.at.z) } : MM.randomSpot(this.dimId, Math.random, 25, 140);
+      const s = opts.at ? { x: opts.at.x, z: opts.at.z, y: MM.heightAt(this.dimId, opts.at.x, opts.at.z) } : MM.randomSpot(this.dimId, Math.random, 25, 165);
       const n = { id: this.host.ent(), type, T, x: s.x, y: s.y + (T.fly || 0), z: s.z, r: Math.random() * 6.28, hp: T.hp,
         tx: s.x, tz: s.z, wait: 0, cd: 0, flee: 0, target: 0, home: s, seed: Math.floor(Math.random() * 1e9),
         name: T.names ? pick(T.names) : T.name, temp: opts.until || 0, talkedBy: new Set(),
@@ -116,7 +120,7 @@
     npcRow(n) { return [n.id, n.type, r2(n.x), r2(n.y), r2(n.z), r2(n.r), Math.round(n.hp / n.T.hp * 100), n.seed, n.name]; }
 
     spawnPickup(kind, announce, at, count) {
-      const s = at || MM.randomSpot(this.dimId, Math.random, 12, 140);
+      const s = at || MM.randomSpot(this.dimId, Math.random, 12, 165);
       const pk = { id: this.host.ent(), c: kind, n: count || 1, x: s.x, y: MM.heightAt(this.dimId, s.x, s.z), z: s.z, drop: !!at, born: this.host.time };
       this.pickups.set(pk.id, pk);
       if (announce) this.ev({ k: 'pk+', p: [pk.id, pk.c, r2(pk.x), r2(pk.y), r2(pk.z), pk.n] });
@@ -162,6 +166,12 @@
         const have = {};
         for (const pk of this.pickups.values()) if (!pk.drop) have[pk.c] = (have[pk.c] || 0) + 1;
         for (const k in this.dim.pickups) if ((have[k] || 0) < this.dim.pickups[k]) this.spawnPickup(k, true);
+        // And with its curios, more slowly.
+        if (this.host.tickN % 300 === 0) {
+          let q = 0;
+          for (const pk of this.pickups.values()) if (!pk.drop && MM.isCurio(pk.c)) q++;
+          if (q < MM.curioCount(this.dimId)) this.spawnPickup('q:' + MM.pickCurio(this.dimId), true);
+        }
         for (const pk of [...this.pickups.values()]) if (pk.drop && now - pk.born > 90) { this.pickups.delete(pk.id); this.ev({ k: 'pk-', id: pk.id }); }
         // Event visitors leave when their time is up.
         for (const n of [...this.npcs.values()]) if (n.temp && now > n.temp) { this.npcs.delete(n.id); this.ev({ k: 'npc-', id: n.id }); }
@@ -197,7 +207,7 @@
       const players = [...this.players.values()];
       if (E.spawn) for (const [type, n] of E.spawn) for (let i = 0; i < n; i++) {
         const p = pick(players), a = Math.random() * 6.28, d = 14 + Math.random() * 16;
-        const x = Math.max(-150, Math.min(150, p.x + Math.cos(a) * d)), z = Math.max(-150, Math.min(150, p.z + Math.sin(a) * d));
+        const x = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, p.x + Math.cos(a) * d)), z = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, p.z + Math.sin(a) * d));
         this.spawnNpc(type, true, { at: { x, z }, until: now + E.dur + 20 });
       }
       if (E.loot) for (let i = 0; i < E.loot[1]; i++) {
@@ -251,8 +261,12 @@
         if (pr.kind === 'gren') { this.explode(pr.x, Math.max(pr.y, ground), pr.z, 6.5, 35, owner, 'grenade'); continue; }
         if (hit.p) {
           if (pr.kind === 'shrink' && this.host.canHurt(owner, hit.p)) { hit.p.fx.shrink = now + 8; this.host.dirty(hit.p); this.ev({ k: 'shrunk', id: hit.p.id }); }
+          if (pr.kind === 'freeze' && this.host.canHurt(owner, hit.p)) { hit.p.fx.cuff = now + 3; this.host.dirty(hit.p); this.ev({ k: 'frozen', id: hit.p.id, t: 3 }); }
           this.host.hurtPlayer(this, hit.p, pr.dmg, owner, pr.kind);
-        } else if (hit.n) this.hurtNpc(hit.n, pr.dmg, owner);
+        } else if (hit.n) {
+          if (pr.kind === 'freeze') { hit.n.stun = now + 4; this.ev({ k: 'frozen', n: hit.n.id, t: 4 }); }
+          this.hurtNpc(hit.n, pr.dmg, owner);
+        }
         else if (hit.t) this.hurtTurret(hit.t, pr.dmg);
         else if (hit.prop !== undefined) this.hurtProp(hit.prop, pr.dmg, owner);
       }
@@ -403,8 +417,8 @@
           if (now >= n.wait && dist2(n.x, n.z, n.tx, n.tz) < 1) {
             n.wait = now + 1 + Math.random() * 4;
             const a = Math.random() * 6.28, d = 4 + Math.random() * 14;
-            n.tx = Math.max(-150, Math.min(150, n.home.x + Math.cos(a) * d));
-            n.tz = Math.max(-150, Math.min(150, n.home.z + Math.sin(a) * d));
+            n.tx = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, n.home.x + Math.cos(a) * d));
+            n.tz = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, n.home.z + Math.sin(a) * d));
           }
           if (now >= n.wait) goal = { x: n.tx, z: n.tz };
         }
@@ -414,8 +428,9 @@
             const step = Math.min(l, speed * dt);
             let nx = n.x + dx / l * step, nz = n.z + dz / l * step;
             [nx, nz] = MM.collideProps(this.dimId, nx, nz, T.r, null);
-            const lim = Math.min(MM.WORLD_HALF - 15, MM.boundOf(this.dimId) - 0.8);
-            n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-lim, Math.min(lim, nz));
+            [nx, nz] = MM.collideWalls(this.dimId, nx, nz, T.r);
+            const lim = Math.min(MM.WORLD_HALF - 15, MM.boundOf(this.dimId) - 0.8), limZ = Math.min(MM.WORLD_HALF - 15, MM.boundZOf(this.dimId) - 0.8);
+            n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-limZ, Math.min(limZ, nz));
             n.r = Math.atan2(dx, dz);
           }
         }
@@ -591,6 +606,7 @@
         case 'drive': this.onDrive(p, m.d); break;
         case 'door': this.onDoor(p, m.l); break;
         case 'tm': this.onTeam(p, m); break;
+        case 'uc': this.onCurio(p, m.id); break;
       }
     }
 
@@ -610,9 +626,15 @@
       const prog = cleanProgress(m.arch, saved);
       if (prog.inv.grenade === undefined || (!saved && !prog.inv.grenade)) prog.inv.grenade = 1;
       for (const g of MM.GADGET_IDS) if (!prog.inv[g]) prog.inv[g] = prog.inv[g] || 0;
+      // One of each variant: only one Rick C-137 (or Morty Y-231...) at a time. A taken code
+      // gets you a fresh one from the same letter.
+      const asked = MM.sanitizeHome(m.home);
+      let home = asked;
+      const taken = h => [...this.players.values()].some(o => o.arch === m.arch && o.home === h);
+      if (taken(home)) { const L = home.replace(/[^A-Z]/g, '') || 'X'; do home = L + '-' + (1 + Math.floor(Math.random() * 999)); while (taken(home)); }
       const p = {
         id: this.nextId++, conn: c.conn, bot: c.bot, token,
-        name: MM.sanitizeName(m.name), home: MM.sanitizeHome(m.home), look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
+        name: MM.sanitizeName(m.name), home, look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
         prog, inv: prog.inv, st: null,
         inst: null, ep: 0, x: 0, y: 0, z: 0, r: 0, a: 0, lastSt: this.time, strikes: 0,
         hp: A.hp, maxHp: A.hp, dead: false, respawnAt: 0, ship: false,
@@ -630,7 +652,8 @@
       this.send(p, { t: 'hi', id: p.id, name: this.name, cap: this.cap, dims: MM.DIM_IDS, tok: token, you: { name: p.name, home: p.home, arch: p.arch } });
       this.log(`join ${p.name} (${p.id}) as ${p.arch}${p.bot ? ' [bot]' : ''}${saved ? ' (saved progress)' : ''}`);
       // You start in your own world: the one your character lives in.
-      const starts = MM.startWorlds(m.arch);
+      const starts = MM.startWorlds(m.arch, p.home);
+      if (p.home !== asked && !p.bot) this.toast(p, A.name + ' ' + asked + ' is already here, so you are ' + A.name + ' ' + p.home + '.');
       this.travel(p, m.dim && starts.includes(m.dim) ? m.dim : starts[0], null, null, true);
     }
 
@@ -648,7 +671,7 @@
     info(p) {
       const up = p.prog.up;
       return { id: p.id, name: p.name, home: p.home, look: p.look, arch: p.arch, bot: p.bot, title: p.prog.title || '',
-        gear: { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers } };
+        gear: { ratsuit: !!up.ratsuit, wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs } };
     }
 
     // ----- Life progress -----
@@ -764,8 +787,8 @@
       const dt = Math.min(1.0, Math.max(0.05, now - p.lastSt));
       const kb = now < p.kbUntil;
       const allowed = this.speedOf(p) * dt * 1.5 + 1.5 + (kb ? 30 * dt + 3 : 0);
-      const lim = MM.boundOf(p.inst.dimId);
-      const x = Math.max(-lim, Math.min(lim, m.x)), z = Math.max(-lim, Math.min(lim, m.z));
+      const lim = MM.boundOf(p.inst.dimId), limZ = MM.boundZOf(p.inst.dimId);
+      const x = Math.max(-lim, Math.min(lim, m.x)), z = Math.max(-limZ, Math.min(limZ, m.z));
       const moved = Math.hypot(x - p.x, z - p.z);
       const ground = MM.heightAt(p.inst.dimId, x, z);
       const g = p.inst.dim.gravity;
@@ -790,7 +813,14 @@
       for (const pk of p.inst.pickups.values()) {
         if (dist2(pk.x, pk.z, p.x, p.z) < MM.PICKUP_RADIUS * MM.PICKUP_RADIUS && Math.abs(pk.y - p.y) < 3) {
           p.inst.pickups.delete(pk.id);
-          p.inv[pk.c] = Math.min(9999, (p.inv[pk.c] || 0) + pk.n);
+          p.inv[pk.c] = Math.min(MM.isCurio(pk.c) ? 99 : 9999, (p.inv[pk.c] || 0) + pk.n);
+          if (MM.isCurio(pk.c)) {
+            const q = pk.c.slice(2), found = p.prog.found || (p.prog.found = []);
+            const first = !found.includes(q);
+            if (first) found.push(q);
+            this.priv(p, { k: 'found', id: q, first, n: found.length });
+            p.progDirty = true;
+          }
           p.inst.ev({ k: 'pk-', id: pk.id, by: p.id });
           this.dirty(p);
         }
@@ -818,7 +848,7 @@
 
     onFire(p, m) {
       const now = this.time;
-      if (p.dead || now < p.cdFire || now < p.fx.sob) return;
+      if (p.dead || now < p.cdFire || now < p.fx.sob || MM.helpless(p.arch, p.prog.up)) return;
       const wid = this.weaponOf(p), w = MM.WEAPONS[wid];
       p.cdFire = now + w.cd * 0.9;
       p.fx.prot = 0;
@@ -1031,6 +1061,7 @@
     // (or took off someone you knocked out). Gold portals are the only way past the Curve.
     onPortal(p, d) {
       const now = this.time;
+      if (MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       if (p.dead || !MM.DIM_BY_ID[d]) return;
       const own = p.st.gun && p.charges > 0;
       if (!own && !(p.borrow > 0)) { this.toast(p, 'You need a portal gun. Build one, or borrow (steal) Rick\'s.'); return; }
@@ -1078,6 +1109,7 @@
 
     // ----- Ship -----
     onShip(p, on) {
+      if (on && MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       if (p.dead || !p.st.ship || p.ship === on) return;
       p.ship = on;
       p.kbUntil = this.time + 1;     // stepping out mid-air: let the fall happen
@@ -1104,6 +1136,7 @@
     onCraft(p, id) {
       const R = MM.RECIPES[id];
       if (p.dead || !R) return;
+      if (MM.helpless(p.arch, p.prog.up) && id !== 'ratsuit') { this.toast(p, MM.HELPLESS_TEXT); return; }
       const why = MM.canKnow(p.arch, p.prog, id);
       if (why) { this.toast(p, why); return; }
       if (R.at) {
@@ -1121,20 +1154,61 @@
         this.restat(p);
         if (id === 'gunbuild') { p.charges = p.st.gun.charges; this.toast(p, 'You built a portal gun! Press E to use it.'); }
         if (id === 'hull') this.toast(p, 'Your ship is ready. Press B to board it.');
-        if (['wings', 'jetpack', 'engine', 'lasers', 'hull'].includes(id)) p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
+        if (['wings', 'jetpack', 'engine', 'lasers', 'hull', 'cyberarm', 'cyberlegs', 'ratsuit'].includes(id)) p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
       }
       for (const k in cost) p.inv[k] -= cost[k];
       this.priv(p, { k: 'built', r: id });
       this.progress(p, 'craft', id);
     }
 
+    // Use a curio from your inventory. Food and potions are used up; keepsakes just talk back.
+    onCurio(p, id) {
+      const Q = MM.CURIOS[id], key = 'q:' + id, now = this.time, inst = p.inst;
+      if (p.dead || !(p.inv[key] > 0) || now < (p.cdCurio || 0)) return;
+      p.cdCurio = now + 1;
+      let text = Q.text;
+      switch (Q.use) {
+        case 'feast': p.hp = p.maxHp; p.fx.sprint = now + 15; break;
+        case 'speed': p.fx.sprint = now + 15; break;
+        case 'fate': p.fx.prot = now + 8; break;
+        case 'heal': p.hp = p.maxHp; break;
+        case 'snack': p.hp = Math.min(p.maxHp, p.hp + 30); break;
+        case 'trip': p.hp = p.maxHp; p.fx.daze = now + 6; break;
+        case 'shield': p.fx.shield = now + 10; break;
+        case 'rage': p.fx.sprint = now + 12; p.fx.shield = now + 12; break;
+        case 'cash': p.inv.k = (p.inv.k || 0) + 5; break;
+        case 'charge':
+          if (p.st.gun) { p.charges = Math.min(p.st.gun.charges, p.charges + 1); if (p.charges >= p.st.gun.charges) p.chargeAt = 0; }
+          else p.borrow = (p.borrow || 0) + 1;
+          break;
+        case 'love': {
+          let k = 0;
+          for (const n of inst.npcs.values()) if (n.T.human && !n.T.hostile && !n.T.guard && dist2(n.x, n.z, p.x, p.z) < 16 * 16 && k < 6) {
+            n.owner = p.id; n.ownerUntil = now + 30; n.angry = 0; k++;
+            inst.ev({ k: 'say', n: n.id, by: p.id, text: pick(['I would follow you anywhere.', 'You are... perfect.', 'Marry me. Or at least let me walk behind you.']) });
+          }
+          if (!k) text = 'Nobody is around to fall in love with you. Probably for the best.';
+          break;
+        }
+        case 'vision': case 'truth': case 'channel': text = pick(MM.CURIO_LINES[Q.use]); break;
+      }
+      if (Q.eat) p.inv[key]--;
+      if (!p.inv[key]) delete p.inv[key];
+      inst.ev({ k: 'curio', id: p.id, q: id });
+      this.toast(p, Q.icon + ' ' + text);
+      this.dirty(p);
+    }
+
     onGadget(p, m) {
+      if (MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       const inst = p.inst, g = m.g;
       if (p.dead || p.ship || this.time < p.fx.sob || !(p.inv[g] > 0)) return;
       if (g === 'grenade') {
         this.fireProjectile(inst, { owner: p.id, kind: 'gren', x: p.x + m.dx, y: p.y + 1.5, z: p.z + m.dz, dx: m.dx, dy: m.dy, dz: m.dz, speed: 20, up: 6, gravity: true, life: 1.8, dmg: 0, rad: 0.3 });
       } else if (g === 'shrink') {
         this.fireProjectile(inst, { owner: p.id, kind: 'shrink', x: p.x + m.dx * 0.7, y: p.y + 1.35 + m.dy * 0.7, z: p.z + m.dz * 0.7, dx: m.dx, dy: m.dy, dz: m.dz, speed: 65, range: 70, dmg: 5, rad: 0.35 });
+      } else if (g === 'freeze') {
+        this.fireProjectile(inst, { owner: p.id, kind: 'freeze', x: p.x + m.dx * 0.7, y: p.y + 1.35 + m.dy * 0.7, z: p.z + m.dz * 0.7, dx: m.dx, dy: m.dy, dz: m.dz, speed: 55, range: 60, dmg: 4, rad: 0.4 });
       } else if (g === 'meeseeks') {
         this.summonMeeseeks(p, 1, 30);
       } else if (g === 'timecrystal') {
@@ -1169,6 +1243,7 @@
 
     // ----- Daily life at landmarks -----
     onUse(p, lid, taskId) {
+      if (MM.helpless(p.arch, p.prog.up)) { const l = MM.LANDMARK_BY_ID[lid]; if (l && l.door) this.onDoor(p, lid); else this.toast(p, MM.HELPLESS_TEXT); return; }
       const l = MM.LANDMARK_BY_ID[lid];
       if (p.dead || !l || l.dim !== p.inst.dimId || this.time < p.cdUse) return;
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2) return;
@@ -1327,7 +1402,7 @@
     progState(p) {
       const pr = p.prog, wall = this.wall(), tasks = {};
       for (const t of p.A.life.daily) tasks[t] = Math.max(0, Math.ceil(((pr.tasks[t] || 0) - wall) / 1000));
-      return { t: 'pg', up: pr.up, step: pr.step, grants: pr.grants, cnt: pr.cnt, errands: pr.errands, tasks, title: pr.title || '', st: p.st };
+      return { t: 'pg', up: pr.up, step: pr.step, grants: pr.grants, cnt: pr.cnt, errands: pr.errands, tasks, title: pr.title || '', st: p.st, found: pr.found || [] };
     }
 
     // ----- The main loop -----
@@ -1387,7 +1462,8 @@
     }
     stats() {
       const d = {};
-      for (const id of MM.DIM_IDS) d[id] = 0;
+      for (const id of MM.DIM_IDS) if (!MM.HOME_RE.test(id)) d[id] = 0;   // home dimensions only when someone is there
+      for (const p of this.players.values()) if (p.inst && !(p.inst.dimId in d)) d[p.inst.dimId] = 0;
       let bots = 0;
       for (const p of this.players.values()) { if (p.inst) d[p.inst.dimId]++; if (p.bot) bots++; }
       return { total: this.players.size, bots, d, instances: this.instances.size };

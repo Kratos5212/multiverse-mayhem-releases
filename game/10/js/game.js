@@ -7,6 +7,7 @@
   const now = () => performance.now() / 1000;
   const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
   const r2 = v => Math.round(v * 100) / 100;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
 
   // ---------- Profile and settings ----------
   const settings = UI.load('settings', { sens: 1, invert: false, volume: 0.6, quality: isTouch ? 'low' : 'high', botChat: true, view: 'third' });
@@ -26,6 +27,7 @@
   applyQuality();
   renderer.setClearColor('#0b0f1e');
   const camera = new T.PerspectiveCamera(62, 1, 0.1, 1500);
+  C.camera = camera;
   // First person: your own arm and gun live in a tiny scene drawn on top of the world,
   // so they never poke through walls.
   const vmScene = new T.Scene();
@@ -37,6 +39,7 @@
   const vm = { root: null, arm: null, src: null, bob: 0, swayX: 0, swayY: 0, pose: { x: 0.3, y: -0.3, z: 0.1, pitch: -0.22, yaw: 0.28, roll: 0, size: 0.92 },
     fistPose: { x: 0.3, y: -0.32, z: 0.1, pitch: -0.5, yaw: 0.4, roll: 0, size: 0.8 } };
   const scene = new T.Scene();
+  C.scene = scene;   // debug hooks (profiling scripts)
   const fx = new C.FX(scene);
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -105,7 +108,7 @@
   function menuChanged() { previewDirty = true; previewT = 0.05; UI.save('profile', profile); fillStarts(); }
   // You can only start where your character lives.
   function fillStarts() {
-    const sel = $('startDim'), starts = MM.startWorlds(profile.arch);
+    const sel = $('startDim'), starts = MM.startWorlds(profile.arch, profile.home);
     sel.textContent = '';
     for (const id of starts) sel.append(el('option', { value: id, text: MM.DIM_BY_ID[id].name }));
     if (!starts.includes(profile.startDim)) profile.startDim = starts[0];
@@ -122,7 +125,7 @@
     $('server').value = profile.server || (httpHosted ? location.host : '');
     UI.initMenu(profile, menuChanged);
     $('name').oninput = () => { profile.name = $('name').value; UI.save('profile', profile); };
-    $('home').oninput = () => { profile.home = $('home').value.toUpperCase(); UI.save('profile', profile); };
+    $('home').oninput = () => { profile.home = $('home').value.toUpperCase(); UI.save('profile', profile); fillStarts(); };
     $('startDim').onchange = () => { profile.startDim = $('startDim').value; UI.save('profile', profile); };
     $('server').oninput = () => { profile.server = $('server').value.trim(); UI.save('profile', profile); };
     // Pages that can't reach a game server (like a hosted preview) offer offline play only.
@@ -205,7 +208,7 @@
   function archLabel(info) { return (info.bot ? 'bot · ' : '') + (info.title || MM.ARCHETYPES[info.arch].name); }
   function addPlayer(info) {
     if (info.id === G.myId || G.players.has(info.id)) return;
-    const av = C.buildAvatar(info.look, info.arch);
+    const av = C.buildAvatar(info.look, info.arch, { ratsuit: !!(info.gear && info.gear.ratsuit) });
     C.setGear(av, info.gear);
     const tag = C.makeTag(info.name, info.home, archLabel(info), UI.ARCH_COLORS[info.arch]);
     tag.sprite.position.y = av.headY + 0.55;
@@ -254,7 +257,7 @@
     if (G.pickups.has(id)) return;
     const m = C.pickupModel(c);
     m.position.set(x, y + 0.8, z);
-    m.userData.base = y + 0.8; m.userData.ph = Math.random() * 6;
+    m.userData.base = y + 0.8; m.userData.ph = Math.random() * 6; m.userData.kind = c;
     scene.add(m);
     G.pickups.set(id, m);
   }
@@ -332,7 +335,7 @@
     const me = G.me;
     me.x = w.x; me.y = w.y; me.z = w.z; me.vx = me.vy = me.vz = 0;
     if (!G.meAv) {
-      G.meAv = C.buildAvatar(profile.look, profile.arch);
+      G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!(G.prog && G.prog.up.ratsuit) });
       scene.add(G.meAv.root);
     }
     if (G.prog) C.setGear(G.meAv, myGear());
@@ -455,6 +458,69 @@
     if ((b & 1024) && r < dt * 10) fx.burst(p.x, y + 1.2, p.z, '#bfe0ff', 2, 1.5, 0.3, 0.5, 0);
     if ((b & 256) && r < dt * 8) fx.burst(p.x, y + 2.1, p.z, '#ffe066', 2, 1.2, 0.3, 0.6, -1);   // seeing stars
   }
+  // ---------- Rick's scanner ----------
+  // Point at something and press X: a readout of what it is, how dangerous it is and what it
+  // is made of, with a line of Rick's commentary. Pure information; nothing is sent.
+  const SNARK = ['Ugh. Boring.', 'Fascinating. No, it is not.', 'I have seen this in a thousand dimensions. It is always disappointing.',
+    'Do not lick it.', 'Huh. Okay, that one is actually kind of neat.', 'Classic. Real classic.', 'This is Morty-level tech.', 'Wubba lubba dub dub.'];
+  function scan() {
+    if (!canAct()) return;
+    if (!(G.st && G.st.scanner)) { UI.toast(MM.ARCHETYPES[profile.arch].name === 'Rick' ? 'Build the Scanner Implant at the garage first (C).' : 'Only a Rick has a scanner built in.', 3000); return; }
+    const fwd = new T.Vector3(); camera.getWorldDirection(fwd);
+    const from = camWorld, best = { s: Infinity, it: null };
+    const look = (x, y, z, it, r) => {
+      const dx = x - from.x, dy = y - from.y, dz = z - from.z, d = Math.hypot(dx, dy, dz);
+      if (d > 45 || d < 0.3) return;
+      const cos = (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d, ang = Math.acos(Math.min(1, cos)) - Math.atan((r || 0.6) / d);
+      if (ang > 0.28) return;
+      const sc = ang * 40 + d * 0.15;
+      if (sc < best.s) { best.s = sc; best.it = it; }
+    };
+    for (const [id, p] of G.players) look(p.x, p.y + 1, p.z, { k: 'p', id, p }, 0.7);
+    for (const [id, n] of G.npcs) look(n.x, n.y + 1, n.z, { k: 'n', id, n }, MM.NPCS[n.type].r);
+    for (const [id, m] of G.pickups) look(m.position.x, m.position.y, m.position.z, { k: 'pk', id, m }, 0.5);
+    for (const l of MM.LANDMARKS) if (l.dim === G.dimId) look(l.x, MM.heightAt(G.dimId, l.x, l.z) + l.h / 2, l.z, { k: 'l', l }, l.r);
+    const props = MM.genProps(G.dimId);
+    for (const p of props) if (G.alive[p.id] && !p.type.startsWith('lm_')) look(p.x, p.y + p.h / 2, p.z, { k: 'prop', p }, p.r);
+    const it = best.it;
+    C.sfx('ability', 0.5);
+    if (!it) { showScan('Nothing', [['Signal', 'none']], 'Point me at something, genius.'); return; }
+    const pos = it.k === 'p' ? it.p : it.k === 'n' ? it.n : it.k === 'pk' ? it.m.position : it.k === 'l' ? { x: it.l.x, y: MM.heightAt(G.dimId, it.l.x, it.l.z), z: it.l.z } : it.p;
+    const dx = pos.x - G.me.x, dz = pos.z - G.me.z, dl = Math.hypot(dx, dz) || 1;
+    fx.cone(G.me.x, G.me.y + 1.5, G.me.z, dx / dl, dz / dl, '#39ff6a', 30, Math.min(dl, 20) / 4, 0.25);
+    fx.shockwave(pos.x, pos.y || 0, pos.z, '#39ff6a', 2.2, 0.6, 0.12);
+    const mat = d => Object.keys(d || {}).map(k => d[k] + ' ' + MM.MATERIALS[k].name).join(', ') || 'nothing useful';
+    const pretty = t => t.replace(/^lm_/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+    if (it.k === 'p') {
+      const A = MM.ARCHETYPES[it.p.info.arch], tm = A.temper || {};
+      showScan(it.p.info.name + ' ' + it.p.info.home, [['Variant', A.name + (it.p.info.title ? ' · ' + it.p.info.title : '')], ['Health', it.p.hp + '%'],
+        ['Threat', tm.fights === 'often' ? 'picks fights' : tm.fights === 'never' ? 'harmless' : 'hits back'], ['Origin', 'Dimension ' + it.p.info.home]], it.p.info.arch === 'genius' ? 'Another me. Ugh. Probably a Doofus.' : pick(SNARK));
+    } else if (it.k === 'n') {
+      const T = MM.NPCS[it.n.type];
+      showScan(it.n.name || T.name, [['Species', T.name], ['Health', (it.n.hp !== undefined ? it.n.hp : 100) + '%'], ['Threat', T.hostile ? 'HOSTILE' : T.guard ? 'guard: will defend others' : 'peaceful'],
+        ['Drops', mat(T.drop)]], T.talk ? '"' + pick(T.talk) + '"' : pick(SNARK));
+    } else if (it.k === 'pk' && MM.isCurio(it.m.userData.kind)) {
+      const Q = MM.CURIOS[it.m.userData.kind.slice(2)];
+      showScan(Q.name, [['Type', 'curio'], ['Use', Q.use ? (Q.eat ? 'one use' : 'reusable') : 'keepsake'], ['Seen in', Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 2).join(', ')]], Q.desc);
+    } else if (it.k === 'pk') showScan('Loose matter', [['Composition', 'collectable material'], ['Value', 'worth picking up']], 'Grab it before a Jerry does.');
+    else if (it.k === 'l') {
+      const tasks = tasksAt(it.l).map(t => MM.TASKS[t].name);
+      const builds = MM.RECIPE_IDS.filter(r => MM.RECIPES[r].at && MM.LANDMARKS.some(x => MM.isAt(x, MM.RECIPES[r].at) && x === it.l)).map(r => MM.RECIPES[r].name);
+      showScan(it.l.name, [['Type', 'landmark'], ['Things to do', tasks.join(', ') || 'nothing for you'], ['Can build', builds.slice(0, 3).join(', ') || '—'], ['Door', it.l.door ? MM.DIM_BY_ID[it.l.door.dim].name : 'no']], pick(SNARK));
+    } else {
+      const P = MM.PROPS[it.p.type];
+      showScan(pretty(it.p.type), [['Integrity', P.hp + ' hp'], ['Salvage', mat(P.drop)], ['Size', it.p.r.toFixed(1) + ' m']], pick(SNARK));
+    }
+  }
+  function showScan(title, rows, quote) {
+    const box = $('scan');
+    box.textContent = '';
+    box.append(el('b', { text: '▸ ' + title }));
+    for (const [k, v] of rows) box.append(el('div', { class: 'r' }, el('span', { text: k }), el('span', { text: String(v) })));
+    if (quote) box.append(el('div', { class: 'q', text: quote }));
+    box.hidden = false; box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+    clearTimeout(G.scanT); G.scanT = setTimeout(() => { box.hidden = true; }, 7000);
+  }
   function screenFlash(color, op, ms) {
     const f = $('whiteflash');
     if (!f) return;
@@ -468,7 +534,7 @@
 
   function onMessage(m) {
     switch (m.t) {
-      case 'hi': G.myId = m.id; profile.name = m.you.name; profile.home = m.you.home; keepToken(m.tok); break;
+      case 'hi': G.myId = m.id; profile.name = m.you.name; profile.home = m.you.home; $('home').value = profile.home; UI.save('profile', profile); keepToken(m.tok); break;
       case 'pg': onProgress(m); break;
       case 'w': enterDimension(m); break;
       case 's': onSnap(m); break;
@@ -505,7 +571,7 @@
     for (const u of m.u) { const tu = G.turrets.get(u[0]); if (tu) tu.aim = u[1]; }
   }
 
-  const SHOT_COLORS = { plasma: '#5dff8a', blaster: '#ffd84d', toy: '#ff8fd0', turret: '#ff4d4d', shrink: '#b48aff', gren: '#ffd84d' };
+  const SHOT_COLORS = { plasma: '#5dff8a', blaster: '#ffd84d', toy: '#ff8fd0', turret: '#ff4d4d', shrink: '#b48aff', freeze: '#bfeaff', gren: '#ffd84d' };
   const NPC_NAMES = {};
   for (const k in MM.NPCS) NPC_NAMES[k] = MM.NPCS[k].name;
 
@@ -521,7 +587,7 @@
       }
       case 'shot': {
         if (e.o === G.myId && e.w !== 'turret') {
-          if (e.w === 'gren' || e.w === 'shrink') C.sfx(e.w === 'gren' ? 'jump' : 'shrink');
+          if (e.w === 'gren' || e.w === 'shrink' || e.w === 'freeze') C.sfx(e.w === 'gren' ? 'jump' : 'shrink');
         } else {
           sfxAt(e.w === 'gren' ? 'jump' : e.w, e.x, e.z, 0.8);
           const p = G.players.get(e.o); if (p) { p.av.attackT = 0.25; p.aimT = 0.8; }
@@ -536,10 +602,16 @@
         sfxAt('boom', e.x, e.z, Math.min(1, e.r / 6));
         const d = Math.hypot(e.x - me.x, e.z - me.z);
         if (d < 25) G.shake = Math.max(G.shake, (1 - d / 25) * 0.6 * Math.min(1, e.r / 5));
+        // Everyone caught in the blast goes flying, limbs and all.
+        const blast = (av, x, z) => { const dd = Math.hypot(x - e.x, z - e.z), R = e.r * 1.6; if (av && dd < R) C.ragdoll(av, x - e.x, z - e.z, (1 - dd / R) * Math.min(1, e.r / 5) + 0.3); };
+        blast(G.meAv, me.x, me.z);
+        for (const p of G.players.values()) blast(p.av, p.x, p.z);
+        for (const n of G.npcs.values()) if (n.m.av) blast(n.m.av, n.x, n.z);
         break;
       }
       case 'mel': { const p = G.players.get(e.id); if (p) { p.av.attackT = 0.3; sfxAt('melee', p.x, p.z); } break; }
       case 'dmg': {
+        { const tav = e.p === G.myId ? G.meAv : e.p ? (G.players.get(e.p) || {}).av : (G.npcs.get(e.n) || { m: {} }).m.av; C.hitReact(tav); }
         if (e.p === G.myId) {
           $('flash').style.opacity = '1'; setTimeout(() => { $('flash').style.opacity = '0'; }, 120);
           C.sfx('hurt', 0.8);
@@ -597,6 +669,12 @@
       case 'kiosk': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1, p.z, '#ffd84d', 25, 6, 0.6, 0.5, 2); break; }
       case 'timestop': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1.2, p.z, '#8fd8ff', 90, 14, 1.2, 1.4, 0); fx.burst(p.x, p.y + 1.2, p.z, '#ffffff', 30, 8, 0.8, 1.0, 0); } C.sfx('ability'); if (e.id === G.myId) UI.toast('Time stopped. Someone will have noticed.', 3000); break; }
       case 'bite': { const n = G.npcs.get(e.n); if (n) sfxAt('bite', n.x, n.z); break; }
+      case 'frozen': {
+        const p = e.n ? G.npcs.get(e.n) : posOf(e.id);
+        if (p) { fx.burst(p.x, p.y + 1, p.z, '#bfeaff', 34, 5, 0.6, 0.9, 0); fx.shockwave(p.x, p.y + 0.1, p.z, '#bfeaff', 1.6, 0.5, 0.1); numAt(p.x, p.y + 2.4, p.z, 'FROZEN', '#bfeaff', false); sfxAt('shrink', p.x, p.z); }
+        break;
+      }
+      case 'curio': { const p = posOf(e.id); const Q = MM.CURIOS[e.q]; if (p && Q) fx.burst(p.x, p.y + 1.4, p.z, Q.color, 24, 4, 0.5, 0.8, 1); break; }
       case 'shrunk': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#b48aff', 20, 4, 0.5, 0.6, 0); sfxAt('shrink', p.x, p.z); } break; }
       case 'say': {
         const n = G.npcs.get(e.n);
@@ -620,7 +698,12 @@
       }
       case 'gear': {
         const p = G.players.get(e.id);
-        if (p) { p.info.gear = e.gear; C.setGear(p.av, e.gear); collectOutlines(p.av); }
+        if (p) {
+          const rebuild = p.info.arch === 'picklerick' && !!e.gear.ratsuit !== !!(p.info.gear && p.info.gear.ratsuit);
+          p.info.gear = e.gear;
+          if (rebuild) { const info = p.info; removePlayer(e.id); addPlayer(info); }
+          else { C.setGear(p.av, e.gear); collectOutlines(p.av); }
+        }
         break;
       }
       case 'ship': {
@@ -643,8 +726,15 @@
   function onPrivate(e) {
     const me = G.me;
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
-    else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; }
+    else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
+    else if (e.k === 'found') {
+      const Q = MM.CURIOS[e.id];
+      C.sfx('pickup');
+      if (e.first) UI.banner(Q.icon + ' ' + Q.name, Q.desc + '  (' + e.n + '/' + MM.CURIO_IDS.length + ' found · I to open your inventory)');
+      else UI.toast('Found: ' + Q.icon + ' ' + Q.name, 2500);
+      if (G.prog && !(G.prog.found || (G.prog.found = [])).includes(e.id)) G.prog.found.push(e.id);
+    }
     else if (e.k === 'built') { C.sfx('craft'); UI.toast('Built: ' + MM.RECIPES[e.r].name); if (G.modal === 'craft') setTimeout(openCraft, 50); }
     else if (e.k === 'task') {
       const got = Object.keys(e.give).map(k => '+' + e.give[k] * e.mult + ' ' + MM.MATERIALS[k].icon).join(' ');
@@ -696,6 +786,7 @@
     const invKey = JSON.stringify(y.inv) + y.ch;
     if (invKey !== G.invKey) updateTracker();
     if (G.modal === 'craft' && invKey !== G.invKey) openCraft();
+    if (G.modal === 'items' && invKey !== G.invKey) openInventory();
     G.invKey = invKey;
   }
 
@@ -703,6 +794,14 @@
   function onProgress(m) {
     const first = !G.prog;
     G.prog = m; G.st = m.st;
+    // Pickle Rick just built his rat suit: a new body.
+    if (G.meAv && profile.arch === 'picklerick' && !!m.up.ratsuit !== !!G.meRat) {
+      scene.remove(G.meAv.root); G.meAv.dispose();
+      G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!m.up.ratsuit });
+      scene.add(G.meAv.root);
+      if (m.up.ratsuit) { UI.banner('Pickle Riiiick!', 'Rat legs, rat arms, and a lot of spite. Now you can fight.'); fx.puff(G.me.x, G.me.y + 0.5, G.me.z, '#8a7a6a', 14, 1.2, 1.2, 0.8); }
+    }
+    G.meRat = !!m.up.ratsuit;
     if (G.meAv) C.setGear(G.meAv, myGear());
     $('flyBar').hidden = !G.st.fly;
     updateTracker();
@@ -710,7 +809,7 @@
     if (G.modal === 'journal') openJournal();
     if (first && G.entered) buildHotbar();
   }
-  function myGear() { const up = G.prog ? G.prog.up : {}; return { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers }; }
+  function myGear() { const up = G.prog ? G.prog.up : {}; return { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs, ratsuit: !!up.ratsuit }; }
   // The next step of your path, always on screen.
   function updateTracker() {
     const A = MM.ARCHETYPES[profile.arch], pg = G.prog;
@@ -773,6 +872,9 @@
     mk('shrink', '3', 'Shrink', () => useGadget('shrink'));
     mk('meeseeks', '4', 'Meeseeks', () => useGadget('meeseeks'));
     mk('timecrystal', '5', 'Time', () => useGadget('timecrystal'));
+    mk('freeze', '6', 'Freeze', () => useGadget('freeze'));
+    mk('items', 'I', 'Items', () => openInventory());
+    mk('scan', 'X', 'Scan', () => scan());
     mk('craft', 'C', 'Build', () => openCraft());
     mk('journal', 'J', 'Journal', () => openJournal());
     mk('portal', 'E', 'Portal', () => portalAction());
@@ -791,6 +893,7 @@
       slots[g].classList.toggle('off', !(y.inv[g] > 0));
       slots[g].classList.toggle('empty', !(y.inv[g] > 0));
     }
+    slots.scan.hidden = !(G.st && G.st.scanner);
     // Only Ricks and Evil Morty know how to make a Time Crystal: no slot for everyone else.
     slots.timecrystal.hidden = !(y.inv.timecrystal > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'timecrystal'));
     const st = G.st;
@@ -798,7 +901,7 @@
     $('tPortal').querySelector('.n').textContent = slots.portal.querySelector('.n').textContent;
     slots.portal.classList.toggle('off', !(y.chMax && y.ch > 0) && !(y.bor > 0) && !nearKiosk() && !y.ship);
     slots.ship.hidden = !(st && st.ship);
-    slots.ship.querySelector('span:nth-child(2)').textContent = y.ship ? 'Land' : 'Ship';
+    slots.ship.querySelector('.l').textContent = y.ship ? 'Land' : 'Ship';
     $('tShip').hidden = !(st && st.ship);
     tLabel('tShip', y.ship ? 'LAND' : 'SHIP');
   }
@@ -835,8 +938,9 @@
     return { dx: tx / l, dy: ty / l, dz: tz / l };
   }
 
+  const pickled = () => { if (MM.helpless(profile.arch, G.prog && G.prog.up)) { if (now() > (G.pickleT || 0)) { UI.toast(MM.HELPLESS_TEXT, 3500); G.pickleT = now() + 4; } return true; } return false; };
   function fire() {
-    if (!canAct() || (G.you.fx & 4)) return;
+    if (!canAct() || (G.you.fx & 4) || pickled()) return;
     const t = now();
     const wid = weaponId(), W = MM.WEAPONS[wid];
     if (t < G.fireT) return;
@@ -849,7 +953,7 @@
     C.sfx(W.melee ? 'melee' : wid === 'lasers' || wid === 'rifle' ? 'plasma' : wid, 0.7);
   }
   function useGadget(g) {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     if (G.you.ship) { UI.toast('Land first (B) to use gadgets.'); return; }
     if (!(G.you.inv[g] > 0)) { UI.toast('No ' + MM.RECIPES[g].name + '. Build one with C.'); return; }
     const a = g === 'turret' || g === 'meeseeks' ? { dx: Math.sin(G.camYaw), dy: 0, dz: Math.cos(G.camYaw) } : aimDir();
@@ -881,7 +985,7 @@
       : mode === 'gun' ? { gold: !!(G.you.chMax && G.you.ch > 0 && st.gun && st.gun.gold) } : {};
   }
   function portalAction() {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     const m = travelModes();
     if (m.length) return openDims(m[0]);
     if (G.you.chMax && G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
@@ -889,7 +993,7 @@
       : 'No portal gun. Step through someone else\'s portal, fly a ship, find a portal station (the Citadel), borrow Rick\'s gun from his workbench, or build your own (J).', 5000);
   }
   function toggleShip() {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     if (!G.st || !G.st.ship) { UI.toast('You don\'t have a ship. Build a Ship Hull at the Bazaar Shipyard, if your path allows it (J).', 4000); return; }
     send({ t: 'ship', on: !G.you.ship });
   }
@@ -959,7 +1063,7 @@
     const ids = MM.WORLD_IDS.filter(id => !MM.DIM_BY_ID[id].outsideCurve);
     const out = MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].outsideCurve);
     const spots = [];
-    const rings = [[0.9, 0.88, 10], [0.77, 0.78, 9], [0.64, 0.66, 8], [0.5, 0.5, 6]];
+    const rings = [[0.9, 0.88, 11], [0.78, 0.8, 10], [0.66, 0.68, 9], [0.54, 0.52, 7], [0.42, 0.3, 4]];
     let k = 0;
     for (const [f, span, n] of rings) for (let i = 0; i < n && k < ids.length; i++, k++) {
       const t = n === 1 ? 0 : -span + (2 * span * i) / (n - 1);
@@ -1025,8 +1129,11 @@
         box.append(tabs);
       }
       box.append(curveMap(go));
-      for (const outside of [false, true]) {
-        const ids = MM.WORLD_IDS.filter(id => !!MM.DIM_BY_ID[id].outsideCurve === outside && id !== G.dimId && !MM.DIM_BY_ID[id].pocket);
+      // Home dimensions: yours, and those of everyone online (their Earth, their twist).
+      const homes = [MM.homeDimId(profile.home)].concat(G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : [])
+        .filter((id, i, a) => id !== 'suburbia' && id !== G.dimId && a.indexOf(id) === i);
+      for (const outside of ['home', false, 'time', true]) {
+        const ids = outside === 'home' ? homes : MM.WORLD_IDS.filter(id => { const D = MM.DIM_BY_ID[id]; return (outside === 'time' ? !!D.timeline : !D.timeline && !!D.outsideCurve === outside) && id !== G.dimId && !D.pocket; });
         if (!ids.length) continue;
         const list = el('div', { class: 'list' });
         for (const id of ids) {
@@ -1035,7 +1142,7 @@
             el('div', { class: 't' }, el('b', { text: d.name + '  ' + d.code }), el('small', { text: w || d.blurb + ' · ' + n + ' here' })),
             el('button', { class: 'btn go', disabled: w ? 'disabled' : null, onclick: () => go(id) }, mode === 'gun' ? 'Open' : mode === 'ship' ? 'Fly' : 'Go')));
         }
-        box.append(el('h3', { text: outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
+        box.append(el('h3', { text: outside === 'home' ? 'Home dimensions' : outside === 'time' ? 'Other times' : outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
       }
       const fee = S && !S.free.includes(profile.arch) ? Object.keys(S.fee).map(k => S.fee[k] + ' ' + MM.MATERIALS[k].name).join(', ') : '';
       box.append(el('p', { class: 'note', text: mode === 'station' ? 'Step through the station portal' + (fee ? ' for ' + fee : ' (free for you)') + '.'
@@ -1119,6 +1226,44 @@
         (st.fly ? ' · ' + (st.fly === 'jet' ? 'jetpack' : 'wings') : '') + (st.gun ? ' · portal gun ×' + st.gun.charges : '') + (st.ship ? ' · ship' + (st.ship.drive ? ' with dimension drive' : '') : '') }));
     });
   }
+  // Inventory (I): gadgets, curios you are carrying, materials, and the collection log.
+  const GADGET_KEYS = { grenade: '1', turret: '2', shrink: '3', meeseeks: '4', timecrystal: '5', freeze: '6' };
+  function openInventory() {
+    const y = G.you, pg = G.prog;
+    if (!y || !pg) return;
+    openModal('items', 'Inventory', box => {
+      box.append(el('h3', { text: 'Curios' }));
+      const cl = el('div', { class: 'list' });
+      for (const q of MM.CURIO_IDS) {
+        const n = y.inv['q:' + q] || 0, Q = MM.CURIOS[q];
+        if (!n) continue;
+        cl.append(el('div', { class: 'row' }, el('span', { class: 'emo', text: Q.icon }), el('div', { class: 't' }, el('b', { text: Q.name + (n > 1 ? ' ×' + n : '') }), el('small', { text: Q.desc })),
+          el('button', { class: 'btn' + (Q.use ? ' go' : ''), onclick: () => { send({ t: 'uc', id: q }); } }, Q.use ? (Q.eat ? 'Use' : 'Try') : 'Look')));
+      }
+      if (!cl.childNodes.length) cl.append(el('p', { class: 'note', text: 'Nothing yet. Curios glow in a column of light: walk into one to pick it up.' }));
+      box.append(cl, el('h3', { text: 'Gadgets' }));
+      const gl = el('div', { class: 'list' });
+      for (const g of MM.GADGET_IDS) {
+        const n = y.inv[g] || 0, R = MM.RECIPES[g];
+        if (!n) continue;
+        gl.append(el('div', { class: 'row' + (n ? '' : ' later') }, el('div', { class: 't' }, el('b', { text: R.name + (n ? ' ×' + n : '') }), el('small', { text: R.desc + (isTouch ? '' : ' · key ' + GADGET_KEYS[g]) })),
+          el('button', { class: 'btn go', onclick: () => { UI.closeModal(); useGadget(g); } }, 'Use')));
+      }
+      if (!gl.childNodes.length) gl.append(el('p', { class: 'note', text: 'No gadgets. Build them at the workbench (C).' }));
+      box.append(gl, el('p', { class: 'note' }, 'Build more gadgets at the workbench: ', el('button', { class: 'btn', onclick: () => openCraft() }, 'Build (C)')), el('h3', { text: 'Materials' }));
+      box.append(el('p', { class: 'note', text: MM.MAT_IDS.map(k => MM.MATERIALS[k].icon + ' ' + (y.inv[k] || 0) + ' ' + MM.MATERIALS[k].name).join(' · ') }));
+      const found = pg.found || [];
+      box.append(el('h3', { text: 'Collection: ' + found.length + ' of ' + MM.CURIO_IDS.length }));
+      const grid = el('div', { class: 'coll' });
+      for (const q of MM.CURIO_IDS) {
+        const Q = MM.CURIOS[q], have = found.includes(q);
+        const where = Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 3).join(', ');
+        grid.append(el('div', { class: 'cc' + (have ? '' : ' no'), title: have ? Q.name + ': ' + Q.desc : 'Somewhere in ' + where },
+          el('span', { class: 'emo', text: have ? Q.icon : '?' }), el('small', { text: have ? Q.name : '???' }), el('i', { text: have ? '' : where })));
+      }
+      box.append(grid);
+    });
+  }
   function openBoard() {
     openModal('board', 'Multiverse', box => {
       box.append(el('h3', { text: 'Chaos leaderboard (everyone online)' }));
@@ -1196,6 +1341,7 @@
       case 'KeyE': portalAction(); break;
       case 'KeyF': interact(); break;
       case 'KeyC': openCraft(); break;
+      case 'KeyX': scan(); break;
       case 'KeyJ': openJournal(); break;
       case 'KeyB': toggleShip(); break;
       case 'KeyQ': ability(); break;
@@ -1204,6 +1350,8 @@
       case 'Digit3': useGadget('shrink'); break;
       case 'Digit4': useGadget('meeseeks'); break;
       case 'Digit5': useGadget('timecrystal'); break;
+      case 'Digit6': useGadget('freeze'); break;
+      case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emote(); break;
       case 'Space': e.preventDefault(); if (G.you && G.you.dead && now() >= G.rsAt) send({ t: 'rs' }); break;
@@ -1311,8 +1459,9 @@
     for (const p of props) {
       if (!G.alive[p.id] || MM.PROPS[p.type].arch) continue;
       if (y >= p.y + p.h * 0.92 - 0.6) continue;
-      const dx = x - p.x, dz = z - p.z, min = p.r + rad, d2 = dx * dx + dz * dz;
-      if (d2 < min * min && d2 > 1e-6) { const d = Math.sqrt(d2); x = p.x + dx / d * min; z = p.z + dz / d * min; }
+      const reach = MM.propReach(p) + rad;
+      if (Math.abs(x - p.x) > reach || Math.abs(z - p.z) > reach) continue;
+      [x, z] = MM.pushOutOfProp(p, x, z, rad);
     }
     return [x, z];
   }
@@ -1369,12 +1518,14 @@
     if (!inShip) me.vy -= dim.gravity * dt * (me.flying ? 0.2 : 1);
     let nx = me.x + me.vx * dt, nz = me.z + me.vz * dt, ny = me.y + me.vy * dt;
     [nx, nz] = pushOut(nx, nz, ny, inShip ? 1.6 : 0.45);
-    const lim = MM.boundOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1);
-    nx = Math.max(-lim, Math.min(lim, nx)); nz = Math.max(-lim, Math.min(lim, nz));
+    const lim = MM.boundOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1), limZ = MM.boundZOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1);
+    nx = Math.max(-lim, Math.min(lim, nx)); nz = Math.max(-limZ, Math.min(limZ, nz));
+    [nx, nz] = MM.collideWalls(G.dimId, nx, nz, 0.4);
     const g = groundAt(nx, nz, Math.max(ny, me.y)) + (inShip ? 0.4 : 0);
     if (inShip) { if (ny < g) { ny = g; me.vy = Math.max(0, me.vy); } ny = Math.min(ny, g + 90); }
     else if (ny <= g) {
       if (!me.grounded && me.vy < -14) fx.puff(nx, g, nz, '#ddd', 6, 1, 1, 0.5);
+      if (!me.grounded && me.vy < -24 && !inShip) C.ragdoll(G.meAv, me.vx || Math.sin(me.yaw), me.vz || Math.cos(me.yaw), Math.min(0.8, -me.vy / 50));   // a hard landing: stumble over
       ny = g; me.vy = 0; me.grounded = true;
     } else if (ny > g + 0.15) me.grounded = false;
     else if (me.grounded && me.vy <= 0) ny = g;
@@ -1453,7 +1604,18 @@
     return k < 0.5 ? a : b;
   }
   const tmp = {};
+  // The split timeline stutters: now and then the world skips, with a flash of static.
+  function timeGlitch(dt) {
+    if (!MM.DIM_BY_ID[G.dimId].glitch || G.mode !== 'play') return;
+    G.glitchT = (G.glitchT || 4) - dt;
+    if (G.glitchT > 0) return;
+    G.glitchT = 3 + Math.random() * 6;
+    screenFlash(Math.random() < 0.5 ? '#8fd8ff' : '#c8c8d8', 0.35, 260);
+    G.shake = Math.max(G.shake || 0, 0.25);
+    if (Math.random() < 0.3) UI.toast(pick(['The timeline skips.', 'You remember this moment. Twice.', 'Static, then nothing.', 'Somewhere, a Time Cop sighs.']), 1800);
+  }
   function updateOthers(dt) {
+    timeGlitch(dt);
     const rt = now() - (G.offset || 0) - INTERP;
     const fogFar = MM.DIM_BY_ID[G.dimId].fogFar;
     for (const p of G.players.values()) {
@@ -1476,7 +1638,7 @@
       const anim = s.a === MM.ANIM.dead ? s.a : p.emoteT > 0 ? MM.ANIM.emote : s.a;
       p.av.animate(dt, { speed: s.a === MM.ANIM.run ? Math.max(p.speed, 3) : p.speed * 0.3, anim, fx: s.fx });
       if (d < 40) ongoingFx(p, s.fx, p.speed, dt);
-      p.av.setDetail(nearCam(p.x, p.z));
+      wantDetail(p.av, p.x, p.z);
       const near = d < 40;
       for (const o of p.av.outlines) o.visible = near || settings.quality === 'high';
       p.tag.sprite.visible = d < 45 && s.a !== MM.ANIM.dead;
@@ -1490,7 +1652,7 @@
       const root = n.m.root;
       root.position.set(n.x, n.y, n.z);
       root.rotation.y = n.r;
-      if (n.m.av) { n.m.av.animate(dt, { speed: n.speed, anim: (n.flags & 4) ? MM.ANIM.emote : n.speed > 0.4 ? 1 : 0 }); n.m.av.setDetail(nearCam(n.x, n.z)); }
+      if (n.m.av) { n.m.av.animate(dt, { speed: n.speed, anim: (n.flags & 4) ? MM.ANIM.emote : n.speed > 0.4 ? 1 : 0 }); wantDetail(n.m.av, n.x, n.z); }
       else {
         const md = root.userData.model;
         if (n.type === 'meatblob') { const s = 1 + Math.sin(n.t * (3 + n.speed)) * 0.08; md.scale.set(1 / s, s, 1 / s); }
@@ -1519,7 +1681,16 @@
   }
 
   // Characters within this distance of the camera get their smooth, detailed model.
-  function nearCam(x, z) { return (x - camWorld.x) ** 2 + (z - camWorld.z) ** 2 < (settings.quality === 'low' ? 16 * 16 : 26 * 26); }
+  function nearCam(x, z) { return (x - camWorld.x) ** 2 + (z - camWorld.z) ** 2 < (settings.quality === 'low' ? 14 * 14 : 20 * 20); }
+  // Only the closest few characters get the detailed model; a crowd costs no more than a few.
+  const detailQ = [];
+  function wantDetail(av, x, z) { detailQ.push([(x - camWorld.x) ** 2 + (z - camWorld.z) ** 2, av]); }
+  function flushDetail() {
+    detailQ.sort((a, b) => a[0] - b[0]);
+    const cap = settings.quality === 'low' ? 4 : 8, r2 = settings.quality === 'low' ? 14 * 14 : 20 * 20;
+    detailQ.forEach(([d2, av], i) => av.setDetail(i < cap && d2 < r2));
+    detailQ.length = 0;
+  }
 
   // ---------- Camera ----------
   function firstPerson() { return settings.view === 'first' || !!(vr && vr.on); }
@@ -1585,14 +1756,16 @@
     let d = dist;
     if ((G.camPropT -= dt) <= 0) {
       G.camPropT = 0.3;
-      G.camProps = MM.genProps(G.dimId).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (p.r + dist + 2) ** 2);
+      G.camProps = MM.genProps(G.dimId).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (MM.propReach(p) + dist + 2) ** 2);
     }
     for (let s = 0.8; s <= dist; s += 0.4) {
       const px = tx - fx_ * s + rx * sh * s / dist, py = ty - fy * s, pz = tz - fz * s + rz * sh * s / dist;
       let hit = false;
-      for (const p of G.camProps || []) {
+      if (MM.DIM_BY_ID[G.dimId].walls) { const [wx, wz] = MM.collideWalls(G.dimId, px, pz, 0.15); if (wx !== px || wz !== pz) hit = true; }
+      if (!hit) for (const p of G.camProps || []) {
         if (!G.alive[p.id] || py > p.y + p.h || py < p.y - 1) continue;
-        if ((px - p.x) ** 2 + (pz - p.z) ** 2 < (p.r + 0.3) ** 2) { hit = true; break; }
+        const [qx, qz] = MM.pushOutOfProp(p, px, pz, 0.3);
+        if (qx !== px || qz !== pz) { hit = true; break; }
       }
       if (hit) { d = Math.max(0.8, s - 0.4); break; }
     }
@@ -1630,6 +1803,7 @@
     if (vr.on) vr.update(dt);
     for (let left = raw; left > 1e-4; left -= 0.05) updateMe(Math.min(0.05, left));
     updateOthers(dt);
+    flushDetail();
     if (!vr.on) updateCamera(dt);
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
