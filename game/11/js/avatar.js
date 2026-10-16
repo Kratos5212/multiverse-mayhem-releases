@@ -11,7 +11,7 @@
   const WEAPON_COLORS = { plasma: '#5dff8a', blaster: '#ffd84d', toy: '#ff8fd0' };
 
   // A thin ring for inked eye rims (a torus whose tube is a few percent of its radius).
-  const RIM = new T.TorusGeometry(1, 0.075, 6, 36);
+  const RIM = new T.TorusGeometry(1, 0.075, 4, 22);
 
   // ---------- Heads ----------
   // opts.noBall: only the face and hat (beanlings wear their face on the body).
@@ -273,10 +273,12 @@
   // Every character is built twice: smooth for up close and plain for far away. Both sit
   // on the same joints, so one animation drives them; setDetail() shows one or the other.
   C.buildAvatar = function (look, arch, opts) {
-    const av = buildAvatarOnce(look, arch, opts);
-    C.shapeSmooth = false;
-    let lo;
-    try { lo = buildAvatarOnce(look, arch, opts); } finally { C.shapeSmooth = true; }
+    // Up close: smooth boxes on plain primitives (a few thousand triangles). Far: coarse.
+    let av, lo;
+    C.shapeMid = true;
+    try { av = buildAvatarOnce(look, arch, opts); } finally { C.shapeMid = false; }
+    C.shapeSmooth = false; C.shapeLo = true;
+    try { lo = buildAvatarOnce(look, arch, opts); } finally { C.shapeSmooth = true; C.shapeLo = false; }
     av.lodNear = []; av.lodFar = [];
     // Joints (knees, elbows) are pivots inside pivots: only meshes swap, never joints. The
     // far model has no knees or elbows (whole limbs), which keeps distant crowds cheap.
@@ -320,14 +322,17 @@
 
     const pickle = species === 'pickle';
     const bean = species === 'beanling' || pickle, blob = species === 'blob';
+    // Pickle Rick: a bare pickle has no limbs at all (he rolls); the rat suit gives him rat legs
+    // and rat arms, wired on.
+    const rat = pickle && !!opts.ratsuit, limbless = pickle && !rat, RAT = '#8a7a6a';
     // Show proportions: long legs and noodle arms, so heads are about a fifth of a grown-up's
     // height (Morty, with his big head, is closer to a third).
-    const legLen = (pickle ? 0.24 : bean ? 0.55 : 0.84) * h;
-    const legR = (bean ? 0.045 : blob ? 0.15 : 0.1) * w;
+    const legLen = (pickle ? (rat ? 0.46 : 0.1) : bean ? 0.55 : 0.84) * h;
+    const legR = (rat ? 0.07 : bean ? 0.045 : blob ? 0.15 : 0.1) * w;
     const torsoLen = (blob ? 0.6 : 0.58) * h;
     const torsoR = (blob ? 0.42 : 0.22) * w;
-    const armR = (bean ? 0.04 : blob ? 0.12 : 0.065) * w;
-    const armLen = (bean ? 0.58 : 0.68) * h * (blob ? 1.1 : pickle ? 0.45 : 1);
+    const armR = (rat ? 0.055 : bean ? 0.04 : blob ? 0.12 : 0.065) * w;
+    const armLen = (bean ? 0.58 : 0.68) * h * (blob ? 1.1 : rat ? 0.85 : pickle ? 0.45 : 1);
     const pants = L.pantsColor, shoe = L.shoeColor, skin = L.skin;
     const top = L.top;
     const topC = top === 'none' ? skin : top === 'vest' ? L.shirtColor : (top === 'labcoat' ? L.shirtColor : L.topColor);
@@ -337,13 +342,15 @@
     const jointed = C.shapeSmooth !== false;
     const thighLen = legLen * 0.52;
     const shoeAt = (s, y) => {
-      if (bean) s.add(P.sphereLo, shoe, [0, y + 0.05, 0.05], null, [0.07, 0.05, 0.11]);
+      if (rat) { for (let i = -1; i <= 1; i++) s.add(P.cone, '#f0a8b0', [i * 0.035, y + 0.03, 0.09], [Math.PI / 2, 0, 0], [0.022, 0.12, 0.022]); s.add(P.sphereLo, RAT, [0, y + 0.04, 0.02], null, [0.07, 0.05, 0.1]); }
+      else if (bean) s.add(P.sphereLo, shoe, [0, y + 0.05, 0.05], null, [0.07, 0.05, 0.11]);
       else { s.add(P.sphere, shoe, [0, y + 0.06, 0.07], null, [legR * 1.25, 0.08, 0.17]); s.add(P.box, shade(shoe, 0.6), [0, y + 0.012, 0.06], null, [legR * 2.2, 0.025, 0.3]); }
     };
     for (const side of [-1, 1]) {
       const s = new C.Shape();
-      const legC = bean ? skin : pants;
+      const legC = rat ? RAT : bean ? skin : pants;
       const hip = [side * (bean ? 0.12 : 0.11) * w * (blob ? 1.6 : 1), legLen, 0];
+      if (limbless) { parts[side < 0 ? 'legL' : 'legR'] = mk(s, body, hip); continue; }
       if (jointed) {
         // Both halves end in a ball centred on the knee, so the leg bends without a seam.
         C.capsuleAt(s, legC, legR, thighLen + 2 * legR, [0, -thighLen - legR, 0]);
@@ -362,12 +369,13 @@
 
     // Torso
     const ts = new C.Shape();
-    let shoulderY, neckY, headR;
+    let shoulderY, neckY, headR, rollR = 0.3, rollLen = 1;
     if (bean) {
       // A tall bean: body and head are one shape, the face sits near the top.
       // Pickle Rick is a long cucumber: slimmer and taller than a bean person.
       const bh = (pickle ? 1.4 : 1.15) * h, br = (pickle ? 0.27 : 0.33) * w;
       C.capsuleAt(ts, skin, br, bh, [0, legLen - 0.15, 0]);
+      rollR = br; rollLen = bh;
       if (pickle) {
         // Warty bumps down the sides and back (never near the face), and a lighter belly.
         for (let i = 0; i < 26; i++) {
@@ -376,6 +384,15 @@
         }
         ts.add(P.sphere, shade(skin, 1.2), [0, legLen + bh * 0.3, br * 0.42], null, [br * 0.7, bh * 0.3, br * 0.62]);
         ts.add(P.sphere, shade(skin, 0.75), [0, legLen - 0.15 + bh - br * 0.15, 0], null, [br * 0.35, br * 0.15, br * 0.35]);   // the stem end
+        if (rat) {
+          // The rat suit: a pink tail, rat-pelt straps, wires to the limbs and a couple of bolts.
+          for (let i = 0; i < 6; i++) C.capsuleAt(ts, '#f0a8b0', 0.025, 0.2, [0, legLen - 0.05 + i * 0.03, -br - i * 0.15], [-1.2 + i * 0.15, 0, 0]);
+          for (const y of [0.16, 0.4]) ts.add(P.cyl, RAT, [0, legLen + bh * y, 0], null, [br * 1.04, 0.07, br * 1.04]);
+          for (const sx of [-1, 1]) {
+            C.capsuleAt(ts, '#2a2a2a', 0.012, bh * 0.5, [sx * br * 0.95, legLen + bh * 0.05, -br * 0.3], [0, 0, -sx * 0.1]);
+            ts.add(P.cyl, '#9aa3ab', [sx * br * 0.98, legLen + bh * 0.48, 0], [0, 0, Math.PI / 2], [0.04, 0.04, 0.04]);
+          }
+        }
       }
       shoulderY = legLen + bh * 0.48; neckY = legLen + bh * 0.62; headR = br;
       if (top !== 'none') ts.add(P.cyl, topC, [0, legLen + 0.08, 0], null, [0.335 * w, 0.18, 0.335 * w]);
@@ -395,9 +412,13 @@
         const coat = L.topColor;
         C.capsuleAt(ts, coat, torsoR * 1.08, torsoLen + 0.12, [0, legLen - 0.05, -0.03]);
         ts.add(P.box, L.shirtColor, [0, legLen + torsoLen * 0.5, torsoR * 0.98], null, [torsoR * 0.75, torsoLen * 0.95, 0.04]);
-        const tail = new T.CylinderGeometry(torsoR * 1.08, torsoR * 1.35, legLen * 0.65, 14, 1, true, 0.5, Math.PI * 2 - 1.0);
-        ts.add(tail, coat, [0, legLen - legLen * 0.3, -0.02]);
-        tail.dispose();
+        // The tails flare out and sit deep at the back, so a striding leg stays inside the coat
+        // instead of poking through it; a darker lining shows where the coat is open.
+        const tail = new T.CylinderGeometry(torsoR * 1.1, torsoR * 1.55, legLen * 0.62, 16, 1, true, 0.5, Math.PI * 2 - 1.0);
+        ts.add(tail, coat, [0, legLen - legLen * 0.29, -0.05], null, [1, 1, 1.25]);
+        const lining = tail.clone(); lining.scale(-0.96, 1, 0.96);
+        ts.add(lining, shade(coat, 0.72), [0, legLen - legLen * 0.29, -0.05], null, [1, 1, 1.25]);
+        tail.dispose(); lining.dispose();
         ts.add(P.box, shade(coat, 0.9), [torsoR * 0.42, legLen + torsoLen * 0.72, torsoR * 0.98], [0, 0, -0.3], [0.12, 0.3, 0.05]);
         ts.add(P.box, shade(coat, 0.9), [-torsoR * 0.42, legLen + torsoLen * 0.72, torsoR * 0.98], [0, 0, 0.3], [0.12, 0.3, 0.05]);
       } else if (top === 'polo' || top === 'sweater') {
@@ -425,11 +446,7 @@
       shoulderY = legLen + torsoLen - 0.06; neckY = legLen + torsoLen + neckLen;
     }
     if (species === 'robot' && !bean) ts.add(P.cyl, '#22e6ff', [0, legLen + torsoLen * 0.6, torsoR * 0.95], [Math.PI / 2, 0, 0], [0.07, 0.03, 0.07], true);
-    if (species === 'insect') for (const sx of [-1, 1]) {
-      // Gromflomite wings: long, pale and veined, folded down the back.
-      ts.add(P.sphere, '#cfe4ee', [sx * torsoR * 0.45, legLen + torsoLen * 0.55, -torsoR * 1.05], [0.15, sx * 0.25, sx * 0.18], [torsoR * 0.42, torsoLen * 0.62, 0.025]);
-      ts.add(P.box, '#8fa8b8', [sx * torsoR * 0.45, legLen + torsoLen * 0.55, -torsoR * 1.08], [0.15, sx * 0.25, sx * 0.18], [0.02, torsoLen * 1.0, 0.02]);
-    }
+
     parts.torso = mk(ts, body);
 
     // Arms: sleeves follow the top.
@@ -438,7 +455,13 @@
     // Arms: an upper arm and, up close, a forearm on an elbow joint. The hand (and the gun)
     // ride on the forearm.
     const upLen = armLen * 0.5;
+    const limbC = rat ? RAT : skin;
     const hand = (s, y, side) => {
+      if (rat) {   // rat paws: little pink claws
+        s.add(P.sphereLo, RAT, [0, y - 0.02, 0], null, [armR * 1.4, armR * 1.4, armR * 1.2]);
+        for (let i = -1; i <= 1; i++) s.add(P.cone, '#f0a8b0', [i * armR * 0.6, y - armR * 1.6, armR * 0.3], [Math.PI - 0.3, 0, 0], [armR * 0.3, armR * 1.4, armR * 0.3]);
+        return;
+      }
       const hc = species === 'robot' ? shade(skin, 0.8) : skin;
       if (jointed && !bean && species !== 'robot') {
         // A cartoon hand: palm, three fingers and a thumb (the show draws four fingers).
@@ -453,21 +476,22 @@
     for (const side of [-1, 1]) {
       const s = new C.Shape();
       const px = side * (torsoR + armR * 1.2) * (bean ? 1.0 : 1);
+      if (limbless) { parts[side < 0 ? 'armL' : 'armR'] = mk(s, body, [px, shoulderY, 0]); continue; }
       if (jointed) {
         const sl = armLen * sleeveLen * 0.92;
         // Same trick at the elbow: both halves (and long sleeves) end in a ball on the joint.
         const sr = armR * 1.35, su = Math.min(sl, upLen);
-        C.capsuleAt(s, skin, armR, upLen + 2 * armR, [0, -upLen - armR, 0]);
+        C.capsuleAt(s, limbC, armR, upLen + 2 * armR, [0, -upLen - armR, 0]);
         if (sleeveLen > 0) C.capsuleAt(s, sleeveC, sr, su + 2 * sr, [0, -su - sr, 0]);
         const f = new C.Shape(), fl = armLen - upLen;
-        C.capsuleAt(f, skin, armR, fl + armR, [0, -fl, 0]);
+        C.capsuleAt(f, limbC, armR, fl + armR, [0, -fl, 0]);
         if (sl > upLen) C.capsuleAt(f, sleeveC, sr, sl - upLen + sr, [0, -(sl - upLen), 0]);
         hand(f, -fl, side);
         const sp = mk(s, body, [px, shoulderY, 0]);
         parts[side < 0 ? 'armL' : 'armR'] = sp;
         parts[side < 0 ? 'foreL' : 'foreR'] = mk(f, sp, [0, -upLen, 0]);
       } else {
-        C.capsuleAt(s, skin, armR, armLen, [0, -armLen, 0]);
+        C.capsuleAt(s, limbC, armR, armLen, [0, -armLen, 0]);
         if (sleeveLen > 0) C.capsuleAt(s, sleeveC, armR * 1.35, armLen * sleeveLen * 0.92, [0, -armLen * sleeveLen * 0.92, 0]);
         hand(s, -armLen, side);
         parts[side < 0 ? 'armL' : 'armR'] = mk(s, body, [px, shoulderY, 0]);
@@ -489,8 +513,16 @@
       headTop += headR;
     }
 
+    // Gromflomite wings: long, pale and veined, hinged at the shoulders; folded down the back
+    // at rest, a buzzing blur in flight.
+    if (species === 'insect') for (const sx of [-1, 1]) {
+      const s = new C.Shape();
+      s.add(P.sphere, '#cfe4ee', [0, -torsoLen * 0.42, 0], null, [torsoR * 0.42, torsoLen * 0.5, 0.025]);
+      s.add(P.box, '#8fa8b8', [0, -torsoLen * 0.42, -0.02], null, [0.02, torsoLen * 0.9, 0.02]);
+      parts[sx < 0 ? 'bugWingL' : 'bugWingR'] = mk(s, body, [sx * torsoR * 0.35, shoulderY, -torsoR * 1.0]);
+    }
     // Wings for the winged
-    if (species === 'birdfolk' || A.fly) {
+    if (species === 'birdfolk' || (A.fly && species !== 'insect')) {
       for (const side of [-1, 1]) {
         const s = new C.Shape();
         const wc = species === 'birdfolk' ? L.hairColor : '#e9e4d8';
@@ -505,7 +537,7 @@
     root.add(shadow);
 
     const av = {
-      root, body, parts, look: L, arch, height: (neckY + headTop * 1.0 + headR) , phase: Math.random() * 6, attackT: 0, deadT: 0, t: Math.random() * 10,
+      root, body, parts, look: L, arch, coat: top === 'labcoat', height: (neckY + headTop * 1.0 + headR) , phase: Math.random() * 6, attackT: 0, deadT: 0, t: Math.random() * 10,
       shield: null,
       animate(dt, st) { animate(av, dt, st); },
       dispose() {
@@ -514,6 +546,8 @@
       },
     };
     av.shoulderY = shoulderY;
+    // A bare Pickle Rick rolls like a log when he moves.
+    if (limbless) { av.roller = true; av.rollR = rollR; av.rollLen = rollLen; av.rollBase = legLen - 0.15; }
     av.headY = neckY + headR * 2.2 + (L.acc === 'tophat' || L.hair === 'afro' ? headR * 0.9 : 0);
     if (bean) av.headY = neckY + headR * 2;
     // Where the eyes are, for the first-person camera.
@@ -556,7 +590,7 @@
   // springy the step is. swing: arm swing. stride: leg swing. jitter: nervous fidgeting.
   // carry: elbow bend while holding a gun. march: stiff straight-armed walk.
   const GAITS = {
-    genius:     { slouch: 0.12, bounce: 0.7, swing: 0.55, stride: 0.85, jitter: 0, carry: 0.5, headDown: 0.12 },
+    genius:     { slouch: 0.02, bounce: 0.7, swing: 0.55, stride: 0.85, jitter: 0, carry: 0.5, headDown: 0.04 },
     sidekick:   { slouch: 0.07, bounce: 1.25, swing: 0.6, stride: 0.95, jitter: 1, carry: 0.7 },
     teen:       { slouch: 0, bounce: 1.1, swing: 0.75, stride: 1.0, jitter: 0, carry: 0.6 },
     surgeon:    { slouch: -0.02, bounce: 0.9, swing: 0.6, stride: 0.95, jitter: 0, carry: 0.6 },
@@ -568,6 +602,18 @@
     picklerick: { slouch: 0, bounce: 1.4, swing: 1.0, stride: 1.2, jitter: 0, carry: 0.5 },
     squanchy:   { slouch: 0.08, bounce: 1.1, swing: 0.7, stride: 1.0, jitter: 0.2, carry: 0.5 },
   };
+  function mkRag(dx, dz, power, av) {
+    const l = Math.hypot(dx, dz) || 1;
+    return { dx: dx / l, dz: dz / l, power, t: 0, dur: 0.8 + power * 0.9, seeds: Array.from({ length: 8 }, () => Math.random()) };
+  }
+  // Knock a character over: push direction (world x, z) and strength 0..1.
+  C.ragdoll = function (av, dx, dz, power) {
+    if (!av || av.inShip || av.roller) return;
+    power = Math.max(0.2, Math.min(1, power));
+    if (av.rag && av.rag.t < av.rag.dur * 0.5) { av.rag.power = Math.max(av.rag.power, power); return; }
+    av.rag = mkRag(dx || Math.random() - 0.5, dz || Math.random() - 0.5, power, av);
+  };
+  C.hitReact = function (av, front) { if (av) { av.hitT = 0.3; av.hitDir = front === false ? -1 : 1; } };
   const BASE_GAIT = { slouch: 0.03, bounce: 1, swing: 0.7, stride: 1, jitter: 0, carry: 0.55 };
   const lerp = (a, b, k) => a + (b - a) * k;
   const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
@@ -633,7 +679,28 @@
     av.stretch = Math.max(0, (av.stretch || 0) - dt * 4);
     if (av.squash > 0) { kL += av.squash * 0.7; kR += av.squash * 0.7; lL -= av.squash * 0.35; lR -= av.squash * 0.35; bob -= av.squash * 0.12; }
 
+    // Floppy follow-through: arms, head and torso lag behind when the body speeds up, stops
+    // or turns, then spring back (a damped spring driven by the body's acceleration).
+    const rp = av.root.position;
+    if (av.prevPos && dt > 0 && dt < 0.1) {
+      const vx = (rp.x - av.prevPos.x) / dt, vz = (rp.z - av.prevPos.z) / dt;
+      if (Math.hypot(vx, vz) < 40) {
+        const ry = av.root.rotation.y, fwdV = vx * Math.sin(ry) + vz * Math.cos(ry), sideV = vx * Math.cos(ry) - vz * Math.sin(ry);
+        const af = (fwdV - (av.pfV || 0)) / dt, as = (sideV - (av.psV || 0)) / dt;
+        av.pfV = fwdV; av.psV = sideV;
+        const tf = clamp(-af * 0.012, -0.6, 0.6), ts2 = clamp(as * 0.008, -0.4, 0.4);
+        av.lagV = (av.lagV || 0) + ((tf - (av.lag || 0)) * 90 - (av.lagV || 0) * 9) * dt; av.lag = (av.lag || 0) + av.lagV * dt;
+        av.sLagV = (av.sLagV || 0) + ((ts2 - (av.sLag || 0)) * 90 - (av.sLagV || 0) * 9) * dt; av.sLag = (av.sLag || 0) + av.sLagV * dt;
+      }
+    }
+    av.prevPos = av.prevPos || new T.Vector3(); av.prevPos.copy(rp);
+    const lag = av.lag || 0, sLag = av.sLag || 0;
+    aL += lag * 1.4; aR += av.attackT > 0 ? 0 : lag * 1.4; aLz += sLag; aRz += sLag; headX += lag * 0.5; twist += sLag * 0.4;
+    // Getting hit: a jolt through the body.
+    if (av.hitT > 0) { av.hitT -= dt; const k2 = Math.max(0, av.hitT) / 0.3; tilt -= k2 * 0.5 * (av.hitDir || 1); headX -= k2 * 0.8; aL -= k2 * 0.9; aR -= k2 * 0.9; aLz += k2 * 0.4; aRz -= k2 * 0.4; }
     const set = (o, ax, v, sharp) => { if (o) o.rotation[ax] = sharp ? v : lerp(o.rotation[ax], v, f); };
+    // In a long coat the legs swing back less (Rick shuffles; the coat would split otherwise).
+    if (av.coat && ground) { lL = Math.min(lL, 0.24); lR = Math.min(lR, 0.24); }
     set(p.legL, 'x', lL); set(p.legR, 'x', lR);
     set(p.shinL, 'x', kL); set(p.shinR, 'x', kR);
     set(p.armL, 'x', aL); set(p.armR, 'x', aR, av.attackT > 0);
@@ -648,20 +715,58 @@
       p.wingL.rotation.z = lerp(1.2, -0.2, o) + flap; p.wingR.rotation.z = lerp(-1.2, 0.2, o) - flap;
       p.wingL.rotation.y = lerp(-1.0, 0, o); p.wingR.rotation.y = lerp(1.0, 0, o);
     }
+    if (p.bugWingL) {
+      const buzz = fly ? Math.sin(av.t * 60) * 0.5 : air ? Math.sin(av.t * 30) * 0.3 : 0;
+      const open = fly ? 1.3 : air ? 0.7 : 0.18;
+      p.bugWingL.rotation.z = -open + buzz; p.bugWingR.rotation.z = open - buzz;
+      p.bugWingL.rotation.x = p.bugWingR.rotation.x = fly ? -0.6 : 0.12;
+    }
     p.head.rotation.y = lerp(p.head.rotation.y, headY - twist * 0.6, f);
     if (av.jet) { av.jet.flame.visible = fly; av.jet.flame.scale.y = 0.8 + Math.random() * 0.4; }
     if (av.inShip) { set(p.legL, 'x', 0); set(p.legR, 'x', 0); set(p.shinL, 'x', 0.1); set(p.shinR, 'x', 0.1); tilt = 0; roll = clamp(-av.turn * 0.05, -0.3, 0.3); bob = Math.sin(av.t * 3) * 0.05; if (av.ship) av.ship.rotation.y += 0.02; }
-    if (dead) av.deadT = Math.min(1, av.deadT + dt * 3); else av.deadT = Math.max(0, av.deadT - dt * 4);
+    if (dead) av.deadT = Math.min(1, av.deadT + dt * 3); else { av.deadT = Math.max(0, av.deadT - dt * 4); if (!av.deadT) av.deadRag = null; }
     const D = av.deadT;
-    av.body.rotation.x = lerp(av.body.rotation.x, tilt, f) * (1 - D) - D * 1.45;
-    av.body.rotation.z = lerp(av.body.rotation.z, roll, f) * (1 - D);
-    av.body.position.y = lerp(av.body.position.y, bob, f) * (1 - D) + D * 0.25;
-    av.body.position.z = -D * 0.6;
+    av.body.rotation.x = lerp(av.body.rotation.x, tilt, f);
+    av.body.rotation.z = lerp(av.body.rotation.z, roll, f);
+    av.body.position.y = lerp(av.body.position.y, bob, f);
+    av.body.position.z = 0;
+    // Ragdoll: knocked over (explosions, slams, big falls) or dead. The body topples in the
+    // push direction while the limbs flail, then (if alive) gets back up.
+    let RW = 0;
+    if (av.rag) { av.rag.t += dt; const u = av.rag.t / av.rag.dur; if (u >= 1) av.rag = null; else RW = u < 0.55 ? Math.min(1, u / 0.1) : 1 - (u - 0.55) / 0.45; }
+    if (D > 0 && !av.deadRag) { const a = Math.random() * Math.PI * 2; av.deadRag = mkRag(Math.sin(a), Math.cos(a), 1, av); }
+    const rg = D > RW ? av.deadRag : av.rag, w = Math.max(RW, D);
+    if (rg && w > 0.001 && !av.inShip && !av.roller) {
+      rg.t2 = (rg.t2 || 0) + dt;
+      const t2 = D > RW ? Math.min(rg.t2, 0.9) : rg.t2, S = rg.seeds, fl = (i, fq) => Math.sin(t2 * fq + S[i] * 6.28);
+      const mix = (o, ax, v) => { if (o) o.rotation[ax] = o.rotation[ax] * (1 - w) + v * w; };
+      mix(p.armL, 'x', -1.4 + fl(0, 9) * 0.9); mix(p.armR, 'x', -1.4 + fl(1, 8) * 0.9);
+      mix(p.armL, 'z', 1.2 + fl(2, 6) * 0.5); mix(p.armR, 'z', -1.2 - fl(3, 7) * 0.5);
+      mix(p.foreL, 'x', -0.4 + fl(4, 10) * 0.5); mix(p.foreR, 'x', -0.4 + fl(5, 11) * 0.5);
+      mix(p.legL, 'x', fl(6, 8) * 0.8); mix(p.legR, 'x', fl(7, 7) * 0.8);
+      mix(p.legL, 'z', -0.35); mix(p.legR, 'z', 0.35);
+      mix(p.shinL, 'x', 0.6 + fl(0, 9) * 0.4); mix(p.shinR, 'x', 0.6 + fl(1, 9) * 0.4);
+      mix(p.head, 'x', fl(2, 5) * 0.5); mix(p.head, 'y', fl(3, 4) * 0.6);
+      // Topple in the push direction (local frame), with a little bounce on the way down.
+      const ry = av.root.rotation.y, lx = rg.dx * Math.cos(ry) - rg.dz * Math.sin(ry), lz = rg.dx * Math.sin(ry) + rg.dz * Math.cos(ry);
+      const fall = 1.45 * Math.min(1, w * 1.15) + Math.sin(Math.min(1, rg.t2 * 2.2) * Math.PI) * 0.12 * rg.power;
+      av.body.rotation.x = av.body.rotation.x * (1 - w) + fall * lz;
+      av.body.rotation.z = av.body.rotation.z * (1 - w) - fall * lx;
+      av.body.position.y = av.body.position.y * (1 - w) + w * 0.32;
+    }
+    if (av.roller) {
+      // Lie down along the left-right axis and roll forward; stand up again when stopped.
+      av.lie = lerp(av.lie || 0, ground && speed > 0.5 ? 1 : 0, Math.min(1, dt * 7));
+      av.rollA = (av.rollA || 0) + speed * dt / Math.max(0.1, av.rollR);
+      const L = av.lie;
+      av.body.rotation.set(av.rollA * (L > 0.5 ? 1 : 0), 0, L * Math.PI / 2);
+      av.body.position.set(L * (av.rollBase + av.rollLen / 2), L * av.rollR + (1 - L) * bob, 0);
+    }
     const sq = av.squash * 0.14 - av.stretch * 0.1;
     av.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
     // Effects
     const fx = st.fx || 0;
-    const sc = (fx & 8) ? 0.5 : 1;
+    const sc = ((fx & 8) ? 0.5 : 1) * (av.baseScale || 1);
     av.root.scale.setScalar(lerp(av.root.scale.x, sc, Math.min(1, dt * 6)));
     av.root.visible = !(fx & 32) || Math.floor(av.t * 8) % 2 === 0 || dead;
     if (fx & 1) {
@@ -707,6 +812,21 @@
       av.body.add(jet);
       av.jet = { jet, flame };
     }
+    // Rick's robot limbs: steel shells over the arm and legs, with glowing joints.
+    const shell = (part, len, r, at) => {
+      if (!part) return;
+      const s = new C.Shape();
+      C.capsuleAt(s, '#9aa3ab', r, len, [0, -len, 0]);
+      for (let i = 1; i < 3; i++) s.add(P.cyl, '#59606e', [0, -len * i / 3, 0], null, [r * 1.08, 0.025, r * 1.08]);
+      s.add(P.sphere, '#5ff8ff', [0, -0.02, r * 0.8], null, [r * 0.35, r * 0.35, r * 0.2], true);
+      const m = C.meshOf(s.build(), 0.03);
+      if (at) m.position.y = at;
+      part.add(m);
+      (av.cyber || (av.cyber = [])).push(m);
+    };
+    const L = av.look || {}, w = L.width || 1, h = L.height || 1;
+    if (gear.cyberarm && !av.cyberArm) { av.cyberArm = true; shell(av.parts.armR, 0.68 * h * 0.5, 0.07 * w * 1.25); shell(av.parts.foreR, 0.68 * h * 0.5 * 0.9, 0.07 * w * 1.2); }
+    if (gear.cyberlegs && !av.cyberLegs) { av.cyberLegs = true; for (const k of ['legL', 'legR']) shell(av.parts[k], 0.84 * h * 0.52, 0.1 * w * 1.15); for (const k of ['shinL', 'shinR']) shell(av.parts[k], 0.84 * h * 0.44, 0.1 * w * 1.1); }
     av.gear = gear;
   };
   // A cartoon flying saucer around the character's legs.

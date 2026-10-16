@@ -229,6 +229,7 @@
     engine:   { cat: 'ship', name: 'Turbo Engine', cost: { p: 6, g: 4 }, at: 'shipyard', needs: 'hull', desc: 'The ship flies 60% faster.' },
     lasers:   { cat: 'ship', name: 'Ship Lasers', cost: { s: 6, c: 4, p: 3 }, at: 'market', needs: 'hull', desc: 'Heavy lasers while you fly.' },
     drive:    { cat: 'ship', name: 'Dimension Drive', cost: { c: 6, g: 4, p: 6, f: 4 }, at: 'shipyard', needs: 'engine', desc: 'Fly your ship straight into any dimension.' },
+    quantum:  { cat: 'ship', name: 'Quantum Drive', cost: { c: 12, g: 8, p: 12, f: 8 }, at: 'shipyard', needs: 'drive', desc: 'Enable light speed travel for instant interstellar jumps.' },
   };
   MM.RECIPE_IDS = Object.keys(MM.RECIPES);
   MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal', 'freeze'];
@@ -524,6 +525,9 @@
       jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1) * (up.cyberlegs ? 1.35 : 1),
       fly: A.fly || up.wings ? 'wings' : up.jetpack ? 'jet' : null,
       dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1) * (up.cyberarm ? 1.35 : 1),
+      // Sprinting (Shift, or push the stick past its edge): a bit faster than walking, more
+      // with better legs.
+      sprint: 1.3 * (up.legs1 ? 1.06 : 1) * (up.legs2 ? 1.06 : 1) * (up.cyberlegs ? 1.15 : 1),
       scanner: !!up.scanner,
       cdMult: up.megabrain ? 0.7 : 1,
       cloak: !!up.cloak,
@@ -534,7 +538,14 @@
       const base = A.portal || { charges: 2, recharge: 25 };
       s.gun = { charges: base.charges + (up.guncap1 ? 1 : 0) + (up.guncap2 ? 1 : 0), recharge: base.recharge * (up.gunfast ? 0.65 : 1) };
     }
-    if (up.hull) s.ship = { speed: up.engine ? 30 : 19, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive };
+    if (up.hull) {
+      let baseSpeed = up.engine ? 30 : 19;
+      // Quantum drive provides massive speed boost for light speed travel
+      if (up.quantum) {
+        baseSpeed = 1000; // Light speed travel speed
+      }
+      s.ship = { speed: baseSpeed, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive, quantum: !!up.quantum };
+    }
     // Rick helped build the Curve and can step outside it; Evil Morty broke out of it. Anyone
     // else needs the golden fluid.
     if (s.gun) s.gun.gold = arch === 'genius' || arch === 'evilmorty' || !!up.curvebreaker;

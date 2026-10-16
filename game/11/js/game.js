@@ -7,6 +7,7 @@
   const now = () => performance.now() / 1000;
   const wrap = a => Math.atan2(Math.sin(a), Math.cos(a));
   const r2 = v => Math.round(v * 100) / 100;
+  const pick = a => a[Math.floor(Math.random() * a.length)];
 
   // ---------- Profile and settings ----------
   const settings = UI.load('settings', { sens: 1, invert: false, volume: 0.6, quality: isTouch ? 'low' : 'high', botChat: true, view: 'third' });
@@ -26,6 +27,7 @@
   applyQuality();
   renderer.setClearColor('#0b0f1e');
   const camera = new T.PerspectiveCamera(62, 1, 0.1, 1500);
+  C.camera = camera;
   // First person: your own arm and gun live in a tiny scene drawn on top of the world,
   // so they never poke through walls.
   const vmScene = new T.Scene();
@@ -37,6 +39,7 @@
   const vm = { root: null, arm: null, src: null, bob: 0, swayX: 0, swayY: 0, pose: { x: 0.3, y: -0.3, z: 0.1, pitch: -0.22, yaw: 0.28, roll: 0, size: 0.92 },
     fistPose: { x: 0.3, y: -0.32, z: 0.1, pitch: -0.5, yaw: 0.4, roll: 0, size: 0.8 } };
   const scene = new T.Scene();
+  C.scene = scene;   // debug hooks (profiling scripts)
   const fx = new C.FX(scene);
   function resize() {
     const w = window.innerWidth, h = window.innerHeight;
@@ -105,7 +108,7 @@
   function menuChanged() { previewDirty = true; previewT = 0.05; UI.save('profile', profile); fillStarts(); }
   // You can only start where your character lives.
   function fillStarts() {
-    const sel = $('startDim'), starts = MM.startWorlds(profile.arch);
+    const sel = $('startDim'), starts = MM.startWorlds(profile.arch, profile.home);
     sel.textContent = '';
     for (const id of starts) sel.append(el('option', { value: id, text: MM.DIM_BY_ID[id].name }));
     if (!starts.includes(profile.startDim)) profile.startDim = starts[0];
@@ -122,7 +125,7 @@
     $('server').value = profile.server || (httpHosted ? location.host : '');
     UI.initMenu(profile, menuChanged);
     $('name').oninput = () => { profile.name = $('name').value; UI.save('profile', profile); };
-    $('home').oninput = () => { profile.home = $('home').value.toUpperCase(); UI.save('profile', profile); };
+    $('home').oninput = () => { profile.home = $('home').value.toUpperCase(); UI.save('profile', profile); fillStarts(); };
     $('startDim').onchange = () => { profile.startDim = $('startDim').value; UI.save('profile', profile); };
     $('server').oninput = () => { profile.server = $('server').value.trim(); UI.save('profile', profile); };
     // Pages that can't reach a game server (like a hosted preview) offer offline play only.
@@ -140,7 +143,7 @@
   }
 
   // ---------- Game state ----------
-  const G = {
+  const G = { baseFov: 62, pairs: new Map(),
     mode: 'menu', net: null, myId: 0, ep: 0, dimId: null, inst: 0, world: null, you: null,
     me: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, grounded: true, fly: 6, kbT: 0, aimT: 0, emoteT: 0, flying: false },
     meAv: null, players: new Map(), npcs: new Map(), pickups: new Map(), portals: new Map(), turrets: new Map(), alive: [],
@@ -205,7 +208,7 @@
   function archLabel(info) { return (info.bot ? 'bot · ' : '') + (info.title || MM.ARCHETYPES[info.arch].name); }
   function addPlayer(info) {
     if (info.id === G.myId || G.players.has(info.id)) return;
-    const av = C.buildAvatar(info.look, info.arch);
+    const av = C.buildAvatar(info.look, info.arch, { ratsuit: !!(info.gear && info.gear.ratsuit) });
     C.setGear(av, info.gear);
     const tag = C.makeTag(info.name, info.home, archLabel(info), UI.ARCH_COLORS[info.arch]);
     tag.sprite.position.y = av.headY + 0.55;
@@ -254,7 +257,7 @@
     if (G.pickups.has(id)) return;
     const m = C.pickupModel(c);
     m.position.set(x, y + 0.8, z);
-    m.userData.base = y + 0.8; m.userData.ph = Math.random() * 6;
+    m.userData.base = y + 0.8; m.userData.ph = Math.random() * 6; m.userData.kind = c;
     scene.add(m);
     G.pickups.set(id, m);
   }
@@ -283,6 +286,84 @@
     scene.remove(p.g); p.tag.sprite.material.map.dispose();
     G.portals.delete(id);
   }
+  // ----- The portal pair: blue and orange, Valve style -----
+  function addPair(e) {
+    const key = e.o + ':' + e.c;
+    removePair(key);
+    const P = { x: e.x, y: e.y, z: e.z, nx: e.nx, ny: e.ny, nz: e.nz };
+    const g = new T.Group();
+    const mesh = C.portalMesh(MM.PAIR_COLORS[e.c], 0.85);
+    mesh.renderOrder = 3;
+    // Valve-style: a hard, glowing oval rim around the swirl.
+    const rim = new T.Mesh(pairRimGeo || (pairRimGeo = new T.RingGeometry(0.86, 1.0, 48)), new T.MeshBasicMaterial({ color: MM.PAIR_COLORS[e.c], side: T.DoubleSide, fog: false }));
+    rim.scale.set(0.85, 0.85 * 1.35, 1); rim.position.z = 0.01;
+    g.add(mesh, rim);
+    mesh.userData.rim = rim;
+    g.position.set(P.x, P.y, P.z);
+    g.lookAt(P.x + P.nx, P.y + P.ny, P.z + P.nz);
+    scene.add(g);
+    G.pairs.set(key, { o: e.o, c: e.c, P, g, mesh, born: now() });
+  }
+  let pairRimGeo = null;
+  function removePair(key) { const q = G.pairs.get(key); if (q) { scene.remove(q.g); q.mesh.material.dispose(); q.mesh.userData.rim.material.dispose(); G.pairs.delete(key); } }
+  function removePairsOf(o) { removePair(o + ':0'); removePair(o + ':1'); }
+  // Aim with the crosshair and shoot the next portal of your pair (R, right click, or the
+  // touch button): blue, then orange, then blue again (which moves the old blue one).
+  function shootPair() {
+    if (!canAct() || pickled()) return;
+    if (G.you.ship) { UI.toast('Land first (B) to shoot portals.'); return; }
+    if (!(G.prog && MM.canPair(profile.arch, G.prog.up))) { UI.toast('You need a portal gun for that. Ricks have one; anyone else can build or borrow one (J).', 3500); return; }
+    if (now() < (G.pairCd || 0)) return;
+    const ray = vr && vr.on ? vr.aimRay() : null;
+    const o = ray ? ray.o : camWorld.clone(), d = ray ? ray.d : new T.Vector3();
+    if (!ray) camera.getWorldDirection(d);
+    // Start the ray at your gun, not behind you at the camera.
+    const skip = Math.max(0, (G.me.x - o.x) * d.x + (G.me.y + 1.4 - o.y) * d.y + (G.me.z - o.z) * d.z);
+    const from = { x: o.x + d.x * skip, y: o.y + d.y * skip, z: o.z + d.z * skip };
+    const hit = MM.raycastWorld(G.dimId, from, { x: d.x, y: d.y, z: d.z }, MM.PAIR_RANGE, G.alive);
+    const c = G.pairNext || 0, S = MM.pairSpot(G.dimId, hit);
+    G.pairNext = 1 - c; G.pairCd = now() + 0.35;
+    send({ t: 'pp', c, x: r2(S.x), y: r2(S.y), z: r2(S.z), nx: r2(S.nx), ny: r2(S.ny), nz: r2(S.nz) });
+    // The shot: a streak of the portal's colour from the gun to the portal position.
+    const gx = G.me.x, gy = G.me.y + 1.4, gz = G.me.z;
+    // Create a more visible, longer beam effect
+    const n = Math.min(60, Math.ceil(hit.t * 0.8)); // Longer beam
+    for (let i = 0; i <= n; i++) {
+      const k = i / n;
+      // Make the beam pulse slightly and be more visible
+      const alpha = 0.5 + Math.sin(i * 0.2) * 0.2;
+      fx.glow.emit(gx + (S.x - gx) * k, gy + (S.y - gy) * k, gz + (S.z - gz) * k, 0, 0, 0, MM.PAIR_COLORS[c], alpha, 0.4, 0);
+    }
+    // Add a burst effect at the portal placement point for better visibility
+    fx.burst(S.x, S.y, S.z, MM.PAIR_COLORS[c], 20, 8, 0.8, 0.7, 2);
+    G.me.aimT = 1; G.me.yaw = G.camYaw;
+    if (G.meAv) G.meAv.attackT = 0.2;
+    C.sfx('plasma', 0.8); // Slightly louder sound for feedback
+    updateHotbar();
+  }
+  // Walking into a portal of any complete pair: out of the other one, at the same speed.
+  function pairTransit(me) {
+    if (now() < (G.transitCool || 0) || (G.you && G.you.ship)) return;
+    for (const q of G.pairs.values()) {
+      const other = G.pairs.get(q.o + ':' + (1 - q.c));
+      if (!other || !MM.inPair(q.P, me.x, me.y, me.z)) continue;
+      const A = q.P, B = other.P, speed = Math.hypot(me.vx, me.vy, me.vz), ex = MM.pairExit(B, speed);
+      // Through a wall portal into a wall portal: turn the way the exit faces, like in Portal.
+      if (MM.pairKind(A) === 'wall' && MM.pairKind(B) === 'wall') G.camYaw += Math.atan2(B.nx, B.nz) - Math.atan2(-A.nx, -A.nz);
+      else if (MM.pairKind(B) === 'wall') G.camYaw = Math.atan2(B.nx, B.nz);
+      // More impressive entry effect
+      fx.burst(me.x, me.y + 1, me.z, MM.PAIR_COLORS[q.c], 25, 8, 0.8, 0.7, 3);
+      me.x = ex.x; me.y = ex.y; me.z = ex.z; me.vx = ex.vx; me.vy = ex.vy; me.vz = ex.vz;
+      me.grounded = false; me.kbT = 1.1;
+      G.transitCool = now() + 0.35;
+      send({ t: 'pt', o: q.o, c: q.c });
+      // More impressive exit effect
+      fx.burst(ex.x, ex.y + 1, ex.z, MM.PAIR_COLORS[1 - q.c], 25, 8, 0.8, 0.7, 3);
+      // Warp sound with more intensity
+      C.sfx('warp', 0.8);
+      return;
+    }
+  }
   function addTurret(row) {
     const [id, owner, x, y, z] = row;
     if (G.turrets.has(id)) return;
@@ -299,6 +380,7 @@
     for (const id of [...G.pickups.keys()]) removePickup(id);
     for (const id of [...G.portals.keys()]) removePortal(id);
     for (const id of [...G.turrets.keys()]) removeTurret(id);
+    for (const k of [...G.pairs.keys()]) removePair(k);
     fx.clear();
     UI.clearNums();
     if (all) {
@@ -329,10 +411,11 @@
     for (const pk of w.pickups) addPickup(pk);
     for (const po of w.portals) addPortal(po);
     for (const t of w.turrets) addTurret(t);
+    for (const P of w.pairs || []) addPair(P);
     const me = G.me;
     me.x = w.x; me.y = w.y; me.z = w.z; me.vx = me.vy = me.vz = 0;
     if (!G.meAv) {
-      G.meAv = C.buildAvatar(profile.look, profile.arch);
+      G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!(G.prog && G.prog.up.ratsuit) });
       scene.add(G.meAv.root);
     }
     if (G.prog) C.setGear(G.meAv, myGear());
@@ -455,6 +538,69 @@
     if ((b & 1024) && r < dt * 10) fx.burst(p.x, y + 1.2, p.z, '#bfe0ff', 2, 1.5, 0.3, 0.5, 0);
     if ((b & 256) && r < dt * 8) fx.burst(p.x, y + 2.1, p.z, '#ffe066', 2, 1.2, 0.3, 0.6, -1);   // seeing stars
   }
+  // ---------- Rick's scanner ----------
+  // Point at something and press X: a readout of what it is, how dangerous it is and what it
+  // is made of, with a line of Rick's commentary. Pure information; nothing is sent.
+  const SNARK = ['Ugh. Boring.', 'Fascinating. No, it is not.', 'I have seen this in a thousand dimensions. It is always disappointing.',
+    'Do not lick it.', 'Huh. Okay, that one is actually kind of neat.', 'Classic. Real classic.', 'This is Morty-level tech.', 'Wubba lubba dub dub.'];
+  function scan() {
+    if (!canAct()) return;
+    if (!(G.st && G.st.scanner)) { UI.toast(MM.ARCHETYPES[profile.arch].name === 'Rick' ? 'Build the Scanner Implant at the garage first (C).' : 'Only a Rick has a scanner built in.', 3000); return; }
+    const fwd = new T.Vector3(); camera.getWorldDirection(fwd);
+    const from = camWorld, best = { s: Infinity, it: null };
+    const look = (x, y, z, it, r) => {
+      const dx = x - from.x, dy = y - from.y, dz = z - from.z, d = Math.hypot(dx, dy, dz);
+      if (d > 45 || d < 0.3) return;
+      const cos = (dx * fwd.x + dy * fwd.y + dz * fwd.z) / d, ang = Math.acos(Math.min(1, cos)) - Math.atan((r || 0.6) / d);
+      if (ang > 0.28) return;
+      const sc = ang * 40 + d * 0.15;
+      if (sc < best.s) { best.s = sc; best.it = it; }
+    };
+    for (const [id, p] of G.players) look(p.x, p.y + 1, p.z, { k: 'p', id, p }, 0.7);
+    for (const [id, n] of G.npcs) look(n.x, n.y + 1, n.z, { k: 'n', id, n }, MM.NPCS[n.type].r);
+    for (const [id, m] of G.pickups) look(m.position.x, m.position.y, m.position.z, { k: 'pk', id, m }, 0.5);
+    for (const l of MM.LANDMARKS) if (l.dim === G.dimId) look(l.x, MM.heightAt(G.dimId, l.x, l.z) + l.h / 2, l.z, { k: 'l', l }, l.r);
+    const props = MM.genProps(G.dimId);
+    for (const p of props) if (G.alive[p.id] && !p.type.startsWith('lm_')) look(p.x, p.y + p.h / 2, p.z, { k: 'prop', p }, p.r);
+    const it = best.it;
+    C.sfx('ability', 0.5);
+    if (!it) { showScan('Nothing', [['Signal', 'none']], 'Point me at something, genius.'); return; }
+    const pos = it.k === 'p' ? it.p : it.k === 'n' ? it.n : it.k === 'pk' ? it.m.position : it.k === 'l' ? { x: it.l.x, y: MM.heightAt(G.dimId, it.l.x, it.l.z), z: it.l.z } : it.p;
+    const dx = pos.x - G.me.x, dz = pos.z - G.me.z, dl = Math.hypot(dx, dz) || 1;
+    fx.cone(G.me.x, G.me.y + 1.5, G.me.z, dx / dl, dz / dl, '#39ff6a', 30, Math.min(dl, 20) / 4, 0.25);
+    fx.shockwave(pos.x, pos.y || 0, pos.z, '#39ff6a', 2.2, 0.6, 0.12);
+    const mat = d => Object.keys(d || {}).map(k => d[k] + ' ' + MM.MATERIALS[k].name).join(', ') || 'nothing useful';
+    const pretty = t => t.replace(/^lm_/, '').replace(/([a-z])([A-Z])/g, '$1 $2').replace(/^./, c => c.toUpperCase());
+    if (it.k === 'p') {
+      const A = MM.ARCHETYPES[it.p.info.arch], tm = A.temper || {};
+      showScan(it.p.info.name + ' ' + it.p.info.home, [['Variant', A.name + (it.p.info.title ? ' · ' + it.p.info.title : '')], ['Health', it.p.hp + '%'],
+        ['Threat', tm.fights === 'often' ? 'picks fights' : tm.fights === 'never' ? 'harmless' : 'hits back'], ['Origin', 'Dimension ' + it.p.info.home]], it.p.info.arch === 'genius' ? 'Another me. Ugh. Probably a Doofus.' : pick(SNARK));
+    } else if (it.k === 'n') {
+      const T = MM.NPCS[it.n.type];
+      showScan(it.n.name || T.name, [['Species', T.name], ['Health', (it.n.hp !== undefined ? it.n.hp : 100) + '%'], ['Threat', T.hostile ? 'HOSTILE' : T.guard ? 'guard: will defend others' : 'peaceful'],
+        ['Drops', mat(T.drop)]], T.talk ? '"' + pick(T.talk) + '"' : pick(SNARK));
+    } else if (it.k === 'pk' && MM.isCurio(it.m.userData.kind)) {
+      const Q = MM.CURIOS[it.m.userData.kind.slice(2)];
+      showScan(Q.name, [['Type', 'curio'], ['Use', Q.use ? (Q.eat ? 'one use' : 'reusable') : 'keepsake'], ['Seen in', Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 2).join(', ')]], Q.desc);
+    } else if (it.k === 'pk') showScan('Loose matter', [['Composition', 'collectable material'], ['Value', 'worth picking up']], 'Grab it before a Jerry does.');
+    else if (it.k === 'l') {
+      const tasks = tasksAt(it.l).map(t => MM.TASKS[t].name);
+      const builds = MM.RECIPE_IDS.filter(r => MM.RECIPES[r].at && MM.LANDMARKS.some(x => MM.isAt(x, MM.RECIPES[r].at) && x === it.l)).map(r => MM.RECIPES[r].name);
+      showScan(it.l.name, [['Type', 'landmark'], ['Things to do', tasks.join(', ') || 'nothing for you'], ['Can build', builds.slice(0, 3).join(', ') || '—'], ['Door', it.l.door ? MM.DIM_BY_ID[it.l.door.dim].name : 'no']], pick(SNARK));
+    } else {
+      const P = MM.PROPS[it.p.type];
+      showScan(pretty(it.p.type), [['Integrity', P.hp + ' hp'], ['Salvage', mat(P.drop)], ['Size', it.p.r.toFixed(1) + ' m']], pick(SNARK));
+    }
+  }
+  function showScan(title, rows, quote) {
+    const box = $('scan');
+    box.textContent = '';
+    box.append(el('b', { text: '▸ ' + title }));
+    for (const [k, v] of rows) box.append(el('div', { class: 'r' }, el('span', { text: k }), el('span', { text: String(v) })));
+    if (quote) box.append(el('div', { class: 'q', text: quote }));
+    box.hidden = false; box.classList.remove('show'); void box.offsetWidth; box.classList.add('show');
+    clearTimeout(G.scanT); G.scanT = setTimeout(() => { box.hidden = true; }, 7000);
+  }
   function screenFlash(color, op, ms) {
     const f = $('whiteflash');
     if (!f) return;
@@ -468,7 +614,7 @@
 
   function onMessage(m) {
     switch (m.t) {
-      case 'hi': G.myId = m.id; profile.name = m.you.name; profile.home = m.you.home; keepToken(m.tok); break;
+      case 'hi': G.myId = m.id; profile.name = m.you.name; profile.home = m.you.home; $('home').value = profile.home; UI.save('profile', profile); keepToken(m.tok); break;
       case 'pg': onProgress(m); break;
       case 'w': enterDimension(m); break;
       case 's': onSnap(m); break;
@@ -505,7 +651,7 @@
     for (const u of m.u) { const tu = G.turrets.get(u[0]); if (tu) tu.aim = u[1]; }
   }
 
-  const SHOT_COLORS = { plasma: '#5dff8a', blaster: '#ffd84d', toy: '#ff8fd0', turret: '#ff4d4d', shrink: '#b48aff', gren: '#ffd84d' };
+  const SHOT_COLORS = { plasma: '#5dff8a', blaster: '#ffd84d', toy: '#ff8fd0', turret: '#ff4d4d', shrink: '#b48aff', freeze: '#bfeaff', gren: '#ffd84d' };
   const NPC_NAMES = {};
   for (const k in MM.NPCS) NPC_NAMES[k] = MM.NPCS[k].name;
 
@@ -513,7 +659,20 @@
     const me = G.me;
     switch (e.k) {
       case 'join': if (e.p.id !== G.myId) addPlayer(e.p); updateDimInfo(); break;
+      case 'pp': {
+        addPair(e);
+        if (e.o !== G.myId) sfxAt('plasma', e.x, e.z, 0.5);
+        fx.burst(e.x, e.y, e.z, MM.PAIR_COLORS[e.c], 16, 4, 0.5, 0.5, 0);
+        break;
+      }
+      case 'pt': {
+        if (e.id === G.myId) break;
+        const p = G.players.get(e.id);
+        if (p) sfxAt('warp', p.x, p.z, 0.5);
+        break;
+      }
       case 'leave': {
+        removePairsOf(e.id);
         const p = G.players.get(e.id);
         if (p && e.via) { fx.burst(p.x, p.y + 1, p.z, '#39ff6a', 20, 6, 0.7, 0.5, 2); sfxAt('warp', p.x, p.z, 0.6); }
         removePlayer(e.id); updateDimInfo();
@@ -521,7 +680,7 @@
       }
       case 'shot': {
         if (e.o === G.myId && e.w !== 'turret') {
-          if (e.w === 'gren' || e.w === 'shrink') C.sfx(e.w === 'gren' ? 'jump' : 'shrink');
+          if (e.w === 'gren' || e.w === 'shrink' || e.w === 'freeze') C.sfx(e.w === 'gren' ? 'jump' : 'shrink');
         } else {
           sfxAt(e.w === 'gren' ? 'jump' : e.w, e.x, e.z, 0.8);
           const p = G.players.get(e.o); if (p) { p.av.attackT = 0.25; p.aimT = 0.8; }
@@ -536,10 +695,16 @@
         sfxAt('boom', e.x, e.z, Math.min(1, e.r / 6));
         const d = Math.hypot(e.x - me.x, e.z - me.z);
         if (d < 25) G.shake = Math.max(G.shake, (1 - d / 25) * 0.6 * Math.min(1, e.r / 5));
+        // Everyone caught in the blast goes flying, limbs and all.
+        const blast = (av, x, z) => { const dd = Math.hypot(x - e.x, z - e.z), R = e.r * 1.6; if (av && dd < R) C.ragdoll(av, x - e.x, z - e.z, (1 - dd / R) * Math.min(1, e.r / 5) + 0.3); };
+        blast(G.meAv, me.x, me.z);
+        for (const p of G.players.values()) blast(p.av, p.x, p.z);
+        for (const n of G.npcs.values()) if (n.m.av) blast(n.m.av, n.x, n.z);
         break;
       }
       case 'mel': { const p = G.players.get(e.id); if (p) { p.av.attackT = 0.3; sfxAt('melee', p.x, p.z); } break; }
       case 'dmg': {
+        { const tav = e.p === G.myId ? G.meAv : e.p ? (G.players.get(e.p) || {}).av : (G.npcs.get(e.n) || { m: {} }).m.av; C.hitReact(tav); }
         if (e.p === G.myId) {
           $('flash').style.opacity = '1'; setTimeout(() => { $('flash').style.opacity = '0'; }, 120);
           C.sfx('hurt', 0.8);
@@ -597,6 +762,12 @@
       case 'kiosk': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1, p.z, '#ffd84d', 25, 6, 0.6, 0.5, 2); break; }
       case 'timestop': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1.2, p.z, '#8fd8ff', 90, 14, 1.2, 1.4, 0); fx.burst(p.x, p.y + 1.2, p.z, '#ffffff', 30, 8, 0.8, 1.0, 0); } C.sfx('ability'); if (e.id === G.myId) UI.toast('Time stopped. Someone will have noticed.', 3000); break; }
       case 'bite': { const n = G.npcs.get(e.n); if (n) sfxAt('bite', n.x, n.z); break; }
+      case 'frozen': {
+        const p = e.n ? G.npcs.get(e.n) : posOf(e.id);
+        if (p) { fx.burst(p.x, p.y + 1, p.z, '#bfeaff', 34, 5, 0.6, 0.9, 0); fx.shockwave(p.x, p.y + 0.1, p.z, '#bfeaff', 1.6, 0.5, 0.1); numAt(p.x, p.y + 2.4, p.z, 'FROZEN', '#bfeaff', false); sfxAt('shrink', p.x, p.z); }
+        break;
+      }
+      case 'curio': { const p = posOf(e.id); const Q = MM.CURIOS[e.q]; if (p && Q) fx.burst(p.x, p.y + 1.4, p.z, Q.color, 24, 4, 0.5, 0.8, 1); break; }
       case 'shrunk': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#b48aff', 20, 4, 0.5, 0.6, 0); sfxAt('shrink', p.x, p.z); } break; }
       case 'say': {
         const n = G.npcs.get(e.n);
@@ -620,7 +791,12 @@
       }
       case 'gear': {
         const p = G.players.get(e.id);
-        if (p) { p.info.gear = e.gear; C.setGear(p.av, e.gear); collectOutlines(p.av); }
+        if (p) {
+          const rebuild = p.info.arch === 'picklerick' && !!e.gear.ratsuit !== !!(p.info.gear && p.info.gear.ratsuit);
+          p.info.gear = e.gear;
+          if (rebuild) { const info = p.info; removePlayer(e.id); addPlayer(info); }
+          else { C.setGear(p.av, e.gear); collectOutlines(p.av); }
+        }
         break;
       }
       case 'ship': {
@@ -643,8 +819,15 @@
   function onPrivate(e) {
     const me = G.me;
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
-    else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; }
+    else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
+    else if (e.k === 'found') {
+      const Q = MM.CURIOS[e.id];
+      C.sfx('pickup');
+      if (e.first) UI.banner(Q.icon + ' ' + Q.name, Q.desc + '  (' + e.n + '/' + MM.CURIO_IDS.length + ' found · I to open your inventory)');
+      else UI.toast('Found: ' + Q.icon + ' ' + Q.name, 2500);
+      if (G.prog && !(G.prog.found || (G.prog.found = [])).includes(e.id)) G.prog.found.push(e.id);
+    }
     else if (e.k === 'built') { C.sfx('craft'); UI.toast('Built: ' + MM.RECIPES[e.r].name); if (G.modal === 'craft') setTimeout(openCraft, 50); }
     else if (e.k === 'task') {
       const got = Object.keys(e.give).map(k => '+' + e.give[k] * e.mult + ' ' + MM.MATERIALS[k].icon).join(' ');
@@ -696,6 +879,7 @@
     const invKey = JSON.stringify(y.inv) + y.ch;
     if (invKey !== G.invKey) updateTracker();
     if (G.modal === 'craft' && invKey !== G.invKey) openCraft();
+    if (G.modal === 'items' && invKey !== G.invKey) openInventory();
     G.invKey = invKey;
   }
 
@@ -703,6 +887,14 @@
   function onProgress(m) {
     const first = !G.prog;
     G.prog = m; G.st = m.st;
+    // Pickle Rick just built his rat suit: a new body.
+    if (G.meAv && profile.arch === 'picklerick' && !!m.up.ratsuit !== !!G.meRat) {
+      scene.remove(G.meAv.root); G.meAv.dispose();
+      G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!m.up.ratsuit });
+      scene.add(G.meAv.root);
+      if (m.up.ratsuit) { UI.banner('Pickle Riiiick!', 'Rat legs, rat arms, and a lot of spite. Now you can fight.'); fx.puff(G.me.x, G.me.y + 0.5, G.me.z, '#8a7a6a', 14, 1.2, 1.2, 0.8); }
+    }
+    G.meRat = !!m.up.ratsuit;
     if (G.meAv) C.setGear(G.meAv, myGear());
     $('flyBar').hidden = !G.st.fly;
     updateTracker();
@@ -710,7 +902,7 @@
     if (G.modal === 'journal') openJournal();
     if (first && G.entered) buildHotbar();
   }
-  function myGear() { const up = G.prog ? G.prog.up : {}; return { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers }; }
+  function myGear() { const up = G.prog ? G.prog.up : {}; return { wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs, ratsuit: !!up.ratsuit }; }
   // The next step of your path, always on screen.
   function updateTracker() {
     const A = MM.ARCHETYPES[profile.arch], pg = G.prog;
@@ -773,6 +965,10 @@
     mk('shrink', '3', 'Shrink', () => useGadget('shrink'));
     mk('meeseeks', '4', 'Meeseeks', () => useGadget('meeseeks'));
     mk('timecrystal', '5', 'Time', () => useGadget('timecrystal'));
+    mk('freeze', '6', 'Freeze', () => useGadget('freeze'));
+    mk('items', 'I', 'Items', () => openInventory());
+    mk('pair', 'R', 'Portals', () => shootPair());
+    mk('scan', 'X', 'Scan', () => scan());
     mk('craft', 'C', 'Build', () => openCraft());
     mk('journal', 'J', 'Journal', () => openJournal());
     mk('portal', 'E', 'Portal', () => portalAction());
@@ -791,6 +987,11 @@
       slots[g].classList.toggle('off', !(y.inv[g] > 0));
       slots[g].classList.toggle('empty', !(y.inv[g] > 0));
     }
+    slots.scan.hidden = !(G.st && G.st.scanner);
+    const canPair = !!(G.prog && MM.canPair(profile.arch, G.prog.up));
+    slots.pair.hidden = !canPair; $('tPair').hidden = !canPair;
+    slots.pair.style.setProperty('--pc', MM.PAIR_COLORS[G.pairNext || 0]);
+    $('tPair').style.setProperty('--pc', MM.PAIR_COLORS[G.pairNext || 0]);
     // Only Ricks and Evil Morty know how to make a Time Crystal: no slot for everyone else.
     slots.timecrystal.hidden = !(y.inv.timecrystal > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'timecrystal'));
     const st = G.st;
@@ -800,6 +1001,7 @@
     slots.ship.hidden = !(st && st.ship);
     slots.ship.querySelector('.l').textContent = y.ship ? 'Land' : 'Ship';
     $('tShip').hidden = !(st && st.ship);
+    $('tDown').hidden = !y.ship;
     tLabel('tShip', y.ship ? 'LAND' : 'SHIP');
   }
 
@@ -835,8 +1037,9 @@
     return { dx: tx / l, dy: ty / l, dz: tz / l };
   }
 
+  const pickled = () => { if (MM.helpless(profile.arch, G.prog && G.prog.up)) { if (now() > (G.pickleT || 0)) { UI.toast(MM.HELPLESS_TEXT, 3500); G.pickleT = now() + 4; } return true; } return false; };
   function fire() {
-    if (!canAct() || (G.you.fx & 4)) return;
+    if (!canAct() || (G.you.fx & 4) || pickled()) return;
     const t = now();
     const wid = weaponId(), W = MM.WEAPONS[wid];
     if (t < G.fireT) return;
@@ -849,7 +1052,7 @@
     C.sfx(W.melee ? 'melee' : wid === 'lasers' || wid === 'rifle' ? 'plasma' : wid, 0.7);
   }
   function useGadget(g) {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     if (G.you.ship) { UI.toast('Land first (B) to use gadgets.'); return; }
     if (!(G.you.inv[g] > 0)) { UI.toast('No ' + MM.RECIPES[g].name + '. Build one with C.'); return; }
     const a = g === 'turret' || g === 'meeseeks' ? { dx: Math.sin(G.camYaw), dy: 0, dz: Math.cos(G.camYaw) } : aimDir();
@@ -877,11 +1080,11 @@
   }
   function travelOpts(mode) {
     const st = G.st || {};
-    return mode === 'ship' ? { hull: true, engine: !!(st.ship && st.ship.engine), drive: !!(st.ship && st.ship.drive) }
+    return mode === 'ship' ? { hull: true, engine: !!(st.ship && st.ship.engine), drive: !!(st.ship && st.ship.drive), quantum: !!(st.ship && st.ship.quantum) }
       : mode === 'gun' ? { gold: !!(G.you.chMax && G.you.ch > 0 && st.gun && st.gun.gold) } : {};
   }
   function portalAction() {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     const m = travelModes();
     if (m.length) return openDims(m[0]);
     if (G.you.chMax && G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
@@ -889,7 +1092,7 @@
       : 'No portal gun. Step through someone else\'s portal, fly a ship, find a portal station (the Citadel), borrow Rick\'s gun from his workbench, or build your own (J).', 5000);
   }
   function toggleShip() {
-    if (!canAct()) return;
+    if (!canAct() || pickled()) return;
     if (!G.st || !G.st.ship) { UI.toast('You don\'t have a ship. Build a Ship Hull at the Bazaar Shipyard, if your path allows it (J).', 4000); return; }
     send({ t: 'ship', on: !G.you.ship });
   }
@@ -959,7 +1162,7 @@
     const ids = MM.WORLD_IDS.filter(id => !MM.DIM_BY_ID[id].outsideCurve);
     const out = MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].outsideCurve);
     const spots = [];
-    const rings = [[0.9, 0.88, 10], [0.77, 0.78, 9], [0.64, 0.66, 8], [0.5, 0.5, 6]];
+    const rings = [[0.9, 0.88, 11], [0.78, 0.8, 10], [0.66, 0.68, 9], [0.54, 0.52, 7], [0.42, 0.3, 4]];
     let k = 0;
     for (const [f, span, n] of rings) for (let i = 0; i < n && k < ids.length; i++, k++) {
       const t = n === 1 ? 0 : -span + (2 * span * i) / (n - 1);
@@ -1025,8 +1228,11 @@
         box.append(tabs);
       }
       box.append(curveMap(go));
-      for (const outside of [false, true]) {
-        const ids = MM.WORLD_IDS.filter(id => !!MM.DIM_BY_ID[id].outsideCurve === outside && id !== G.dimId && !MM.DIM_BY_ID[id].pocket);
+      // Home dimensions: yours, and those of everyone online (their Earth, their twist).
+      const homes = [MM.homeDimId(profile.home)].concat(G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : [])
+        .filter((id, i, a) => id !== 'suburbia' && id !== G.dimId && a.indexOf(id) === i);
+      for (const outside of ['home', false, 'time', true]) {
+        const ids = outside === 'home' ? homes : MM.WORLD_IDS.filter(id => { const D = MM.DIM_BY_ID[id]; return (outside === 'time' ? !!D.timeline : !D.timeline && !!D.outsideCurve === outside) && id !== G.dimId && !D.pocket; });
         if (!ids.length) continue;
         const list = el('div', { class: 'list' });
         for (const id of ids) {
@@ -1035,7 +1241,7 @@
             el('div', { class: 't' }, el('b', { text: d.name + '  ' + d.code }), el('small', { text: w || d.blurb + ' · ' + n + ' here' })),
             el('button', { class: 'btn go', disabled: w ? 'disabled' : null, onclick: () => go(id) }, mode === 'gun' ? 'Open' : mode === 'ship' ? 'Fly' : 'Go')));
         }
-        box.append(el('h3', { text: outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
+        box.append(el('h3', { text: outside === 'home' ? 'Home dimensions' : outside === 'time' ? 'Other times' : outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
       }
       const fee = S && !S.free.includes(profile.arch) ? Object.keys(S.fee).map(k => S.fee[k] + ' ' + MM.MATERIALS[k].name).join(', ') : '';
       box.append(el('p', { class: 'note', text: mode === 'station' ? 'Step through the station portal' + (fee ? ' for ' + fee : ' (free for you)') + '.'
@@ -1116,7 +1322,45 @@
         el('small', { text: 'From ' + e.from + '. Reward: ' + Object.keys(e.rew).map(k => e.rew[k] + ' ' + MM.MATERIALS[k].name).join(', ') }))));
       const st = G.st;
       box.append(el('h3', { text: 'You' }), el('p', { class: 'note', text: 'Health ' + st.maxHp + ' · speed ' + st.speed.toFixed(1) + ' · damage ×' + st.dmg.toFixed(2) +
-        (st.fly ? ' · ' + (st.fly === 'jet' ? 'jetpack' : 'wings') : '') + (st.gun ? ' · portal gun ×' + st.gun.charges : '') + (st.ship ? ' · ship' + (st.ship.drive ? ' with dimension drive' : '') : '') }));
+        (st.fly ? ' · ' + (st.fly === 'jet' ? 'jetpack' : 'wings') : '') + (st.gun ? ' · portal gun ×' + st.gun.charges : '') + (st.ship ? ' · ship' + (st.ship.drive ? ' with dimension drive' : '') + (st.ship.quantum ? ' with quantum drive' : '') : '') }));
+    });
+  }
+  // Inventory (I): gadgets, curios you are carrying, materials, and the collection log.
+  const GADGET_KEYS = { grenade: '1', turret: '2', shrink: '3', meeseeks: '4', timecrystal: '5', freeze: '6' };
+  function openInventory() {
+    const y = G.you, pg = G.prog;
+    if (!y || !pg) return;
+    openModal('items', 'Inventory', box => {
+      box.append(el('h3', { text: 'Curios' }));
+      const cl = el('div', { class: 'list' });
+      for (const q of MM.CURIO_IDS) {
+        const n = y.inv['q:' + q] || 0, Q = MM.CURIOS[q];
+        if (!n) continue;
+        cl.append(el('div', { class: 'row' }, el('span', { class: 'emo', text: Q.icon }), el('div', { class: 't' }, el('b', { text: Q.name + (n > 1 ? ' ×' + n : '') }), el('small', { text: Q.desc })),
+          el('button', { class: 'btn' + (Q.use ? ' go' : ''), onclick: () => { send({ t: 'uc', id: q }); } }, Q.use ? (Q.eat ? 'Use' : 'Try') : 'Look')));
+      }
+      if (!cl.childNodes.length) cl.append(el('p', { class: 'note', text: 'Nothing yet. Curios glow in a column of light: walk into one to pick it up.' }));
+      box.append(cl, el('h3', { text: 'Gadgets' }));
+      const gl = el('div', { class: 'list' });
+      for (const g of MM.GADGET_IDS) {
+        const n = y.inv[g] || 0, R = MM.RECIPES[g];
+        if (!n) continue;
+        gl.append(el('div', { class: 'row' + (n ? '' : ' later') }, el('div', { class: 't' }, el('b', { text: R.name + (n ? ' ×' + n : '') }), el('small', { text: R.desc + (isTouch ? '' : ' · key ' + GADGET_KEYS[g]) })),
+          el('button', { class: 'btn go', onclick: () => { UI.closeModal(); useGadget(g); } }, 'Use')));
+      }
+      if (!gl.childNodes.length) gl.append(el('p', { class: 'note', text: 'No gadgets. Build them at the workbench (C).' }));
+      box.append(gl, el('p', { class: 'note' }, 'Build more gadgets at the workbench: ', el('button', { class: 'btn', onclick: () => openCraft() }, 'Build (C)')), el('h3', { text: 'Materials' }));
+      box.append(el('p', { class: 'note', text: MM.MAT_IDS.map(k => MM.MATERIALS[k].icon + ' ' + (y.inv[k] || 0) + ' ' + MM.MATERIALS[k].name).join(' · ') }));
+      const found = pg.found || [];
+      box.append(el('h3', { text: 'Collection: ' + found.length + ' of ' + MM.CURIO_IDS.length }));
+      const grid = el('div', { class: 'coll' });
+      for (const q of MM.CURIO_IDS) {
+        const Q = MM.CURIOS[q], have = found.includes(q);
+        const where = Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 3).join(', ');
+        grid.append(el('div', { class: 'cc' + (have ? '' : ' no'), title: have ? Q.name + ': ' + Q.desc : 'Somewhere in ' + where },
+          el('span', { class: 'emo', text: have ? Q.icon : '?' }), el('small', { text: have ? Q.name : '???' }), el('i', { text: have ? '' : where })));
+      }
+      box.append(grid);
     });
   }
   function openBoard() {
@@ -1163,7 +1407,7 @@
 
   // ---------- Input ----------
   const keys = new Set();
-  const touch = { mx: 0, mz: 0, fire: false, jump: false, stickId: null, lookId: null, lx: 0, ly: 0 };
+  const touch = { mx: 0, mz: 0, fire: false, jump: false, down: false, sprint: false, stickId: null, lookId: null, lx: 0, ly: 0 };
   let mouseDown = false;
   const chatOpen = () => !$('chatInput').hidden;
   function openChat() {
@@ -1196,6 +1440,8 @@
       case 'KeyE': portalAction(); break;
       case 'KeyF': interact(); break;
       case 'KeyC': openCraft(); break;
+      case 'KeyX': scan(); break;
+      case 'KeyR': shootPair(); break;
       case 'KeyJ': openJournal(); break;
       case 'KeyB': toggleShip(); break;
       case 'KeyQ': ability(); break;
@@ -1204,6 +1450,8 @@
       case 'Digit3': useGadget('shrink'); break;
       case 'Digit4': useGadget('meeseeks'); break;
       case 'Digit5': useGadget('timecrystal'); break;
+      case 'Digit6': useGadget('freeze'); break;
+      case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emote(); break;
       case 'Space': e.preventDefault(); if (G.you && G.you.dead && now() >= G.rsAt) send({ t: 'rs' }); break;
@@ -1218,6 +1466,7 @@
     C.audioUnlock();
     if (!document.pointerLockElement && canvas.requestPointerLock) { try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (_) {} }
     if (e.button === 0) mouseDown = true;
+    if (e.button === 2) shootPair();   // right click: the next portal of your pair
   });
   window.addEventListener('mouseup', e => { if (e.button === 0) mouseDown = false; });
   window.addEventListener('mousemove', e => {
@@ -1247,7 +1496,7 @@
   const stick = $('stick');
   stick.addEventListener('pointerdown', e => { touch.stickId = e.pointerId; stick.setPointerCapture(e.pointerId); moveStick(e); C.audioUnlock(); });
   stick.addEventListener('pointermove', e => { if (e.pointerId === touch.stickId) moveStick(e); });
-  const endStick = e => { if (e.pointerId !== touch.stickId) return; touch.stickId = null; touch.mx = touch.mz = 0; stick.firstElementChild.style.transform = ''; };
+  const endStick = e => { if (e.pointerId !== touch.stickId) return; touch.stickId = null; touch.mx = touch.mz = 0; touch.sprint = false; stick.classList.remove('sprint'); stick.firstElementChild.style.transform = ''; };
   stick.addEventListener('pointerup', endStick); stick.addEventListener('pointercancel', endStick);
   function moveStick(e) {
     const r = stick.getBoundingClientRect();
@@ -1255,6 +1504,8 @@
     const l = Math.hypot(dx, dy);
     if (l > 1) { dx /= l; dy /= l; }
     touch.mx = dx; touch.mz = -dy;
+    touch.sprint = l > 1.25;   // drag past the edge of the stick to sprint
+    stick.classList.toggle('sprint', touch.sprint);
     stick.firstElementChild.style.transform = `translate(${dx * 36}px, ${dy * 36}px)`;
   }
   canvas.addEventListener('pointerdown', e => {
@@ -1278,11 +1529,12 @@
     b.addEventListener('pointerup', up); b.addEventListener('pointercancel', up);
   };
   for (const b of document.querySelectorAll('#tbtns button[data-i]')) b.prepend(UI.icon(b.dataset.i));
-  hold('tFire', 'fire'); hold('tJump', 'jump');
+  hold('tFire', 'fire'); hold('tJump', 'jump'); hold('tDown', 'down');
   $('tAb').addEventListener('pointerdown', () => ability());
   $('tPortal').addEventListener('pointerdown', () => portalAction());
   $('tTalk').addEventListener('pointerdown', () => interact());
   $('tShip').addEventListener('pointerdown', () => toggleShip());
+  $('tPair').addEventListener('pointerdown', () => shootPair());
   $('bJournal').onclick = () => openJournal();
   // Offline progress lives in this browser: save it when the page goes away.
   window.addEventListener('pagehide', () => { if (G.net && G.net.host) G.net.host.saveAll(); });
@@ -1311,8 +1563,9 @@
     for (const p of props) {
       if (!G.alive[p.id] || MM.PROPS[p.type].arch) continue;
       if (y >= p.y + p.h * 0.92 - 0.6) continue;
-      const dx = x - p.x, dz = z - p.z, min = p.r + rad, d2 = dx * dx + dz * dz;
-      if (d2 < min * min && d2 > 1e-6) { const d = Math.sqrt(d2); x = p.x + dx / d * min; z = p.z + dz / d * min; }
+      const reach = MM.propReach(p) + rad;
+      if (Math.abs(x - p.x) > reach || Math.abs(z - p.z) > reach) continue;
+      [x, z] = MM.pushOutOfProp(p, x, z, rad);
     }
     return [x, z];
   }
@@ -1339,7 +1592,9 @@
     const inShip = !!(y && y.ship && st.ship);
     // Same speed rules as the server (Host.speedOf), so you never get snapped back.
     const mult = (fxb & 2 ? 1.8 : 1) * (fxb & 8 ? 0.75 : 1) * (fxb & 16 ? 0.6 : 1) * (fxb & 256 ? 0.5 : 1) * (fxb & 1024 ? 0.12 : 1);
-    const speed = inShip ? st.ship.speed * mult : st.speed * mult * (st.fly && !me.grounded ? 1.3 : 1);
+    const shift = !chatOpen() && !UI.modalOpen() && (keys.has('ShiftLeft') || keys.has('ShiftRight'));
+    me.sprinting = !inShip && !dead && il > 0.3 && (shift || touch.sprint) && iz > -0.2;
+    const speed = inShip ? st.ship.speed * mult : st.speed * mult * (st.fly && !me.grounded ? 1.3 : 1) * (me.sprinting ? st.sprint || 1.3 : 1);
     const sy = Math.sin(G.camYaw), cy = Math.cos(G.camYaw);
     const wx = (sy * iz - cy * ix) * speed, wz = (cy * iz + sy * ix) * speed;
     const accel = me.kbT > 0 ? 2 : inShip ? 5 : me.grounded ? 40 : 10;
@@ -1347,7 +1602,7 @@
     me.vx += (wx - me.vx) * k; me.vz += (wz - me.vz) * k;
     me.kbT = Math.max(0, me.kbT - dt);
     const jumpHeld = !chatOpen() && !UI.modalOpen() && (keys.has('Space') || touch.jump) && !dead;
-    const downHeld = !chatOpen() && !UI.modalOpen() && (keys.has('ShiftLeft') || keys.has('ShiftRight') || keys.has('ControlLeft'));
+    const downHeld = !chatOpen() && !UI.modalOpen() && (shift || keys.has('ControlLeft') || touch.down);
     me.flying = false;
     if (inShip) {
       // Ship: fly where you look. Space climbs, Shift dives.
@@ -1366,20 +1621,33 @@
       if (st.fly === 'jet' && Math.random() < 0.5) fx.glow.emit(me.x, me.y + 0.5, me.z, 0, -4, 0, '#ffb03a', 0.4, 0.3, 0);
     }
     if (me.grounded) me.fly = Math.min(st.flyTime || 6, me.fly + dt * 1.5);
-    if (!inShip) me.vy -= dim.gravity * dt * (me.flying ? 0.2 : 1);
+    // Reduced gravity when flying or in ship at high altitude
+    let gravityMult = 1.0;
+    if (me.flying) {
+      gravityMult = 0.2; // Personal jetpack/wings
+    } else if (inShip && me.y > 50) {
+      // Reduce gravity for ships at high altitude (simulating space)
+      gravityMult = Math.max(0.1, 1.0 - (me.y - 50) * 0.015); // Gradually reduce gravity above 50 units
+    }
+    if (!inShip) me.vy -= dim.gravity * dt * gravityMult;
     let nx = me.x + me.vx * dt, nz = me.z + me.vz * dt, ny = me.y + me.vy * dt;
     [nx, nz] = pushOut(nx, nz, ny, inShip ? 1.6 : 0.45);
     const lim = MM.boundOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1), limZ = MM.boundZOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1);
     nx = Math.max(-lim, Math.min(lim, nx)); nz = Math.max(-limZ, Math.min(limZ, nz));
     [nx, nz] = MM.collideWalls(G.dimId, nx, nz, 0.4);
     const g = groundAt(nx, nz, Math.max(ny, me.y)) + (inShip ? 0.4 : 0);
-    if (inShip) { if (ny < g) { ny = g; me.vy = Math.max(0, me.vy); } ny = Math.min(ny, g + 90); }
+    if (inShip) { if (ny < g) { ny = g; me.vy = Math.max(0, me.vy); }
+      // Increased height limit for space travel - much higher for interplanetary travel
+      const maxShipHeight = 1000; // Increased from 100 to 1000 for space travel
+      ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight); }
     else if (ny <= g) {
       if (!me.grounded && me.vy < -14) fx.puff(nx, g, nz, '#ddd', 6, 1, 1, 0.5);
+      if (!me.grounded && me.vy < -24 && !inShip) C.ragdoll(G.meAv, me.vx || Math.sin(me.yaw), me.vz || Math.cos(me.yaw), Math.min(0.8, -me.vy / 50));   // a hard landing: stumble over
       ny = g; me.vy = 0; me.grounded = true;
     } else if (ny > g + 0.15) me.grounded = false;
     else if (me.grounded && me.vy <= 0) ny = g;
     me.x = nx; me.y = ny; me.z = nz;
+    if (G.pairs.size > 1) pairTransit(me);
     // Face where you move, or where you aim right after shooting.
     me.aimT = Math.max(0, me.aimT - dt);
     me.emoteT = Math.max(0, me.emoteT - dt);
@@ -1395,6 +1663,10 @@
       G.meAv.body.visible = !firstPerson() || dead;
       vm.bob += (me.grounded && !inShip ? hs : 0) * dt * 1.6; vm.speed = me.grounded && !inShip ? Math.min(1, hs / 5) : 0;
     }
+    // Sprinting: dust at your heels and a slightly wider view.
+    if (me.sprinting && me.grounded && hs > 3 && Math.random() < dt * 14) fx.puff(me.x - me.vx * 0.05, me.y + 0.1, me.z - me.vz * 0.05, '#e8e2d4', 1, 0.5, 0.6, 0.4);
+    const fovT = G.baseFov + (me.sprinting && hs > 3 ? 6 : 0);
+    if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
     if (st.fly) $('flyFill').style.transform = 'scaleX(' + me.fly / (st.flyTime || 6) + ')';
     // Hold to fire.
     if ((mouseDown && document.pointerLockElement === canvas) || (mouseDown && !document.pointerLockElement) || touch.fire) fire();
@@ -1454,7 +1726,18 @@
     return k < 0.5 ? a : b;
   }
   const tmp = {};
+  // The split timeline stutters: now and then the world skips, with a flash of static.
+  function timeGlitch(dt) {
+    if (!MM.DIM_BY_ID[G.dimId].glitch || G.mode !== 'play') return;
+    G.glitchT = (G.glitchT || 4) - dt;
+    if (G.glitchT > 0) return;
+    G.glitchT = 3 + Math.random() * 6;
+    screenFlash(Math.random() < 0.5 ? '#8fd8ff' : '#c8c8d8', 0.35, 260);
+    G.shake = Math.max(G.shake || 0, 0.25);
+    if (Math.random() < 0.3) UI.toast(pick(['The timeline skips.', 'You remember this moment. Twice.', 'Static, then nothing.', 'Somewhere, a Time Cop sighs.']), 1800);
+  }
   function updateOthers(dt) {
+    timeGlitch(dt);
     const rt = now() - (G.offset || 0) - INTERP;
     const fogFar = MM.DIM_BY_ID[G.dimId].fogFar;
     for (const p of G.players.values()) {
@@ -1477,7 +1760,7 @@
       const anim = s.a === MM.ANIM.dead ? s.a : p.emoteT > 0 ? MM.ANIM.emote : s.a;
       p.av.animate(dt, { speed: s.a === MM.ANIM.run ? Math.max(p.speed, 3) : p.speed * 0.3, anim, fx: s.fx });
       if (d < 40) ongoingFx(p, s.fx, p.speed, dt);
-      p.av.setDetail(nearCam(p.x, p.z));
+      wantDetail(p.av, p.x, p.z);
       const near = d < 40;
       for (const o of p.av.outlines) o.visible = near || settings.quality === 'high';
       p.tag.sprite.visible = d < 45 && s.a !== MM.ANIM.dead;
@@ -1491,7 +1774,7 @@
       const root = n.m.root;
       root.position.set(n.x, n.y, n.z);
       root.rotation.y = n.r;
-      if (n.m.av) { n.m.av.animate(dt, { speed: n.speed, anim: (n.flags & 4) ? MM.ANIM.emote : n.speed > 0.4 ? 1 : 0 }); n.m.av.setDetail(nearCam(n.x, n.z)); }
+      if (n.m.av) { n.m.av.animate(dt, { speed: n.speed, anim: (n.flags & 4) ? MM.ANIM.emote : n.speed > 0.4 ? 1 : 0 }); wantDetail(n.m.av, n.x, n.z); }
       else {
         const md = root.userData.model;
         if (n.type === 'meatblob') { const s = 1 + Math.sin(n.t * (3 + n.speed)) * 0.08; md.scale.set(1 / s, s, 1 / s); }
@@ -1508,6 +1791,12 @@
       if (n.tag) n.tag.sprite.visible = Math.hypot(n.x - G.me.x, n.z - G.me.z) < 25;
     }
     const t = now();
+    for (const q of G.pairs.values()) {
+      q.mesh.userData.tick(dt);
+      const op = Math.min(1, (t - q.born) * 4);
+      q.mesh.material.uniforms.open.value = op; q.mesh.userData.rim.scale.set(0.85 * op, 0.85 * 1.35 * op, 1);
+      if (Math.random() < 0.15) fx.glow.emit(q.P.x + (Math.random() - 0.5) * 1.4, q.P.y + (Math.random() - 0.5) * 1.8, q.P.z + (Math.random() - 0.5) * 1.4, q.P.nx, q.P.ny, q.P.nz, MM.PAIR_COLORS[q.c], 0.25, 0.4, 0);
+    }
     for (const po of G.portals.values()) {
       po.mesh.userData.tick(dt);
       const left = po.ttl - (t - po.born);
@@ -1520,7 +1809,16 @@
   }
 
   // Characters within this distance of the camera get their smooth, detailed model.
-  function nearCam(x, z) { return (x - camWorld.x) ** 2 + (z - camWorld.z) ** 2 < (settings.quality === 'low' ? 16 * 16 : 26 * 26); }
+  function nearCam(x, z) { return (x - camWorld.x) ** 2 + (z - camWorld.z) ** 2 < (settings.quality === 'low' ? 14 * 14 : 20 * 20); }
+  // Only the closest few characters get the detailed model; a crowd costs no more than a few.
+  const detailQ = [];
+  function wantDetail(av, x, z) { detailQ.push([(x - camWorld.x) ** 2 + (z - camWorld.z) ** 2, av]); }
+  function flushDetail() {
+    detailQ.sort((a, b) => a[0] - b[0]);
+    const cap = settings.quality === 'low' ? 4 : 8, r2 = settings.quality === 'low' ? 14 * 14 : 20 * 20;
+    detailQ.forEach(([d2, av], i) => av.setDetail(i < cap && d2 < r2));
+    detailQ.length = 0;
+  }
 
   // ---------- Camera ----------
   function firstPerson() { return settings.view === 'first' || !!(vr && vr.on); }
@@ -1586,7 +1884,7 @@
     let d = dist;
     if ((G.camPropT -= dt) <= 0) {
       G.camPropT = 0.3;
-      G.camProps = MM.genProps(G.dimId).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (p.r + dist + 2) ** 2);
+      G.camProps = MM.genProps(G.dimId).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (MM.propReach(p) + dist + 2) ** 2);
     }
     for (let s = 0.8; s <= dist; s += 0.4) {
       const px = tx - fx_ * s + rx * sh * s / dist, py = ty - fy * s, pz = tz - fz * s + rz * sh * s / dist;
@@ -1594,7 +1892,8 @@
       if (MM.DIM_BY_ID[G.dimId].walls) { const [wx, wz] = MM.collideWalls(G.dimId, px, pz, 0.15); if (wx !== px || wz !== pz) hit = true; }
       if (!hit) for (const p of G.camProps || []) {
         if (!G.alive[p.id] || py > p.y + p.h || py < p.y - 1) continue;
-        if ((px - p.x) ** 2 + (pz - p.z) ** 2 < (p.r + 0.3) ** 2) { hit = true; break; }
+        const [qx, qz] = MM.pushOutOfProp(p, px, pz, 0.3);
+        if (qx !== px || qz !== pz) { hit = true; break; }
       }
       if (hit) { d = Math.max(0.8, s - 0.4); break; }
     }
@@ -1618,7 +1917,17 @@
   const clock = new T.Clock();
   const proj = new T.Vector3();
   let menuInited = false;
+  // One bad frame must never freeze the game: report the error once and keep going.
+  const seenErr = new Set();
   function frame() {
+    try { frameBody(); }
+    catch (err) {
+      const key = String(err && err.message);
+      if (!seenErr.has(key)) { seenErr.add(key); console.error('Frame error (the game keeps running):', err); }
+      try { renderer.render(scene, camera); } catch (e2) { /* nothing more to do this frame */ }
+    }
+  }
+  function frameBody() {
     // Real time passed (capped), so a slow device still plays at normal speed.
     const raw = Math.min(0.25, clock.getDelta());
     const dt = Math.min(0.05, raw);
@@ -1632,6 +1941,7 @@
     if (vr.on) vr.update(dt);
     for (let left = raw; left > 1e-4; left -= 0.05) updateMe(Math.min(0.05, left));
     updateOthers(dt);
+    flushDetail();
     if (!vr.on) updateCamera(dt);
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
@@ -1696,4 +2006,12 @@
     if (m === 'gun') vr.say('Portal open to ' + MM.DIM_BY_ID[id].name + '. Walk through it!');
   }
   renderer.setAnimationLoop(frame);
+  // Phones sometimes drop the graphics context under memory pressure. Ask for it back and
+  // rebuild the world when it returns, instead of leaving a dead black screen.
+  canvas.addEventListener('webglcontextlost', e => { e.preventDefault(); UI.toast('Graphics hiccup: rebuilding the world…', 3000); }, false);
+  canvas.addEventListener('webglcontextrestored', () => {
+    if (!G.world || !G.dimId) return;
+    scene.remove(G.world.group); G.world = C.buildDimension(G.dimId, settings.quality); scene.add(G.world.group);
+    for (let i = 0; i < G.alive.length; i++) G.world.setAlive(i, G.alive[i]);
+  }, false);
 })();

@@ -112,6 +112,77 @@
   }
 
   // ---------- Prop models (unit scale, base on the ground) ----------
+  // ---------- Statues: carved figures built from the same parts as a body ----------
+  // fig(s, o): a standing person at (o.x, o.y, o.z), o.k metres per unit (1 unit = 1.8 m tall),
+  // turned o.ry around Y, all in one stone or bronze colour. o.hair: 'spiky' (Rick) or 'none';
+  // o.coat: a lab coat; o.raise: raise the left arm with a portal gun; o.armsOut: arms held
+  // out to the sides (to hold hands).
+  function fig(s, o) {
+    const k = o.k, c = o.color, cy = Math.cos(o.ry || 0), sy = Math.sin(o.ry || 0), dark = shade(c, 0.82), lite = shade(c, 1.08);
+    const put = (geo, col, p, r, sc) => s.add(geo, col, [o.x + (p[0] * cy + p[2] * sy) * k, o.y + p[1] * k, o.z + (-p[0] * sy + p[2] * cy) * k],
+      [(r ? r[0] : 0), (r ? r[1] : 0) + (o.ry || 0), (r ? r[2] : 0)], [sc[0] * k, sc[1] * k, sc[2] * k]);
+    // A limb from point a to point b (local units), as a rounded cylinder.
+    const yAxis = new T.Vector3(0, 1, 0), turn = new T.Quaternion().setFromAxisAngle(yAxis, o.ry || 0);
+    const limb = (a, b, rad, col) => {
+      const dir = new T.Vector3(b[0] - a[0], b[1] - a[1], b[2] - a[2]), l = dir.length();
+      const q = turn.clone().multiply(new T.Quaternion().setFromUnitVectors(yAxis, dir.normalize()));
+      const e = new T.Euler().setFromQuaternion(q, 'YXZ');
+      const m = [(a[0] + b[0]) / 2, (a[1] + b[1]) / 2, (a[2] + b[2]) / 2];
+      s.add(P.cyl, col, [o.x + (m[0] * cy + m[2] * sy) * k, o.y + m[1] * k, o.z + (-m[0] * sy + m[2] * cy) * k], [e.x, e.y, e.z], [rad * k, l * k, rad * k]);
+      put(P.sphere, col, b, null, [rad * 1.05, rad * 1.05, rad * 1.05]);
+    };
+    // Legs and shoes.
+    for (const sx of [-1, 1]) {
+      limb([sx * 0.11, 0.9, 0], [sx * 0.12, 0.12, 0.01], 0.085, o.coat ? dark : c);
+      put(P.box, dark, [sx * 0.12, 0.05, 0.05], null, [0.15, 0.1, 0.28]);
+    }
+    put(P.sphere, c, [0, 0.92, 0], null, [0.2, 0.13, 0.14]);
+    // Body (with a lab coat that hangs open to the knees).
+    put(P.box, c, [0, 1.2, 0], null, [0.38, 0.56, 0.24]);
+    if (o.coat) {
+      for (const sx of [-1, 1]) put(P.box, lite, [sx * 0.13, 0.98, 0.02], [0, 0, sx * 0.05], [0.17, 0.9, 0.27]);
+      for (const sx of [-1, 1]) put(P.box, lite, [sx * 0.07, 1.36, 0.13], [0.15, 0, sx * 0.5], [0.07, 0.22, 0.02]);   // lapels
+    }
+    put(P.cyl, c, [0, 1.52, 0], null, [0.06, 0.12, 0.06]);
+    // Head, face and hair.
+    put(P.sphere, c, [0, 1.68, 0.01], null, [0.15, 0.18, 0.16]);
+    put(P.box, dark, [0, 1.74, 0.15], null, [0.2, 0.03, 0.03]);                          // brow
+    for (const sx of [-1, 1]) put(P.sphere, lite, [sx * 0.06, 1.69, 0.14], null, [0.04, 0.04, 0.02]);
+    put(P.sphere, c, [0, 1.64, 0.16], null, [0.03, 0.04, 0.03]);                        // nose
+    if (o.hair === 'spiky') for (let i = 0; i < 11; i++) {
+      const a = -2.0 + i * 0.4;
+      put(P.cone, lite, [Math.sin(a) * 0.15, 1.74 + Math.abs(Math.cos(a)) * 0.05, -Math.cos(a) * 0.13 - 0.02], [-1.2 * Math.cos(a), a, 0], [0.06, 0.24, 0.05]);
+    }
+    // Arms.
+    for (const sx of [-1, 1]) {
+      const sh = [sx * 0.24, 1.42, 0];
+      let hand;
+      if (o.reach) hand = [o.reach[0] + sx * 0.05, o.reach[1], o.reach[2]];
+      else if (o.armsOut) hand = [sx * 0.86, 1.1, 0.22];
+      else if (o.raise && sx < 0) hand = [-0.36, 1.92, 0.18];
+      else hand = [sx * 0.3, 0.86, 0.06];
+      limb(sh, hand, 0.06, o.coat ? lite : c);
+      if (o.raise && sx < 0) { put(P.box, dark, [hand[0], hand[1] + 0.06, hand[2] + 0.1], [-0.6, 0, 0], [0.08, 0.1, 0.24]); put(P.cyl, lite, [hand[0], hand[1] + 0.14, hand[2] + 0.22], [-0.6, 0, 0], [0.035, 0.12, 0.035]); }
+    }
+  }
+  // A horse, facing +x, standing on its own.
+  function horse(s, x, y, z, k, c) {
+    const d = shade(c, 0.8);
+    const at = (p, q) => [x + p * k, y + q * k, z];
+    s.add(P.sphere, c, at(0, 1.3), null, [0.85 * k, 0.42 * k, 0.36 * k]);                              // barrel
+    s.add(P.sphere, c, at(0.62, 1.42), null, [0.36 * k, 0.4 * k, 0.32 * k]);                           // chest
+    s.add(P.sphere, c, at(-0.6, 1.36), null, [0.38 * k, 0.38 * k, 0.34 * k]);                          // rump
+    s.add(P.cyl, c, at(0.95, 1.85), [0, 0, -0.75], [0.17 * k, 0.75 * k, 0.17 * k]);                    // neck
+    s.add(P.box, c, at(1.3, 2.12), [0, 0, -0.35], [0.5 * k, 0.22 * k, 0.2 * k]);                       // head
+    s.add(P.sphere, d, at(1.5, 2.02), null, [0.12 * k, 0.11 * k, 0.11 * k]);                           // muzzle
+    for (const sz of [-1, 1]) s.add(P.cone, c, [x + 1.12 * k, y + 2.35 * k, z + sz * 0.07 * k], [0, 0, -0.2], [0.05 * k, 0.16 * k, 0.04 * k]);   // ears
+    for (let i = 0; i < 6; i++) s.add(P.box, d, at(0.82 + i * 0.07, 1.72 + i * 0.09), [0, 0, -0.75], [0.07 * k, 0.16 * k, 0.05 * k]);   // mane
+    for (const px of [-0.62, 0.6]) for (const sz of [-1, 1]) {
+      s.add(P.cyl, c, [x + px * k, y + 0.55 * k, z + sz * 0.18 * k], null, [0.08 * k, 1.1 * k, 0.08 * k]);
+      s.add(P.cyl, d, [x + px * k, y + 0.05 * k, z + sz * 0.18 * k], null, [0.1 * k, 0.1 * k, 0.1 * k]);   // hooves
+    }
+    s.add(P.cyl, d, at(-1.05, 1.0), [0, 0, -0.35], [0.07 * k, 0.75 * k, 0.07 * k]);                  // tail
+  }
   const MODELS = {
     house(s) { suburbanHouse(s, { w: 11, d: 8.5, h: 5.6, stories: 2, wall: '#ffffff', trim: '#fbfaf6', roof: '#8a7f78', door: '#7a3a2a', shutter: '#5a6a7a', porch: true, chimney: true }); },
     house2(s) { ranchHouse(s, { w: 13, d: 9, h: 3.3, wall: '#ffffff', trim: '#fbfaf6', roof: '#7d7068', door: '#3a5a7a', shutter: '#6a5a4a' }); },
@@ -260,13 +331,12 @@
       for (const y of [5, 10, 15]) s.add(P.torus, '#5ff8ff', [0, y, 0], [Math.PI / 2, 0, 0], [2.6, 2.6, 0.8], true);
       s.add(P.sphere, '#5ff8ff', [0, 25.5, 0], null, [0.5, 0.5, 0.5], true);
     },
+    // The Citadel's monument: a stone Rick in his lab coat, portal gun raised.
     rickstatue(s) {
       s.add(P.cyl, '#7d8796', [0, 1, 0], null, [2.2, 2, 2.2]);
-      s.add(P.capsule, '#c8ccd2', [0, 4.2, 0], null, [1.0, 2.4, 0.8]);
-      s.add(P.sphere, '#c8ccd2', [0, 7.6, 0], null, [1.3, 1.7, 1.2]);
-      for (let i = 0; i < 9; i++) { const a = -1.9 + i * 0.475; s.add(P.cone, '#b4bac2', [Math.sin(a) * 1.1, 8.6 + Math.abs(Math.cos(a)) * 0.4, -Math.cos(a) * 1.0], [-0.9 * Math.cos(a), a, 0], [0.4, 1.6, 0.3]); }
-      s.add(P.capsule, '#9aa2ac', [0, 8.0, 1.1], [0, 0, Math.PI / 2], [0.12, 1.2, 0.1]);
-      s.add(P.sphere, '#ffffff', [0.45, 7.7, 1.05], null, [0.35, 0.35, 0.15]); s.add(P.sphere, '#ffffff', [-0.45, 7.7, 1.05], null, [0.35, 0.35, 0.15]);
+      s.add(P.cyl, '#8d97a6', [0, 2.05, 0], null, [1.8, 0.1, 1.8]);
+      s.add(P.box, '#ffd84d', [0, 1.2, 2.2], null, [1.6, 0.5, 0.06]);
+      fig(s, { x: 0, y: 2.1, z: 0, k: 4.6, color: '#c8ccd2', hair: 'spiky', coat: true, raise: true });
     },
     vending(s) {
       s.add(P.box, '#3a4a6a', [0, 1.2, 0], null, [1.4, 2.4, 1.0]);
@@ -616,13 +686,9 @@
       s.add(P.box, '#bfdcec', [0, 1.6, D / 2 + 0.05], null, [2.6, 2.6, 0.06]);
       s.add(P.box, '#f3f1ea', [0, 1.6, D / 2 + 0.09], null, [0.08, 2.6, 0.04]);
       s.add(P.box, '#4a9a6a', [0, 3.3, D / 2 + 0.9], [-0.15, 0, 0], [4, 0.15, 2]);
-      // A horse statue out front, in honour of the patients.
+      // A bronze horse out front, in honour of the patients.
       s.add(P.box, '#9aa0a6', [5, 0.4, D / 2 + 2.5], null, [3.4, 0.8, 1.4]);
-      s.add(P.capsule, '#a0703f', [5, 2.1, D / 2 + 2.5], [0, 0, Math.PI / 2], [0.5, 1.7, 0.5]);
-      for (const x of [4.2, 5.8]) for (const z of [-0.3, 0.3]) s.add(P.cylLo, '#a0703f', [x, 1.25, D / 2 + 2.5 + z], null, [0.12, 1.0, 0.12]);
-      s.add(P.capsule, '#a0703f', [6.2, 2.9, D / 2 + 2.5], [0, 0, -0.6], [0.3, 0.9, 0.35]);
-      s.add(P.box, '#3a2a1a', [6.0, 3.1, D / 2 + 2.5], [0, 0, -0.6], [0.15, 1.0, 0.1]);
-      s.add(P.capsule, '#3a2a1a', [3.7, 2.0, D / 2 + 2.5], [0, 0, 0.6], [0.06, 0.6, 0.06]);
+      horse(s, 4.7, 0.8, D / 2 + 2.5, 1.25, '#a0703f');
     },
     // The unemployment office: a grey municipal block with a queue of chairs outside.
     lm_office(s) {
@@ -1052,12 +1118,12 @@
     unitystatue(s) {
       s.add(P.cyl, '#c9cfd6', [0, 0.6, 0], null, [3.2, 1.2, 3.2]);
       for (let i = 0; i < 3; i++) {
-        const a = i / 3 * Math.PI * 2, x = Math.cos(a) * 1.1, z = Math.sin(a) * 1.1;
-        C.capsuleAt(s, '#e8e8f0', 0.5, 4.2, [x, 1.2, z]);
-        s.add(P.sphere, '#e8e8f0', [x, 6.0, z], null, [0.6, 0.65, 0.6]);
-        s.add(P.box, '#e8e8f0', [x * 0.5, 4.5, z * 0.5], [0, -a, 0], [0.18, 0.18, 1.3]);
+        const a = i / 3 * Math.PI * 2;
+        // Three hosts facing out, all reaching up to one point in the middle: one mind.
+        fig(s, { x: Math.sin(a) * 1.15, y: 1.2, z: Math.cos(a) * 1.15, ry: a, k: 3.0, color: '#e8e8f0', reach: [0, 2.2, -0.36] });
       }
-      s.add(P.torus, '#5fd6b0', [0, 7.3, 0], [Math.PI / 2, 0, 0], [1.5, 1.5, 0.6], true);
+      s.add(P.sphere, '#5fd6b0', [0, 1.2 + 2.3 * 3.0, 0], null, [0.45, 0.45, 0.45], true);
+      s.add(P.torus, '#5fd6b0', [0, 8.6, 0], [Math.PI / 2, 0, 0], [1.6, 1.6, 0.6], true);
     },
 
     // ----- Galactic Federation -----
@@ -1507,15 +1573,24 @@
       s.add(P.sphereLo, '#d8b040', [0, 5.1, 0.11], null, [0.12, 0.12, 0.03]);
       s.add(P.box, '#d8b040', [0, 3.5, 0.11], null, [0.9, 0.12, 0.02]);
     },
+    // A heroic shrimp, standing tall on its tail fan, one claw raised.
     shrimpstatue(s) {
       s.add(P.box, '#c8c2b4', [0, 0.6, 0], null, [2.6, 1.2, 2.6]);
-      const k = '#ff8a6a';
-      for (let i = 0; i < 6; i++) { const a = 0.3 + i * 0.42; s.add(P.sphere, shade(k, 1 - i * 0.04), [0, 1.8 + Math.sin(a) * 1.6, Math.cos(a) * 1.6 - 0.4], [a, 0, 0], [0.85 - i * 0.09, 0.55, 0.6]); }
-      s.add(P.cone, '#ff9d7d', [0, 1.6, -1.2], [-1.6, 0, 0], [0.7, 0.9, 0.3]);
+      const k = '#ff8a6a', d = '#e86a4a';
+      for (let i = 0; i < 5; i++) { const a = (i - 2) * 0.5; s.add(P.sphere, d, [Math.sin(a) * 0.5, 1.35, -0.2 + Math.cos(a) * 0.3], [0.2, a, 0], [0.32, 0.12, 0.55]); }   // tail fan
+      for (let i = 0; i < 7; i++) { const t = i / 6, z = Math.sin(t * 2.2) * 0.45 - 0.1; s.add(P.sphere, shade(k, 1 - i * 0.03), [0, 1.6 + i * 0.48, z], [-0.25 + t * 0.5, 0, 0], [0.62 - i * 0.03, 0.34, 0.5]); }
+      s.add(P.sphere, k, [0, 5.0, 0.5], [0.4, 0, 0], [0.5, 0.42, 0.6]);                // head
+      s.add(P.cone, d, [0, 5.15, 1.1], [1.3, 0, 0], [0.12, 0.6, 0.12]);                 // rostrum
       for (const sx of [-1, 1]) {
-        s.add(P.sphere, '#1b1b1b', [sx * 0.35, 3.8, 1.1], null, [0.16, 0.16, 0.16]);
-        s.add(P.cylLo, '#e86a4a', [sx * 0.3, 4.4, 1.0], [-0.4, 0, -sx * 0.4], [0.04, 1.8, 0.04]);
+        s.add(P.cylLo, d, [sx * 0.25, 5.35, 0.75], null, [0.04, 0.3, 0.04]);
+        s.add(P.sphere, '#1b1b1b', [sx * 0.25, 5.52, 0.78], null, [0.12, 0.12, 0.12]);
+        s.add(P.cylLo, d, [sx * 0.35, 5.6, -0.3], [-0.9, 0, -sx * 0.35], [0.03, 2.4, 0.03]);   // antennae sweep back
+        for (let j = 0; j < 4; j++) s.add(P.cylLo, d, [sx * 0.5, 2.4 + j * 0.45, 0.4], [0.5, 0, sx * 0.9], [0.04, 0.5, 0.04]);   // little legs
       }
+      C.capsuleAt(s, k, 0.11, 1.0, [0.55, 3.8, 0.3], [0, 0, -0.7]);   // raised arm
+      s.add(P.sphere, d, [1.25, 4.6, 0.3], null, [0.24, 0.32, 0.16]);
+      s.add(P.cone, d, [1.35, 4.95, 0.3], [0, 0, -0.3], [0.12, 0.36, 0.1]);
+      C.capsuleAt(s, k, 0.11, 0.9, [-0.55, 3.8, 0.3], [0, 0, 2.5]);
     },
     teddystatue(s) {
       s.add(P.box, '#c8c2b4', [0, 0.6, 0], null, [2.4, 1.2, 2.4]);
@@ -1550,6 +1625,175 @@
       s.add(P.box, '#f4f4f4', [1.2, 4.2, 0.17], null, [2.2, 0.3, 0.02]);
     },
     // A glowing ring on the floor: something to do here (inside rooms built elsewhere).
+    // ----- Snake Planet -----
+    // A snake hut: a round mud hut wrapped by a carved snake, coiling up to a head over the door.
+    snakehut(s) {
+      s.add(P.cyl, '#b88a5a', [0, 1.6, 0], null, [2.6, 3.2, 2.6]);
+      s.add(P.cone, '#7a9a3a', [0, 4.3, 0], null, [3.1, 2.4, 3.1]);
+      s.add(P.box, '#3a2a1a', [0, 1.1, 2.55], null, [1.2, 2.2, 0.2]);
+      for (let i = 0; i < 18; i++) { const a = i / 18 * Math.PI * 2.4, y = 0.4 + i * 0.17; s.add(P.sphere, i % 2 ? '#c8e04a' : '#8ab02a', [Math.sin(a) * 2.75, y, Math.cos(a) * 2.75], null, [0.36, 0.3, 0.36]); }
+      s.add(P.sphere, '#c8e04a', [0, 3.6, 2.9], null, [0.55, 0.42, 0.7]);
+      for (const sx of [-1, 1]) s.add(P.sphereLo, '#ffe066', [sx * 0.24, 3.75, 3.4], null, [0.1, 0.12, 0.08], true);
+      s.add(P.box, '#e2483d', [0, 3.45, 3.6], [0.3, 0, 0], [0.06, 0.04, 0.5]);
+    },
+    fern(s) {
+      for (let i = 0; i < 9; i++) { const a = i / 9 * Math.PI * 2; s.add(P.sphere, i % 2 ? '#3a8a3a' : '#4aa04a', [Math.sin(a) * 0.9, 1.5, Math.cos(a) * 0.9], [0.9 * Math.cos(a), a, -0.9 * Math.sin(a)], [0.28, 1.5, 0.08]); }
+      s.add(P.sphereLo, '#2a6a2a', [0, 0.5, 0], null, [0.5, 0.5, 0.5]);
+    },
+    jungletree(s) {
+      s.add(P.cylLo, '#6a4a2a', [0, 4.5, 0], [0, 0, 0.05], [0.45, 9, 0.45]);
+      for (let i = 0; i < 4; i++) { const a = i * 1.6; C.capsuleAt(s, '#5a3a1a', 0.07, 3, [Math.sin(a) * 0.6, 7, Math.cos(a) * 0.6], [Math.cos(a) * 0.2, 0, -Math.sin(a) * 0.2]); }
+      for (let i = 0; i < 7; i++) { const a = i / 7 * Math.PI * 2; s.add(P.sphere, i % 2 ? '#2f7a3a' : '#3a9a44', [Math.sin(a) * 2.2, 9.2 + (i % 3) * 0.3, Math.cos(a) * 2.2], [0.5 * Math.cos(a), a, -0.5 * Math.sin(a)], [0.8, 0.25, 2.4]); }
+      s.add(P.sphere, '#2a6a32', [0, 9.6, 0], null, [1.4, 0.9, 1.4]);
+    },
+    // The Snake Jazz Club: a stone stage under a giant coiled snake, with lights on its scales.
+    lm_snakeclub(s) {
+      s.add(P.box, '#7a6a4a', [0, 0.6, 0], null, [15, 1.2, 10]);
+      s.add(P.box, '#3a2a3a', [0, 3.6, -4.6], null, [14, 6, 0.6]);
+      for (let i = 0; i < 26; i++) { const a = i / 26 * Math.PI * 3, r = 6.5 - i * 0.12, y = 1.6 + i * 0.26; s.add(P.sphere, i % 2 ? '#8ab02a' : '#6a9020', [Math.cos(a) * r, y, Math.sin(a) * r * 0.55 - 1], null, [0.85, 0.7, 0.85]); }
+      s.add(P.sphere, '#8ab02a', [0, 9.2, 0.6], null, [1.5, 1.1, 1.9]);
+      for (const sx of [-1, 1]) { s.add(P.sphere, '#ffe066', [sx * 0.7, 9.6, 2.0], null, [0.28, 0.32, 0.2], true); s.add(P.sphereLo, '#111', [sx * 0.7, 9.6, 2.2], null, [0.08, 0.26, 0.05]); }
+      s.add(P.box, '#e2483d', [0, 8.9, 2.6], [0.4, 0, 0], [0.12, 0.06, 1.2]);
+      for (let i = -3; i <= 3; i++) s.add(P.sphereLo, ['#ff6fd0', '#5ff8ff', '#ffe066'][(i + 3) % 3], [i * 2, 6.8, -4.2], null, [0.3, 0.3, 0.3], true);
+      s.add(P.cylLo, '#c8a040', [-3, 2.2, 2], null, [0.5, 2, 0.5]); s.add(P.cone, '#c8a040', [-3, 3.5, 2.2], [0.5, 0, 0], [0.6, 0.9, 0.6]);   // a saxophone, sort of
+    },
+    // ----- Earth, 65 million years ago -----
+    volcano(s) {
+      s.add(P.cone, '#5a4a40', [0, 14, 0], null, [17, 28, 17]);
+      s.add(P.cone, '#6a5a4a', [4, 6, 3], null, [10, 12, 10]);
+      s.add(P.cyl, '#ff5a1a', [0, 27.6, 0], null, [3.2, 0.8, 3.2], true);
+      for (let i = 0; i < 6; i++) { const a = i / 6 * Math.PI * 2; s.add(P.box, '#ff7a2a', [Math.sin(a) * 4, 22, Math.cos(a) * 4], [0, a, 0.32], [0.7, 12, 0.3], true); }
+      for (let i = 0; i < 5; i++) s.add(P.sphereLo, i % 2 ? '#7a7a80' : '#9a9aa0', [Math.sin(i) * 1.5, 31 + i * 2.2, Math.cos(i * 2) * 1.5], null, [2.2 + i * 0.4, 1.6, 2.2 + i * 0.4]);
+    },
+    dinoegg(s) {
+      s.add(P.sphere, '#e8e0c8', [0, 1.1, 0], null, [0.75, 1.1, 0.75]);
+      for (let i = 0; i < 7; i++) s.add(P.sphereLo, '#8aa06a', [Math.sin(i * 2.3) * 0.62, 0.6 + i * 0.22, Math.cos(i * 2.3) * 0.62], null, [0.14, 0.12, 0.06]);
+      s.add(P.torus, '#a87a4a', [0, 0.15, 0], [Math.PI / 2, 0, 0], [1.1, 1.1, 1.4]);
+    },
+    // The Dinosaur Council: a ring of stone seats around a fire, under giant ferns.
+    lm_dinocouncil(s) {
+      s.add(P.cyl, '#9a8a6a', [0, 0.2, 0], null, [9.5, 0.4, 9.5]);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; s.add(P.box, '#7a6a5a', [Math.sin(a) * 7.4, 1.6, Math.cos(a) * 7.4], [0, a, 0], [3.2, 2.8, 1.4]); s.add(P.box, '#8a7a6a', [Math.sin(a) * 8.1, 4, Math.cos(a) * 8.1], [0, a, 0], [3.2, 5, 0.6]); }
+      s.add(P.cylLo, '#5a4a3a', [0, 0.6, 0], null, [1.6, 0.6, 1.6]);
+      s.add(P.cone, '#ff8a2a', [0, 1.7, 0], null, [1.1, 2, 1.1], true); s.add(P.cone, '#ffe066', [0, 1.4, 0], null, [0.6, 1.3, 0.6], true);
+      for (let i = 0; i < 4; i++) { const a = i / 4 * Math.PI * 2 + 0.4; for (let k = 0; k < 6; k++) { const b = k / 6 * Math.PI * 2; s.add(P.sphere, '#3a8a3a', [Math.sin(a) * 10 + Math.sin(b) * 1.6, 3.8, Math.cos(a) * 10 + Math.cos(b) * 1.6], [0.9 * Math.cos(b), b, -0.9 * Math.sin(b)], [0.5, 3, 0.12]); } }
+    },
+    // ----- Giant World -----
+    giantmug(s) {
+      s.add(P.cyl, '#e8e0d0', [0, 4.2, 0], null, [3.6, 8.4, 3.6]);
+      s.add(P.cyl, '#5a3a20', [0, 8.3, 0], null, [3.3, 0.3, 3.3]);
+      s.add(P.torus, '#e8e0d0', [3.9, 4.5, 0], [0, 0, 0], [2.0, 2.4, 3.2]);
+      s.add(P.box, '#e2483d', [0, 4.4, 3.55], null, [3, 2, 0.2]);
+    },
+    giantboot(s) {
+      s.add(P.box, '#6a4a2a', [0, 1.2, 1.2], null, [4, 2.4, 6.5]);
+      s.add(P.cyl, '#6a4a2a', [0, 4.4, -0.8], null, [2.1, 6.2, 2.4]);
+      s.add(P.box, '#2a1a10', [0, 0.25, 1.2], null, [4.2, 0.5, 6.7]);
+      for (let i = 0; i < 5; i++) s.add(P.box, '#e8d8a8', [0, 2.6 + i * 0.6, 1.4 - i * 0.3], [0.3, 0, 0], [2.4, 0.12, 0.12]);
+    },
+    giantfork(s) {
+      s.add(P.box, '#b8c0c8', [0, 4.5, 0], [0, 0, 0.1], [0.7, 9, 0.35]);
+      s.add(P.box, '#b8c0c8', [0.9, 9.4, 0], [0, 0, 0.1], [2.6, 1.0, 0.35]);
+      for (let i = -1.5; i <= 1.5; i++) s.add(P.box, '#c8d0d8', [0.9 + i * 0.75 - 0.4, 11.6, 0], [0, 0, 0.1], [0.3, 3.6, 0.3]);
+    },
+    beanstalk(s) {
+      for (let i = 0; i < 12; i++) { const y = i * 2.6; s.add(P.cylLo, i % 2 ? '#4a9a2a' : '#5aaa32', [Math.sin(i * 0.8) * 0.8, y + 1.3, Math.cos(i * 0.8) * 0.8], [Math.sin(i) * 0.2, 0, Math.cos(i) * 0.2], [0.9, 2.9, 0.9]); s.add(P.sphere, '#6ac83a', [Math.sin(i * 0.8 + 1.5) * 2.2, y + 1.8, Math.cos(i * 0.8 + 1.5) * 2.2], [0, i, 0.8], [1.2, 0.2, 0.7]); }
+      s.add(P.sphere, '#8ad84a', [0, 31.5, 0], null, [3, 1.6, 3]);
+    },
+    cloudpuff(s) {
+      s.add(P.sphere, '#ffffff', [0, 1, 0], null, [2.2, 1.3, 2.0]);
+      s.add(P.sphere, '#f4f8ff', [1.6, 0.8, 0.4], null, [1.4, 1.0, 1.4]);
+      s.add(P.sphere, '#f4f8ff', [-1.5, 0.7, -0.3], null, [1.3, 0.9, 1.3]);
+    },
+    // The giants' castle: stone walls, round towers with cone roofs, and a door you could fly a ship through.
+    lm_giantcastle(s) {
+      s.add(P.box, '#a8a090', [0, 7, 0], null, [22, 14, 14]);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) { s.add(P.cyl, '#b8b0a0', [sx * 11, 10, sz * 7], null, [3.2, 20, 3.2]); s.add(P.cone, '#5a6ac8', [sx * 11, 23.5, sz * 7], null, [3.8, 7, 3.8]); }
+      for (let i = -5; i <= 5; i++) s.add(P.box, '#a8a090', [i * 2, 14.6, 7], null, [1.1, 1.2, 1]);
+      s.add(P.box, '#4a3020', [0, 4.5, 7.05], null, [6, 9, 0.3]);
+      s.add(P.cyl, '#4a3020', [0, 9, 7.05], [Math.PI / 2, 0, 0], [3, 0.3, 3]);
+      for (const sx of [-1, 1]) s.add(P.box, '#ffe9a0', [sx * 6.5, 9, 7.05], null, [1.8, 3, 0.2], true);
+      s.add(P.box, '#e2483d', [0, 27, 0], null, [0.2, 4, 0.2]); s.add(P.box, '#e2483d', [1, 28.4, 0], null, [2, 1.2, 0.1]);
+    },
+    // ----- Atlantis -----
+    coral(s) {
+      const c = ['#ff6f8a', '#ff9b4d', '#c86aff'];
+      for (let i = 0; i < 6; i++) { const a = i * 1.1; C.capsuleAt(s, c[i % 3], 0.22, 2.2 + (i % 3) * 0.5, [Math.sin(a) * 0.5, 0, Math.cos(a) * 0.5], [Math.cos(a) * 0.35, 0, -Math.sin(a) * 0.35]); s.add(P.sphereLo, c[(i + 1) % 3], [Math.sin(a) * 1.1, 2.6 + (i % 3) * 0.5, Math.cos(a) * 1.1], null, [0.35, 0.35, 0.35], true); }
+    },
+    kelp(s) {
+      for (let k = 0; k < 3; k++) for (let i = 0; i < 7; i++) s.add(P.sphere, i % 2 ? '#3a8a4a' : '#4a9a3a', [k * 0.4 - 0.4 + Math.sin(i * 0.9 + k) * 0.35, 0.5 + i * 0.95, Math.cos(k * 2) * 0.3], [0, k, Math.sin(i + k) * 0.3], [0.3, 0.6, 0.06]);
+    },
+    column(s) {
+      s.add(P.box, '#d8d0c0', [0, 0.3, 0], null, [2.2, 0.6, 2.2]);
+      s.add(P.cyl, '#e8e0d0', [0, 4.5, 0], null, [0.8, 8, 0.8]);
+      s.add(P.box, '#d8d0c0', [0, 8.7, 0], null, [2.0, 0.6, 2.0]);
+      for (let i = 0; i < 4; i++) s.add(P.sphereLo, '#5aa86a', [Math.sin(i * 1.7) * 0.82, 1.5 + i * 1.5, Math.cos(i * 1.7) * 0.82], null, [0.3, 0.6, 0.12]);
+    },
+    shell(s) {
+      for (let i = 0; i < 7; i++) s.add(P.sphere, i % 2 ? '#f4c8b0' : '#ffd8c8', [(i - 3) * 0.32, 0.8, 0], [0, 0, (i - 3) * 0.22], [0.4, 1.0, 1.3]);
+      s.add(P.sphere, '#fff4f0', [0, 0.6, 0.6], null, [0.35, 0.35, 0.35], true);
+    },
+    // Mr. Nimbus's palace: a domed temple of white columns, sea green roof, trident on top.
+    lm_nimbuspalace(s) {
+      s.add(P.box, '#d8d0c0', [0, 0.8, 0], null, [22, 1.6, 14]);
+      s.add(P.box, '#e8e0d0', [0, 1.9, 0], null, [20, 0.6, 12.4]);
+      for (let i = -4; i <= 4; i++) for (const sz of [-5.5, 5.5]) s.add(P.cyl, '#f0e8d8', [i * 2.3, 5.4, sz], null, [0.6, 6.6, 0.6]);
+      s.add(P.box, '#d8d0c0', [0, 9.1, 0], null, [21, 1, 13]);
+      s.add(P.hemi, '#4ac8a0', [0, 9.6, 0], null, [6.5, 5, 6.5]);
+      s.add(P.cylLo, '#ffd84d', [0, 16.5, 0], null, [0.2, 3.5, 0.2], true);
+      for (const sx of [-1, 0, 1]) s.add(P.cone, '#ffd84d', [sx * 0.6, 18.6, 0], null, [0.18, 1, 0.18], true);
+      s.add(P.box, '#ffd84d', [0, 18, 0], null, [1.4, 0.2, 0.2], true);
+    },
+    // ----- The Dream World -----
+    floatdoor(s) {
+      s.add(P.box, '#8a5a3a', [0, 2.4, 0], [0, 0, 0.12], [1.3, 2.6, 0.14]);
+      s.add(P.box, '#6a3a22', [0, 2.4, 0], [0, 0, 0.12], [1.6, 2.9, 0.08]);
+      s.add(P.sphereLo, '#ffd84d', [0.4, 2.3, 0.1], null, [0.08, 0.08, 0.08], true);
+      s.add(P.box, '#ffe066', [0, 2.4, -0.05], [0, 0, 0.12], [1.2, 2.5, 0.02], true);
+    },
+    // A Dali clock, draped over a dead branch.
+    meltclock(s) {
+      s.add(P.cylLo, '#6a4a3a', [0, 1.6, 0], [0, 0, 0.3], [0.2, 3.2, 0.2]);
+      s.add(P.cyl, '#ffd84d', [0.4, 3.2, 0], [Math.PI / 2, 0, 0.2], [1.1, 0.12, 1.4]);
+      s.add(P.cyl, '#fff8e0', [0.4, 3.2, 0.07], [Math.PI / 2, 0, 0.2], [0.95, 0.04, 1.2]);
+      s.add(P.sphere, '#fff8e0', [1.1, 2.1, 0.05], null, [0.45, 0.9, 0.08]);
+      s.add(P.box, '#1a1a1a', [0.4, 3.35, 0.12], [0, 0, 0.6], [0.06, 0.6, 0.02]); s.add(P.box, '#1a1a1a', [0.6, 3.2, 0.12], [0, 0, 1.6], [0.05, 0.45, 0.02]);
+    },
+    locker(s) {
+      for (let i = -1; i <= 1; i++) { s.add(P.box, ['#3a6ac8', '#c83a3a', '#3a8a5a'][i + 1], [i * 0.8, 1.2, 0], null, [0.76, 2.4, 0.7]); for (let k = 0; k < 3; k++) s.add(P.box, '#1a2a4a', [i * 0.8, 2.1 - k * 0.12, 0.36], null, [0.4, 0.04, 0.02]); }
+    },
+    // Stairs up to nowhere.
+    dreamstair(s) {
+      for (let i = 0; i < 12; i++) s.add(P.box, i % 2 ? '#e8d8ff' : '#c8b0f0', [Math.sin(i * 0.5) * 1.6, 0.4 + i * 0.72, Math.cos(i * 0.5) * 1.6 - 1.6], [0, i * 0.5, 0], [2.2, 0.25, 0.9]);
+      s.add(P.box, '#ffe066', [Math.sin(6) * 1.6, 9.2, Math.cos(6) * 1.6 - 1.6], null, [1.0, 1.8, 0.1], true);
+    },
+    // Dream High School: the school, but leaning, with a giant clock and too many doors.
+    lm_dreamschool(s) {
+      s.add(P.box, '#c86a5a', [0, 4, 0], [0, 0, 0.04], [18, 8, 9]);
+      s.add(P.box, '#e8e0d8', [0, 8.3, 0], [0, 0, 0.04], [18.6, 0.6, 9.6]);
+      for (let i = -3; i <= 3; i++) s.add(P.box, '#8a5a3a', [i * 2.4, 1.3, 4.55], null, [1.1, 2.4, 0.1]);
+      for (let i = -3; i <= 3; i++) s.add(P.box, '#ffe9a0', [i * 2.4 + (i % 2) * 0.3, 5.5, 4.55], [0, 0, i * 0.1], [1.4, 1.6, 0.1], true);
+      s.add(P.cyl, '#fff8e0', [0, 10.8, 1], [Math.PI / 2, 0, 0], [2.4, 0.4, 2.8]);
+      s.add(P.box, '#1a1a1a', [0, 11.4, 1.25], [0, 0, 0.5], [0.15, 1.6, 0.05]);
+      s.add(P.box, '#1a1a1a', [0.4, 10.7, 1.25], [0, 0, 1.9], [0.12, 1.1, 0.05]);
+    },
+    // ----- The split timeline -----
+    timeshard(s) {
+      s.add(P.octa, '#8fd8ff', [0, 1.9, 0], [0.3, 0.5, 0.2], [0.55, 1.7, 0.4], true);
+      s.add(P.octa, '#ffffff', [0.3, 1.6, 0.2], [0.8, 0.1, 0.4], [0.25, 0.8, 0.2], true);
+    },
+    lm_timerift(s) {
+      s.add(P.torus, '#8fd8ff', [0, 4.5, 0], null, [3.6, 3.6, 2.0], true);
+      s.add(P.torus, '#ffffff', [0, 4.5, 0], [0, 0, 0.3], [2.8, 2.8, 1.2], true);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; s.add(P.octa, i % 2 ? '#c8f0ff' : '#5aa8ff', [Math.cos(a) * 3.6, 4.5 + Math.sin(a) * 3.6, 0], [a, a, 0], [0.4, 0.9, 0.3], true); }
+      s.add(P.cyl, '#5a5a6a', [0, 0.2, 0], null, [3, 0.4, 3]);
+    },
+    // ----- Doofus Rick's Earth -----
+    flowerbed(s) {
+      s.add(P.box, '#6a4a2a', [0, 0.2, 0], null, [2.6, 0.4, 1.2]);
+      const c = ['#ff6f8a', '#ffe066', '#ffffff', '#c88aff'];
+      for (let i = 0; i < 8; i++) { s.add(P.cylLo, '#3a8a3a', [(i % 4) * 0.6 - 0.9, 0.6, (i < 4 ? -0.3 : 0.3)], null, [0.03, 0.6, 0.03]); s.add(P.sphereLo, c[i % 4], [(i % 4) * 0.6 - 0.9, 0.95, (i < 4 ? -0.3 : 0.3)], null, [0.16, 0.12, 0.16]); }
+    },
     lm_marker(s) {
       const ring = new T.TorusGeometry(0.55, 0.05, 6, 32);
       s.add(ring, '#ffd84d', [0, 0.03, 0], [Math.PI / 2, 0, 0], null, true);
@@ -1695,7 +1939,12 @@
   function propModel(type, far) {
     const key = far ? type + ':far' : type;
     if (modelCache[key]) return modelCache[key];
-    const s = new C.Shape({ smooth: !far });
+    // Far: coarse primitives (seen small, through fog). Near: smooth, with high-detail
+    // primitives only for landmarks; everyday props (trees, cars, houses) use medium ones.
+    const mid = !far && !type.startsWith('lm_');
+    C.shapeMid = mid;
+    let s;
+    try { s = new C.Shape({ smooth: !far, lo: far }); } finally { C.shapeMid = false; }
     MODELS[type](s);
     return (modelCache[key] = s.build());
   }
@@ -1845,7 +2094,7 @@
   })();
   const terrainMat = new T.MeshToonMaterial({ vertexColors: true, gradientMap: C.gradientMap, map: grain });
   function makeTerrain(dim) {
-    const size = MM.WORLD_HALF * 2 + 120, seg = 150;
+    const size = MM.WORLD_HALF * 2 + 120, seg = 170;
     const g = new T.PlaneGeometry(size, size, seg, seg);
     g.rotateX(-Math.PI / 2);
     const pos = g.attributes.position;
@@ -1889,7 +2138,7 @@
   // Asphalt roads on a 44 m grid, sidewalks with curbs between the intersections, corner
   // squares, and a driveway plus a front path for every house.
   function makeStreets(dim, props) {
-    const S = dim.streets, G = S.grid, E = S.extent, s = new C.Shape();
+    const S = dim.streets, G = S.grid, E = S.extent, s = new C.Shape({ smooth: false });   // flat slabs: no rounded edges needed
     const ROAD = '#5d6168', WALK = '#d8d3c7', CURB = '#bcb6a9', DRIVE = '#c8c2b5';
     for (let k = -3; k <= 3; k++) {
       const c = k * G;
@@ -2152,9 +2401,10 @@
       const look = C.npcLook(type, seed || 1);
       const H = MM.NPCS[type].human;
       const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.variant || 'joe');
+      if (H.scale) { av.baseScale = H.scale; av.root.scale.setScalar(H.scale); }   // giants
       return { root: av.root, av };
     }
-    const key = type === 'froopy' ? type + ((seed || 0) % 4) : type;
+    const key = type === 'froopy' ? type + ((seed || 0) % 4) : type === 'merfolk' ? type + ((seed || 0) % 3) : type;
     if (!npcCache[key]) {
       const s = new C.Shape();
       if (type === 'meatblob') {
@@ -2260,6 +2510,54 @@
         }
         s.add(P.sphereLo, '#3a1a2a', [0, 0.62, 0.56], null, [0.1, 0.05, 0.03]);
         s.add(P.sphere, shade(c, 0.85), [0, 1.35, 0], null, [0.1, 0.2, 0.1]);
+      } else if (type === 'snakefolk' || type === 'snaketerm') {
+        // A Snake Planet snake: an S-curve of a body, rearing up, with a big head. The
+        // terminators from the future are chrome with a red eye.
+        const term = type === 'snaketerm', c1 = term ? '#a8b0b8' : '#8ab02a', c2 = term ? '#7a828a' : '#c8e04a';
+        for (let i = 0; i < 9; i++) { const t = i / 8; s.add(P.sphere, i % 2 ? c1 : c2, [Math.sin(t * 5) * 0.35, 0.18 + Math.max(0, t - 0.45) * 1.5, -0.9 + t * 1.1], null, [0.24 - t * 0.04, 0.2, 0.24]); }
+        s.add(P.sphere, c1, [0, 0.98, 0.35], null, [0.3, 0.24, 0.38]);
+        if (term) { s.add(P.sphereLo, '#ff2a2a', [0.13, 1.06, 0.62], null, [0.08, 0.08, 0.06], true); s.add(P.box, '#4a5058', [-0.1, 1.05, 0.55], null, [0.2, 0.12, 0.2]); }
+        else for (const sx of [-1, 1]) { s.add(P.sphereLo, '#ffe066', [sx * 0.14, 1.08, 0.6], null, [0.08, 0.09, 0.06]); s.add(P.sphereLo, '#111', [sx * 0.14, 1.08, 0.65], null, [0.03, 0.07, 0.02]); }
+        s.add(P.box, '#e2483d', [0, 0.92, 0.78], [0.2, 0, 0], [0.04, 0.02, 0.2]);
+      } else if (type === 'dinosaur') {
+        // A long-necked, kindly dinosaur, built to scale with you (it is very big).
+        const g = '#6a9a7a', b = '#a8c8a0';
+        s.add(P.sphere, g, [0, 3.0, 0], null, [1.7, 1.5, 2.6]);
+        s.add(P.sphere, b, [0, 2.4, 0.2], null, [1.4, 0.9, 2.2]);
+        for (const sx of [-1, 1]) for (const sz of [-1, 1]) C.capsuleAt(s, g, 0.45, 2.2, [sx * 1.0, 0, sz * 1.4]);
+        for (let i = 0; i < 6; i++) s.add(P.sphere, g, [0, 3.8 + i * 0.5, 2.2 + i * 0.35], null, [0.55 - i * 0.03, 0.55, 0.55]);
+        s.add(P.sphere, g, [0, 6.8, 4.5], null, [0.7, 0.55, 0.9]);
+        for (const sx of [-1, 1]) { s.add(P.sphereLo, '#fff', [sx * 0.42, 7.0, 4.9], null, [0.16, 0.18, 0.12]); s.add(P.sphereLo, '#111', [sx * 0.46, 7.0, 5.0], null, [0.07, 0.09, 0.05]); }
+        s.add(P.box, '#3a4a3a', [0, 6.55, 5.3], null, [0.5, 0.05, 0.05]);
+        for (let i = 0; i < 6; i++) s.add(P.sphere, g, [0, 2.9 - i * 0.25, -2.4 - i * 0.6], null, [0.5 - i * 0.07, 0.45 - i * 0.06, 0.6]);
+        for (let i = 0; i < 6; i++) s.add(P.cone, '#d8a84a', [0, 4.4 - Math.abs(i - 2.5) * 0.15, -1.4 + i * 0.6], null, [0.12, 0.5, 0.25]);
+      } else if (type === 'raptor') {
+        const g = '#a86a3a';
+        s.add(P.sphere, g, [0, 1.0, 0], [0.3, 0, 0], [0.4, 0.42, 0.75]);
+        for (let i = 0; i < 5; i++) s.add(P.sphere, g, [0, 1.0 + i * 0.03, -0.7 - i * 0.3], null, [0.22 - i * 0.04, 0.2 - i * 0.03, 0.3]);
+        s.add(P.sphere, g, [0, 1.45, 0.75], null, [0.24, 0.22, 0.42]);
+        s.add(P.box, '#3a1a12', [0, 1.36, 1.05], null, [0.2, 0.05, 0.18]);
+        for (const sx of [-1, 1]) { s.add(P.sphereLo, '#ffe066', [sx * 0.15, 1.55, 0.95], null, [0.06, 0.06, 0.05]); C.capsuleAt(s, g, 0.12, 0.85, [sx * 0.2, 0, -0.05]); C.capsuleAt(s, g, 0.05, 0.4, [sx * 0.22, 0.85, 0.45], [0.8, 0, 0]); s.add(P.cone, '#f0e8d0', [sx * 0.2, 0.05, 0.25], [1.4, 0, 0], [0.04, 0.2, 0.04]); }
+        for (let i = 0; i < 5; i++) s.add(P.cone, '#5a3a1a', [0, 1.4 - i * 0.02, 0.3 - i * 0.25], [-0.4, 0, 0], [0.05, 0.25, 0.08]);
+      } else if (type === 'merfolk') {
+        // An Atlantean: a person from the waist up, a fish from the waist down, floating.
+        const sk = ['#e8b89a', '#8ac8d8', '#c8a0e0'][(seed || 0) % 3], tail = ['#3aa8a0', '#5a7ae0', '#e06a8a'][(seed || 0) % 3];
+        for (let i = 0; i < 5; i++) s.add(P.sphere, tail, [0, 0.9 - i * 0.18, -i * 0.12], null, [0.3 - i * 0.04, 0.22, 0.28 - i * 0.03]);
+        s.add(P.sphere, tail, [0, 0.12, -0.7], [0.4, 0, 0], [0.45, 0.06, 0.25]);
+        s.add(P.sphere, sk, [0, 1.35, 0], null, [0.32, 0.38, 0.24]);
+        s.add(P.sphere, sk, [0, 1.95, 0.02], null, [0.27, 0.29, 0.27]);
+        s.add(P.sphere, '#2a5a8a', [0, 2.12, -0.08], null, [0.3, 0.22, 0.3]);
+        for (const sx of [-1, 1]) { s.add(P.sphereLo, '#fff', [sx * 0.1, 1.98, 0.24], null, [0.07, 0.08, 0.04]); s.add(P.sphereLo, '#111', [sx * 0.1, 1.98, 0.27], null, [0.03, 0.04, 0.02]); C.capsuleAt(s, sk, 0.07, 0.6, [sx * 0.36, 1.05, 0.05], [0, 0, sx * 0.3]); }
+        s.add(P.torus, '#ffd84d', [0, 1.6, 0], [Math.PI / 2, 0, 0], [0.25, 0.25, 0.4]);
+      } else if (type === 'seamonster') {
+        // A trench beast: a long eel with a lantern on its head and far too many teeth.
+        for (let i = 0; i < 9; i++) s.add(P.sphere, i % 2 ? '#2a4a6a' : '#3a5a7a', [Math.sin(i * 0.7) * 0.4, 0.8, -i * 0.42], null, [0.55 - i * 0.04, 0.5 - i * 0.04, 0.4]);
+        s.add(P.sphere, '#2a4a6a', [0, 0.9, 0.55], null, [0.65, 0.55, 0.6]);
+        s.add(P.sphereLo, '#1a0a12', [0, 0.72, 0.95], null, [0.45, 0.25, 0.2]);
+        for (let i = -3; i <= 3; i++) s.add(P.cone, '#f0f0e8', [i * 0.11, 0.9, 1.0], [Math.PI, 0, 0], [0.04, 0.16, 0.04]);
+        for (const sx of [-1, 1]) s.add(P.sphereLo, '#ffffff', [sx * 0.3, 1.15, 0.95], null, [0.1, 0.1, 0.06], true);
+        C.capsuleAt(s, '#3a5a7a', 0.04, 0.8, [0, 1.35, 0.5], [0.6, 0, 0]);
+        s.add(P.sphere, '#7affea', [0, 1.85, 1.0], null, [0.14, 0.14, 0.14], true);
       } else if (type === 'bacteria') {
         // An Anatomy Park disease: a green, spiky, angry germ.
         s.add(P.sphere, '#7ac83a', [0, 0.75, 0], null, [0.65, 0.6, 0.65]);
@@ -2386,12 +2684,40 @@
       k.add(P.cyl, '#fff2a0', [0, 0, 0.045], [Math.PI / 2, 0, 0], [0.26, 0.02, 0.26], true);
       pickupModels = { s: s.build(), c: c.build(), g: g.build(), p: pl.build(), f: f.build(), m: m.build(), k: k.build() };
     }
+    if (MM.isCurio(kind)) return curioModel(kind.slice(2));
     const g = new T.Group();
     const m = C.meshOf(pickupModels[kind] || pickupModels.s, 0.03);
     g.add(m);
     g.userData.spin = m;
     return g;
   };
+  // A curio: its emoji floating in a glowing ring of its colour, with a soft light column so
+  // you can spot it from across the street.
+  const curioTex = {};
+  function curioModel(id) {
+    const Q = MM.CURIOS[id];
+    if (!curioTex[id]) {
+      const cv = document.createElement('canvas'); cv.width = cv.height = 128;
+      const g = cv.getContext('2d');
+      const grd = g.createRadialGradient(64, 64, 8, 64, 64, 62);
+      grd.addColorStop(0, 'rgba(255,255,255,0.95)'); grd.addColorStop(0.55, Q.color + 'cc'); grd.addColorStop(1, 'rgba(0,0,0,0)');
+      g.fillStyle = grd; g.beginPath(); g.arc(64, 64, 62, 0, 7); g.fill();
+      g.font = '72px "Apple Color Emoji","Segoe UI Emoji","Noto Color Emoji",sans-serif'; g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.fillText(Q.icon, 64, 70);
+      curioTex[id] = new T.CanvasTexture(cv);
+    }
+    const grp = new T.Group();
+    const sp = new T.Sprite(new T.SpriteMaterial({ map: curioTex[id], transparent: true, depthWrite: false }));
+    sp.scale.set(1.1, 1.1, 1);
+    grp.add(sp);
+    const ring = new T.Mesh(new T.TorusGeometry(0.62, 0.05, 6, 28), new T.MeshBasicMaterial({ color: Q.color }));
+    grp.add(ring);
+    const beam = new T.Mesh(new T.CylinderGeometry(0.18, 0.4, 6, 10, 1, true), new T.MeshBasicMaterial({ color: Q.color, transparent: true, opacity: 0.18, depthWrite: false, side: T.DoubleSide }));
+    beam.position.y = 2.2;
+    grp.add(beam);
+    grp.userData.spin = ring;
+    return grp;
+  }
 
   // ---------- Turret ----------
   let turretModel = null;
@@ -2430,7 +2756,7 @@
     const props = MM.genProps(dimId);
     const byType = {};
     for (const p of props) (byType[p.type] || (byType[p.type] = [])).push(p);
-    const slots = [];   // prop id -> { set, index, matrix, tint, x, z, r, alive, isNear }
+    const slots = [];   // prop id -> { set, index, matrix, tint, x, z, r, big, alive, state }
     const all = [], typeSets = [];
     const m4 = new T.Matrix4(), q = new T.Quaternion(), v = new T.Vector3(), sc = new T.Vector3(), up = new T.Vector3(0, 1, 0);
     const tint = new T.Color(), white = new T.Color(1, 1, 1);
@@ -2445,8 +2771,8 @@
         const meshes = [];
         for (const [geo, mat] of [[model.lit, C.toonMat], [model.glow, C.glowMat]]) {
           if (!geo) continue;
-          const im = new T.InstancedMesh(geo, mat, list.length);
-          const om = new T.InstancedMesh(geo, C.outlineMat(thick), list.length);
+          const im = new T.InstancedMesh(geo, mat, list.length); im.userData.type = type + ':' + lod + ' ';
+          const om = new T.InstancedMesh(geo, C.outlineMat(thick), list.length); om.userData.type = type + ':' + lod + ' ';
           meshes.push(im, om);
         }
         meshes.lit = !!model.lit;
@@ -2465,45 +2791,53 @@
         m4.compose(v.set(p.x, p.y - 0.05, p.z), q, sc.set(p.s, p.s, p.s));
         for (const lod of ['near', 'far']) {
           const meshes = sets[lod];
-          for (const im of meshes) im.setMatrixAt(i, lod === 'far' ? m4 : zero);
+          for (const im of meshes) im.setMatrixAt(i, zero);
           for (let k = 0; k < meshes.length; k += 2) meshes[k].setColorAt(i, k === 0 && meshes.lit ? tints[i] : white);
         }
-        const R = (MM.PROPS[type] ? MM.PROPS[type].r : 8) * p.s;
-        const slot = { set: sets, index: i, matrix: m4.clone(), tint: tints[i], x: p.x, z: p.z, r: R, alive: true, isNear: false };
+        const R = (MM.PROPS[type] ? MM.PROPS[type].r : 8) * p.s, H = (MM.PROPS[type] ? MM.PROPS[type].h : 8) * p.s;
+        // state: 'near' (detailed model), 'far' (simple model) or 'off' (in the fog or behind you).
+        const slot = { set: sets, index: i, matrix: m4.clone(), tint: tints[i], x: p.x, z: p.z, r: R, big: R > 6 || H > 14, alive: true, state: 'off' };
         slots[p.id] = slot; all.push(slot); sets.slots.push(slot);
       });
-      for (const im of sets.near) im.count = 0;
+      for (const lod of ['near', 'far']) for (const im of sets[lod]) im.count = 0;
       for (const lod of ['near', 'far']) for (const im of sets[lod]) { im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; group.add(im); }
       typeSets.push(sets);
     }
     // Swap props between their near and far models as the camera moves.
-    const nearDist = quality === 'low' ? 38 : 60;
+    const nearDist = quality === 'low' ? 28 : 40;
     // Far models keep one instance per prop (hidden when near or destroyed). Near models
     // are packed: only the props close to the camera are in the list at all, so the
     // detailed geometry costs nothing for the rest of the world.
-    function place(sl) {
-      for (const im of sl.set.far) { im.setMatrixAt(sl.index, sl.alive && !sl.isNear ? sl.matrix : zero); im.instanceMatrix.needsUpdate = true; }
-      sl.set.dirty = true;
-    }
+    // Both models are packed lists: only the props that are close (detailed), or in sight
+    // and inside the fog (simple), are drawn at all. Everything else costs nothing.
     function pack(sets) {
       sets.dirty = false;
-      let n = 0;
-      for (const sl of sets.slots) {
-        if (!sl.alive || !sl.isNear) continue;
-        for (let k = 0; k < sets.near.length; k++) {
-          sets.near[k].setMatrixAt(n, sl.matrix);
-          if (k % 2 === 0) sets.near[k].setColorAt(n, k === 0 && sets.near.lit ? sl.tint : white);
+      for (const lod of ['near', 'far']) {
+        const meshes = sets[lod];
+        let n = 0;
+        for (const sl of sets.slots) {
+          if (!sl.alive || sl.state !== lod) continue;
+          for (let k = 0; k < meshes.length; k++) {
+            meshes[k].setMatrixAt(n, sl.matrix);
+            if (k % 2 === 0) meshes[k].setColorAt(n, k === 0 && meshes.lit ? sl.tint : white);
+          }
+          n++;
         }
-        n++;
+        for (const im of meshes) { im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
       }
-      for (const im of sets.near) { im.count = n; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true; }
     }
     let lodT = 0;
+    const drawDist = dim.interior ? 1e9 : (dim.fogFar || 230) + 25;
+    const fwd = new T.Vector3();
     function updateLod(camPos) {
+      if (C.camera) { C.camera.getWorldDirection(fwd); fwd.y = 0; fwd.normalize(); } else fwd.set(0, 0, 0);
       for (const sl of all) {
-        const d = Math.hypot(sl.x - camPos.x, sl.z - camPos.z) - sl.r;
-        const near = d < (sl.isNear ? nearDist + 6 : nearDist);
-        if (near !== sl.isNear) { sl.isNear = near; place(sl); }
+        const dx = sl.x - camPos.x, dz = sl.z - camPos.z, dist = Math.hypot(dx, dz), d = dist - sl.r;
+        let st = d < (sl.state === 'near' ? nearDist + 6 : nearDist) ? 'near' : d < drawDist || sl.big && d < drawDist * 1.6 ? 'far' : 'off';
+        // Behind the camera (with room to turn): skip. Close things always draw (shadows of
+        // big buildings at the edge of the screen, quick turns).
+        if (st !== 'off' && d > 18 && (dx * fwd.x + dz * fwd.z) / (dist || 1) < -0.35) st = 'off';
+        if (st !== sl.state) { sl.state = st; sl.set.dirty = true; }
       }
       for (const sets of typeSets) if (sets.dirty) pack(sets);
     }
@@ -2545,11 +2879,10 @@
         const s = slots[id];
         if (!s) return;
         s.alive = alive;
-        place(s);
         pack(s.set);
       },
       update(dt, t, camPos) {
-        if (camPos && (lodT -= dt) <= 0) { lodT = 0.25; updateLod(camPos); }
+        if (camPos && (lodT -= dt) <= 0) { lodT = 0.1; updateLod(camPos); }
         kiosk.userData.ring.userData.tick(dt);
         kiosk.userData.ring.rotation.y = Math.sin(t * 0.5) * 0.3;
         if (group.userData.eye && camPos) group.userData.eye.lookAt(camPos);
@@ -2562,6 +2895,8 @@
             for (const k in modelCache) if (modelCache[k].lit === o.geometry || modelCache[k].glow === o.geometry) shared = true;
             if (!shared) o.geometry.dispose();
           }
+          // Name tags and signs: their canvas textures belong to this world only.
+          if (o.isSprite && o.material) { if (o.material.map) o.material.map.dispose(); o.material.dispose(); }
         });
       },
     };
