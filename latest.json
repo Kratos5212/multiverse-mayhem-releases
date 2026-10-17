@@ -1,13 +1,73 @@
 {
- "build": 17,
- "date": "2026-10-17T22:02:31.253Z",
+ "build": 18,
+ "date": "2026-10-17T23:05:14.612Z",
  "game": {
-  "base": "game/17/",
+  "base": "game/18/",
   "files": [
+   {
+    "p": "assets/characters/beth.mms",
+    "h": "6de9921d7331d117bed97340354ab51bef860f145b79b4800481964f18aa41f1",
+    "s": 135908
+   },
+   {
+    "p": "assets/characters/birdperson.mms",
+    "h": "454e2b31cf05d216e33f0cb5bc2e6c9e175a7a1e8275c8d92912fa7361ab6c44",
+    "s": 137344
+   },
+   {
+    "p": "assets/characters/evilmorty.mms",
+    "h": "daf73ecdf886d62ddbe0a1d66886061d208c142428b8031b2edae54872118178",
+    "s": 162840
+   },
+   {
+    "p": "assets/characters/gromflomite.mms",
+    "h": "d724197e87fec1f8c80849805e2562c431b20800ef21c620df2465caa878bc27",
+    "s": 140016
+   },
+   {
+    "p": "assets/characters/jerry.mms",
+    "h": "4364a611277040ad53c18a6eef9b0902c1644403019d9a970de6e3770540e224",
+    "s": 145876
+   },
+   {
+    "p": "assets/characters/meeseeks.mms",
+    "h": "b1da24841ed7d4e216901e02df557ad608e48a0d6d35c9a7b18edc20a83b6c2d",
+    "s": 115288
+   },
+   {
+    "p": "assets/characters/morty.mms",
+    "h": "00f559f8bba637cb0dba11c57c12ef7de159e0fb722471dbb9dd3b8098b01592",
+    "s": 162808
+   },
+   {
+    "p": "assets/characters/poopybutthole.mms",
+    "h": "8e3180942fd6c6eaf0313517eaab81c270d5e5ec5089fbc4187f7bb542a2d3f4",
+    "s": 148996
+   },
    {
     "p": "assets/characters/rick.mms",
     "h": "ce9c8b185e787cd99ab40e03883713de3244c01d358c6f412509dc578ad18614",
     "s": 197504
+   },
+   {
+    "p": "assets/characters/squanchy.mms",
+    "h": "e54efb263c7631cf27d67e255f5466a90cd5d8cd46c78de52600a6a3d53fe38e",
+    "s": 128312
+   },
+   {
+    "p": "assets/characters/summer.mms",
+    "h": "3b3f90427f0ea8b52a4f8c4cf4d6a0b865b37889f90d85bfce0448dc68461315",
+    "s": 142416
+   },
+   {
+    "p": "assets/characters/tommy.mms",
+    "h": "e889cbf05a70ded5c32882b9186c08886eaea6ae1c59615b784636a147a58428",
+    "s": 140780
+   },
+   {
+    "p": "assets/characters/unity.mms",
+    "h": "cc729cae111f9c0fd1c005af2985e8dfb9fcfc70b14897d3c8b8a71f63e8bfda",
+    "s": 136464
    },
    {
     "p": "assets/interiors/hospital.mmg",
@@ -136,13 +196,13 @@
    },
    {
     "p": "js/game.js",
-    "h": "b671d573e189a1bea5602feddf3d6c0e661f54980a06fb32f822eac429f5e686",
-    "s": 158389
+    "h": "ca1b97d116d2c4ef20ef2cbaa771493fee7b893a6e2f67efc591022b189e0c8b",
+    "s": 158525
    },
    {
     "p": "js/life.js",
-    "h": "04a45280095971450fe1f5e423c60441b0b6cffe9b73385bbe9235d3598fc5b7",
-    "s": 16606
+    "h": "0c66a437f3787c4d6e5cbc0ec9b0408602e5ae821f3d6b34299fd8394ef2480e",
+    "s": 17588
    },
    {
     "p": "js/minigames.js",
@@ -151,8 +211,8 @@
    },
    {
     "p": "js/mmg.js",
-    "h": "40ea4a7ae6e70b77e38d98a9bea241543d1a44a4e17a1ffb4822ed143bfe7ce9",
-    "s": 3331
+    "h": "b4df04bdac1d610b3aa3e39112c3d7f707b6ba6a9ad184b74b1d57fa4ae995a1",
+    "s": 3678
    },
    {
     "p": "js/net.js",
@@ -206,8 +266,8 @@
    },
    {
     "p": "shared/layouts.js",
-    "h": "ce9e9d8d8945c990b22aea327c541e8d8db870c0c3352ff164128eace3d2236b",
-    "s": 30457
+    "h": "e2820fc716550d11c5ed8671f85de719736fa1fe8b88ae582aa9953102a128ac",
+    "s": 30552
    },
    {
     "p": "shared/portals.js",
@@ -231,8 +291,8 @@
    },
    {
     "p": "shared/world.js",
-    "h": "f5cc84dd28eecc45d70917d43ab519c485b7972f0a84d94d241a91559ce9e8ca",
-    "s": 199504
+    "h": "8d5406ba3827323b502862b59a12d0695bb9f77b20d86068a5c9c76601d6333d",
+    "s": 201137
    },
    {
     "p": "sim/bot.js",
@@ -256,7 +316,7 @@
    },
    {
     "p": "version.json",
-    "h": "6187d3f1b20acc26503df903fdc64ff8abe5ab74283712c1ff2e765be1e322bc",
+    "h": "176fd2393202576bbb6a78f21bb3b1cf741c7b0871297cbabe20d147597b1a9d",
     "s": 13
    }
   ]
