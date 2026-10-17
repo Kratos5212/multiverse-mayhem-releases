@@ -22,6 +22,8 @@
   if (profile.startDim && !MM.DIM_BY_ID[profile.startDim]) profile.startDim = '';
   C.setVolume(settings.volume);
   C.bevelSegs = settings.quality === 'low' ? 2 : 3;   // rounded-edge smoothness
+  if (!settings.style) settings.style = 'real';
+  C.setStyle(settings.style, settings.quality);
 
   // ---------- Renderer ----------
   const canvas = $('view');
@@ -29,6 +31,11 @@
   C.renderer = renderer;
   const applyQuality = () => renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.quality === 'high' ? 2 : 1.25));
   applyQuality();
+  // The realistic look: filmic tone mapping, and soft sun shadows on high quality.
+  if (C.style === 'real') {
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
+    if (settings.quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
+  }
   renderer.setClearColor('#0b0f1e');
   const camera = new T.PerspectiveCamera(62, 1, 0.1, 1500);
   C.camera = camera;
@@ -256,6 +263,8 @@
     }
     m = C.npcModel(type, seed);
     m.root.position.set(x, y, z); m.root.rotation.y = r;
+    if (C.style === 'real') m.root.traverse(o => { if (o.isMesh && o.material && o.material.side !== T.BackSide) o.castShadow = true; });
+    if (type === 'hologram') m.root.traverse(o => { if (o.isMesh && o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; if (o.material.color) o.material.color.lerp(new T.Color('#7ad8ff'), 0.5); o.material.depthWrite = false; } });
     const NT = MM.NPCS[type];
     // Locals you can talk to wear a small name tag; monsters don't.
     let tag = null;
@@ -394,10 +403,11 @@
     }
   }
   function addTurret(row) {
-    const [id, owner, x, y, z] = row;
+    const [id, owner, x, y, z, big] = row;
     if (G.turrets.has(id)) return;
     const m = C.turretModel();
     m.position.set(x, y, z);
+    if (big) m.scale.setScalar(2.4);   // the house's large energy weapon
     scene.add(m);
     G.turrets.set(id, { m, owner, aim: 0 });
   }
@@ -428,8 +438,11 @@
       G.world = C.buildDimension(w.dim, settings.quality);
       scene.add(G.world.group);
       buildRaceRings(w.dim);
+      if (G.life) G.life.dispose();
+      G.life = C.makeLife(w.dim, scene, settings.quality);
       const dim = MM.DIM_BY_ID[w.dim];
       scene.fog = new T.Fog(dim.fog, 40, dim.fogFar);
+      camera.far = dim.planets ? 3200 : 1500; camera.updateProjectionMatrix();
       const skyU = G.world.group.children[0].material.uniforms;
       G.atmo = { fog: new T.Color(dim.fog), far: dim.fogFar, top: skyU.top.value.clone(), bot: skyU.bot.value.clone(), k: -1 };
       renderer.setClearColor(dim.fog);
@@ -444,6 +457,7 @@
     for (const pk of w.pickups) addPickup(pk);
     for (const po of w.portals) addPortal(po);
     for (const t of w.turrets) addTurret(t);
+    setHouse(w.house);
     for (const P of w.pairs || []) addPair(P);
     const me = G.me;
     me.x = w.x; me.y = w.y; me.z = w.z; me.vx = me.vy = me.vz = 0;
@@ -785,6 +799,17 @@
       case 'pk+': addPickup(e.p); break;
       case 'pk-': if (e.by === G.myId) { const m = G.pickups.get(e.id); if (m) fx.burst(m.position.x, m.position.y, m.position.z, '#ffd84d', 10, 4, 0.5, 0.4, 0); C.sfx('pickup'); } removePickup(e.id); break;
       case 'npc+': addNpc(e.n); break;
+      case 'house': {
+        if (e.h) setHouse(e.h);
+        if (e.by === G.myId) UI.toast('House: ' + e.say, 3000);
+        else if (e.h) UI.toast('The Smith house: ' + MM.DEFENSES[e.id].name.toLowerCase() + '!', 2500);
+        break;
+      }
+      case 'look': {
+        const q = G.players.get(e.id);
+        if (q) { const info = Object.assign({}, q.info, { look: e.look }); removePlayer(e.id); addPlayer(info); }
+        break;
+      }
       case 'nship': { const n = G.npcs.get(e.n); if (n && n.m.av) C.setShip(n.m.av, !!e.on); break; }
       case 'npc-': removeNpc(e.id, e.die); break;
       case 'po+': addPortal(e.po); break;
@@ -858,11 +883,17 @@
   }
 
   // ----- Ring races (shared/races.js) -----
-  // Every race in this world: its rings glowing in its colour, the start ring with a sign.
-  // While you race, the next ring is bright and the rest fade; the clock runs at the top.
+  // Every race in this world has a start pad with a sign: two or more players standing on it
+  // start a race. Its rings only show while you race it: the next one bright, the rest faint;
+  // the clock runs at the top. Playing alone with bots, there are no races at all.
   function buildRaceRings(dimId) {
     G.raceRings = [];
+    if (G.net && G.net.host) return;   // offline, with bots: no races
     for (const R of MM.racesIn(dimId)) {
+      const q0 = MM.ringAt(R, 0, dimId), pad = new T.Mesh(new T.RingGeometry(R.r + 1.6, R.r + 2.4, 48), new T.MeshBasicMaterial({ color: R.color, transparent: true, opacity: 0.55, side: T.DoubleSide, fog: false }));
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(q0.x, R.abs ? q0.y - R.r : MM.heightAt(dimId, q0.x, q0.z) + 0.06, q0.z);
+      G.world.group.add(pad);
       const geo = new T.TorusGeometry(R.r, Math.max(0.18, R.r * 0.07), 8, 32);
       R.rings.forEach((_, i) => {
         const q = MM.ringAt(R, i, dimId), n = MM.ringAt(R, (i + 1) % R.rings.length, dimId);
@@ -870,7 +901,7 @@
         m.position.set(q.x, q.y, q.z);
         m.lookAt(n.x, n.y, n.z);
         if (!i) {
-          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · through here to start', R.color);
+          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · 2+ players here to start', R.color);
           tag.draw(-1);
           tag.sprite.position.set(q.x, q.y + R.r + 1.2, q.z); tag.sprite.scale.multiplyScalar(R.ship ? 4 : 1.6);
           G.world.group.add(tag.sprite);
@@ -884,8 +915,9 @@
     const r = G.race, hud = $('raceHud');
     for (const g of G.raceRings || []) {
       const on = r && r.id === g.R.id, next = on && g.i === r.next;
-      g.m.material.opacity = on ? (next ? 1 : g.i < r.next ? 0.08 : 0.3) : g.i ? 0.25 : 0.9;
-      const s = next || (!r && !g.i) ? 1 + Math.sin(now() * 5) * 0.06 : 1;
+      g.m.visible = !!on && g.i >= r.next;
+      g.m.material.opacity = next ? 1 : 0.3;
+      const s = next ? 1 + Math.sin(now() * 5) * 0.06 : 1;
       g.m.scale.set(s, s, s);
     }
     if (!r) { hud.hidden = true; return; }
@@ -905,7 +937,8 @@
     G.race = null;
     if (e.done) {
       const R = MM.RACE_BY_ID[e.done], got = e.give ? Object.keys(e.give).map(k => '+' + e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ') : '';
-      UI.banner(R.name + (e.record ? ': new record!' : ': finished!'), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
+      const place = e.of > 1 ? ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th' : '';
+      UI.banner(R.name + (place ? ': ' + place + ' of ' + e.of : '') + (e.record ? ' · new record!' : ''), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
       C.sfx('craft');
     }
   }
@@ -913,6 +946,10 @@
   function onPrivate(e) {
     const me = G.me;
     if (e.k === 'race') { onRace(e); return; }
+    if (e.k === 'hmenu') { openDefenses(e.own); return; }
+    if (e.k === 'hack') { UI.banner('Hacking another Rick\'s house', 'Stay close for ' + e.t + ' seconds...'); C.sfx('craft', 0.6); return; }
+    if (e.k === 'hacked') { UI.banner('Hacked', 'You can use this Rick\'s house for ten minutes. Press H or use the console.'); C.sfx('cheer'); return; }
+    if (e.k === 'wardrobe') { openWardrobe(); return; }
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
     else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
@@ -1266,6 +1303,91 @@
   function emote() { if (!canAct()) return; send({ t: 'em', e: 0 }); G.me.emoteT = 2; }
 
   // ---------- Dialogs ----------
+  // ---------- Rick's house (shared/house.js) ----------
+  // "House, ...": the console in the garage, or (your own house) H anywhere near it.
+  function houseKey() {
+    if (profile.arch !== 'genius') { UI.toast('Only a Rick can talk to a Rick\'s house.'); return; }
+    openDefenses(true);
+  }
+  function openDefenses(own) {
+    openModal('house', 'House defences', box => {
+      box.append(el('p', { class: 'note', text: own ? 'Your house answers to your voice: say it (H) anywhere near it, or use the console in the garage.' : 'Hacked: another Rick\'s house, for now.' }));
+      const list = el('div', { class: 'deflist' });
+      for (const id of MM.DEFENSE_IDS) {
+        const D = MM.DEFENSES[id];
+        if (id === 'tele') {
+          for (let i = 0; i < MM.TELE_SPOTS.length; i++) list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: 'tele', d: i }); UI.closeModal(); } },
+            el('b', { text: D.icon + ' Teleport: ' + MM.TELE_SPOTS[i].name }), el('span', { text: D.desc })));
+          continue;
+        }
+        list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: id }); if (id !== 'wardrobe') UI.closeModal(); } },
+          el('b', { text: D.icon + ' ' + D.name + (D.dur ? ' (' + D.dur + ' s)' : '') }), el('span', { text: D.desc })));
+      }
+      box.append(list);
+    });
+  }
+  // The retractable wardrobe: change what you wear (everyone sees it).
+  function openWardrobe() {
+    const L = Object.assign({}, profile.look);
+    openModal('wardrobe', 'Wardrobe', box => {
+      const row = (label, input) => el('label', { class: 'grp' }, el('span', { text: label }), input);
+      const sel = (k, opts) => { const s = el('select', { class: 'field' }); for (const o of opts) s.append(el('option', { value: o, text: o })); s.value = L[k]; s.onchange = () => { L[k] = s.value; }; return s; };
+      const col = k => { const i = el('input', { type: 'color', class: 'field', value: L[k] }); i.oninput = () => { L[k] = i.value; }; return i; };
+      box.append(row('Top', sel('top', MM.LOOK.top)), row('Top colour', col('topColor')), row('Shirt', col('shirtColor')), row('Trousers', col('pantsColor')),
+        row('Hat or glasses', sel('acc', MM.LOOK.acc)), row('Its colour', col('accColor')), row('Hair', sel('hair', MM.LOOK.hair)), row('Hair colour', col('hairColor')),
+        el('div', { class: 'chips' }, el('button', { class: 'btn go', onclick: () => {
+          profile.look = MM.sanitizeLook(L); UI.save('profile', profile);
+          send({ t: 'lk', look: profile.look });
+          if (G.meAv) { scene.remove(G.meAv.root); G.meAv.dispose(); G.meAv = null; }
+          G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!(G.prog && G.prog.up.ratsuit) });
+          scene.add(G.meAv.root);
+          if (G.prog) C.setGear(G.meAv, myGear());
+          C.setShip(G.meAv, !!(G.you && G.you.ship), myGear());
+          UI.closeModal();
+        } }, 'Wear it')));
+    });
+  }
+  // What the house's defences look like: the forcefield dome, the blast shutters, the laser grid.
+  const houseFx = { root: null, dome: null, shutters: null, grid: null };
+  function setHouse(h) {
+    const t = now();
+    G.house = h ? { s: t + h.s, d: t + h.d, g: t + h.g, l: t + h.l } : null;
+    const D = MM.DIM_BY_ID[G.dimId];
+    if (houseFx.root) { scene.remove(houseFx.root); houseFx.root = null; }
+    if (!G.house || !D || D.interior || MM.worldOf(G.dimId) !== 'earth') return;
+    const root = houseFx.root = new T.Group();
+    const gy = MM.heightAt(G.dimId, MM.HOUSE.x, MM.HOUSE.z);
+    const dome = houseFx.dome = new T.Mesh(new T.SphereGeometry(MM.HOUSE.r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#7ae8ff', transparent: true, opacity: 0.16, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(MM.HOUSE.x, gy, MM.HOUSE.z); root.add(dome);
+    const wire = new T.Mesh(dome.geometry, new T.MeshBasicMaterial({ color: '#bff4ff', wireframe: true, transparent: true, opacity: 0.25, depthWrite: false }));
+    dome.add(wire);
+    const home = MM.LANDMARKS.find(l => l.dim === G.dimId && MM.isAt(l, 'home'));
+    const sh = houseFx.shutters = new T.Group();
+    if (home) {
+      const steel = new T.MeshLambertMaterial({ color: '#7a828c' }), seam = new T.MeshLambertMaterial({ color: '#4a525c' });
+      const shell = new T.Mesh(new T.BoxGeometry(14.5, 7.2, 10.5), steel);
+      shell.position.set(0, 3.6, 0); sh.add(shell);
+      for (let i = -3; i <= 3; i++) { const b = new T.Mesh(new T.BoxGeometry(14.6, 0.08, 10.6), seam); b.position.y = 3.6 + i; sh.add(b); }
+      sh.position.set(home.x, MM.heightAt(G.dimId, home.x, home.z), home.z); sh.rotation.y = home.rot || 0;
+      root.add(sh);
+    }
+    const grid = houseFx.grid = new T.Group(), red = new T.MeshBasicMaterial({ color: '#ff2a2a' });
+    for (let y = 0.4; y < 4; y += 0.45) { const b = new T.Mesh(new T.BoxGeometry(0.04, 0.04, 9.8), red); b.position.set(-9.3, gy + y, 28.55); grid.add(b); }
+    for (let i = 0; i < 6; i++) { const b = new T.Mesh(new T.BoxGeometry(10, 0.04, 0.04), red); b.position.set(-14.6, gy + 0.6 + i * 0.55, 23.7 + (i % 2) * 9.7); grid.add(b); }
+    root.add(grid);
+    scene.add(root);
+    tickHouseFx();
+  }
+  function tickHouseFx() {
+    if (!houseFx.root || !G.house) return;
+    const t = now();
+    houseFx.dome.visible = G.house.s > t;
+    if (houseFx.dome.visible) houseFx.dome.material.opacity = 0.12 + Math.sin(t * 3) * 0.04;
+    houseFx.shutters.visible = G.house.d > t;
+    houseFx.grid.visible = G.house.g > t;
+  }
+
   function openModal(kind, title, build) {
     if (document.pointerLockElement) document.exitPointerLock();
     G.modal = kind;
@@ -1614,6 +1736,7 @@
         row('Volume', el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: settings.volume, oninput: e => { settings.volume = Number(e.target.value); C.setVolume(settings.volume); UI.save('settings', settings); } })),
         row('Fights', el('div', { class: 'chips' }, ...[[true, 'On: anyone with fights on can hurt you'], [false, 'Off: nobody can hurt you']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String((settings.pvp !== false) === v), onclick: () => { settings.pvp = v; UI.save('settings', settings); if (G.net) send({ t: 'pvp', on: v }); openMenu(); } }, t)))),
         row('View', el('div', { class: 'chips' }, ...[['third', 'Third person'], ['first', 'First person']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String(settings.view === v), onclick: () => { setView(v); openMenu(); } }, t)))),
+        row('Look', el('div', { class: 'chips' }, ...[['real', 'Realistic'], ['cartoon', 'Cartoon']].map(([q, label]) => el('button', { class: 'chip', 'aria-pressed': String(settings.style === q), onclick: () => { if (settings.style === q) return; settings.style = q; UI.save('settings', settings); UI.toast('The new look applies when you reload the game.', 3500); openMenu(); } }, label)))),
         row('Graphics', el('div', { class: 'chips' }, ...['high', 'low'].map(q => el('button', { class: 'chip', 'aria-pressed': String(settings.quality === q), onclick: () => { settings.quality = q; applyQuality(); resize(); UI.save('settings', settings); openMenu(); } }, q)))),
         row('Options', el('div', { class: 'chips' },
           el('button', { class: 'chip', 'aria-pressed': String(settings.invert), onclick: () => { settings.invert = !settings.invert; UI.save('settings', settings); openMenu(); } }, 'Invert look'),
@@ -1667,6 +1790,7 @@
       case 'KeyX': scan(); break;
       case 'KeyR': shootPair(); break;
       case 'KeyJ': openJournal(); break;
+      case 'KeyH': houseKey(); break;
       case 'KeyB': toggleShip(); break;
       case 'KeyL': lightspeedKey(); break;
       case 'KeyQ': ability(); break;
@@ -1897,7 +2021,7 @@
       ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight);
       if (dim.planets) {
         // Space: fly between the planets; touch one to land on it (you can't fly through it).
-        ny = Math.min(ny, 880);
+        ny = Math.min(ny, 1150);
         for (const P of dim.planets) {
           const dx = nx - P.x, dy = ny + 1 - P.y, dz = nz - P.z, d = Math.hypot(dx, dy, dz), R = P.r + 4;
           if (d < R + 6 && now() > (G.orbitT || 0)) { G.orbitT = now() + 2.5; send({ t: 'land', d: P.dim }); }
@@ -1938,6 +2062,7 @@
     if (me.sprinting && me.grounded && hs > 3 && Math.random() < dt * 14) fx.puff(me.x - me.vx * 0.05, me.y + 0.1, me.z - me.vz * 0.05, '#e8e2d4', 1, 0.5, 0.6, 0.4);
     const fovT = G.baseFov + (me.sprinting && hs > 3 ? 6 : 0);
     if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
+    tickHouseFx();
     // Climbing towards space, the sky darkens and you see further.
     if (G.atmo && !dim.interior && !dim.planets) {
       const k = Math.max(0, Math.min(1, (me.y - MM.heightAt(G.dimId, me.x, me.z) - 70) / (MM.ORBIT_ALT - 70)));
@@ -2239,6 +2364,7 @@
     updateRace();
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
+    if (G.life) G.life.update(dt, camWorld);
     fx.update(dt);
     const w = window.innerWidth, h = window.innerHeight;
     UI.updateNums(dt, n => {

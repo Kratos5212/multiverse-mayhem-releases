@@ -14,10 +14,16 @@
   const profile = UI.load('profile', { name: '', home: '', arch: 'genius', look: null, server: '', startDim: 'suburbia' });
   if (!MM.ARCHETYPES[profile.arch]) profile.arch = 'genius';
   profile.look = profile.look ? MM.sanitizeLook(profile.look) : MM.canonLook(profile.arch);
+  // Rick's colours changed to match the show: a saved look still in the old canon colours
+  // becomes the new canon look (so the sculpted Rick is used).
+  if (profile.arch === 'genius' && profile.look.skin === '#f0dccb' && profile.look.hairColor === '#b4d8e8' && profile.look.pantsColor === '#6e4a2a')
+    Object.assign(profile.look, { skin: '#ddd7c9', hairColor: '#6fd2df', topColor: '#f2f5f7', shirtColor: '#74d0dd', pantsColor: '#686530', shoeColor: '#2b393f' });
   if (!profile.home) profile.home = 'ABDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 23)] + '-' + Math.floor(Math.random() * 999 + 1);
   if (profile.startDim && !MM.DIM_BY_ID[profile.startDim]) profile.startDim = '';
   C.setVolume(settings.volume);
   C.bevelSegs = settings.quality === 'low' ? 2 : 3;   // rounded-edge smoothness
+  if (!settings.style) settings.style = 'real';
+  C.setStyle(settings.style, settings.quality);
 
   // ---------- Renderer ----------
   const canvas = $('view');
@@ -25,6 +31,11 @@
   C.renderer = renderer;
   const applyQuality = () => renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.quality === 'high' ? 2 : 1.25));
   applyQuality();
+  // The realistic look: filmic tone mapping, and soft sun shadows on high quality.
+  if (C.style === 'real') {
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
+    if (settings.quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
+  }
   renderer.setClearColor('#0b0f1e');
   const camera = new T.PerspectiveCamera(62, 1, 0.1, 1500);
   C.camera = camera;
@@ -123,6 +134,8 @@
     $('name').value = profile.name;
     $('home').value = profile.home;
     fillStarts();
+    $('ifTaken').value = profile.taken === 'other' ? 'other' : 'clone';
+    $('ifTaken').onchange = () => { profile.taken = $('ifTaken').value; UI.save('profile', profile); };
     // The Android app (Capacitor) serves the game from inside the app, so there is no server to prefill.
     const inApp = !!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform());
     const httpHosted = !inApp && /^https?:$/.test(location.protocol) && !/claude|artifact/.test(location.hostname);
@@ -186,7 +199,7 @@
     $('loading').hidden = false;
     $('loading').textContent = kind === 'online' ? 'Connecting to ' + (profile.server || location.host) + '…' : 'Opening a portal…';
     const h = {
-      open: () => G.net.send({ t: 'hello', v: MM.VERSION, name: profile.name, home: profile.home, look: profile.look, arch: profile.arch, dim: profile.startDim || undefined, tok: tokenFor(G.net), pvp: settings.pvp !== false }),
+      open: () => G.net.send({ t: 'hello', v: MM.VERSION, name: profile.name, home: profile.home, look: profile.look, arch: profile.arch, dim: profile.startDim || undefined, tok: tokenFor(G.net), pvp: settings.pvp !== false, taken: profile.taken === 'other' ? 'other' : 'clone' }),
       message: onMessage,
       close: reason => leave(reason),
     };
@@ -210,7 +223,7 @@
   }
 
   // ---------- Entities ----------
-  function archLabel(info) { return (info.bot ? 'bot · ' : '') + (info.title || MM.ARCHETYPES[info.arch].name); }
+  function archLabel(info) { return (info.bot ? 'bot · ' : '') + (info.clone ? 'clone · ' : '') + (info.title || MM.ARCHETYPES[info.arch].name); }
   function addPlayer(info) {
     if (info.id === G.myId || G.players.has(info.id)) return;
     const av = C.buildAvatar(info.look, info.arch, { ratsuit: !!(info.gear && info.gear.ratsuit) });
@@ -230,10 +243,28 @@
     G.players.delete(id);
   }
   function addNpc(row) {
-    const [id, type, x, y, z, r, hp, seed, name] = row;
+    const [id, type, x, y, z, r, hp, seed, name, arch, origin, ship] = row;
     if (G.npcs.has(id)) return;
-    const m = C.npcModel(type, seed);
+    let m;
+    if (arch && MM.ARCHETYPES[arch]) {
+      // One of the cast: their own character, in their dimension's look, and their name tag.
+      const av = C.buildAvatar(MM.castLook(arch, origin), arch);
+      m = { root: av.root, av };
+      if (ship) C.setShip(av, true);
+      const tag = C.makeTag(name, '', MM.ARCHETYPES[arch].name, UI.ARCH_COLORS[arch] || '#d6e4ff');
+      tag.draw(-1);
+      tag.sprite.scale.set(2.4, 0.6, 1);
+      tag.sprite.position.y = av.headY + 0.6;
+      m.root.add(tag.sprite);
+      m.root.position.set(x, y, z); m.root.rotation.y = r;
+      scene.add(m.root);
+      G.npcs.set(id, { id, type, name, cast: arch, m, tag, snaps: [{ t: -1, x, y, z, r }], x, y, z, r, hp, px: x, pz: z, speed: 0, t: Math.random() * 6, flags: 0, bubble: null });
+      return;
+    }
+    m = C.npcModel(type, seed);
     m.root.position.set(x, y, z); m.root.rotation.y = r;
+    if (C.style === 'real') m.root.traverse(o => { if (o.isMesh && o.material && o.material.side !== T.BackSide) o.castShadow = true; });
+    if (type === 'hologram') m.root.traverse(o => { if (o.isMesh && o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; if (o.material.color) o.material.color.lerp(new T.Color('#7ad8ff'), 0.5); o.material.depthWrite = false; } });
     const NT = MM.NPCS[type];
     // Locals you can talk to wear a small name tag; monsters don't.
     let tag = null;
@@ -298,21 +329,19 @@
     const P = { x: e.x, y: e.y, z: e.z, nx: e.nx, ny: e.ny, nz: e.nz };
     const g = new T.Group();
     const look = lookOf(e.o), col = MM.pairColors(look)[e.c];
-    const mesh = C.portalMesh(col, 0.85, look && look.portalStyle);
+    // The same portal as one to another world: same size, same swirl, same colours.
+    const mesh = C.portalMesh(col, MM.PAIR_SIZE, look && look.portalStyle);
     mesh.renderOrder = 3;
-    // Valve-style: a hard, glowing oval rim around the swirl.
-    const rim = new T.Mesh(pairRimGeo || (pairRimGeo = new T.RingGeometry(0.86, 1.0, 48)), new T.MeshBasicMaterial({ color: e.c ? '#ffffff' : col, side: T.DoubleSide, fog: false }));
-    rim.scale.set(0.85, 0.85 * 1.35, 1); rim.position.z = 0.01;
-    g.add(mesh, rim);
-    mesh.userData.rim = rim;
+    g.add(mesh);
     g.position.set(P.x, P.y, P.z);
     g.lookAt(P.x + P.nx, P.y + P.ny, P.z + P.nz);
     scene.add(g);
+    fx.burst(P.x, P.y, P.z, col, 26, 6, 0.6, 0.5, 2);
+    sfxAt('portal', P.x, P.z, 0.7);
     G.pairs.set(key, { o: e.o, c: e.c, P, g, mesh, col, born: now() });
   }
-  let pairRimGeo = null;
   const lookOf = id => id === G.myId ? profile.look : G.players.get(id) && G.players.get(id).info.look;
-  function removePair(key) { const q = G.pairs.get(key); if (q) { scene.remove(q.g); q.mesh.material.dispose(); q.mesh.userData.rim.material.dispose(); G.pairs.delete(key); } }
+  function removePair(key) { const q = G.pairs.get(key); if (q) { scene.remove(q.g); q.mesh.material.dispose(); G.pairs.delete(key); } }
   function removePairsOf(o) { removePair(o + ':0'); removePair(o + ':1'); }
   // Aim with the crosshair and shoot the next portal of your pair (R, right click, or the
   // touch button): the first end, then its partner, then the first again (which moves it). Both
@@ -320,7 +349,7 @@
   function shootPair() {
     if (!canAct() || pickled()) return;
     if (G.you.ship) { UI.toast('Land first (B) to shoot portals.'); return; }
-    if (!(G.prog && MM.canPair(profile.arch, G.prog.up))) { UI.toast('You need a portal gun for that. Ricks have one; anyone else can build or borrow one (J).', 3500); return; }
+    if (!(G.prog && MM.canPair(profile.arch, G.prog.up))) return;   // no gun: R does nothing
     if (now() < (G.pairCd || 0)) return;
     const ray = vr && vr.on ? vr.aimRay() : null;
     const o = ray ? ray.o : camWorld.clone(), d = ray ? ray.d : new T.Vector3();
@@ -374,10 +403,11 @@
     }
   }
   function addTurret(row) {
-    const [id, owner, x, y, z] = row;
+    const [id, owner, x, y, z, big] = row;
     if (G.turrets.has(id)) return;
     const m = C.turretModel();
     m.position.set(x, y, z);
+    if (big) m.scale.setScalar(2.4);   // the house's large energy weapon
     scene.add(m);
     G.turrets.set(id, { m, owner, aim: 0 });
   }
@@ -408,8 +438,11 @@
       G.world = C.buildDimension(w.dim, settings.quality);
       scene.add(G.world.group);
       buildRaceRings(w.dim);
+      if (G.life) G.life.dispose();
+      G.life = C.makeLife(w.dim, scene, settings.quality);
       const dim = MM.DIM_BY_ID[w.dim];
       scene.fog = new T.Fog(dim.fog, 40, dim.fogFar);
+      camera.far = dim.planets ? 3200 : 1500; camera.updateProjectionMatrix();
       const skyU = G.world.group.children[0].material.uniforms;
       G.atmo = { fog: new T.Color(dim.fog), far: dim.fogFar, top: skyU.top.value.clone(), bot: skyU.bot.value.clone(), k: -1 };
       renderer.setClearColor(dim.fog);
@@ -424,6 +457,7 @@
     for (const pk of w.pickups) addPickup(pk);
     for (const po of w.portals) addPortal(po);
     for (const t of w.turrets) addTurret(t);
+    setHouse(w.house);
     for (const P of w.pairs || []) addPair(P);
     const me = G.me;
     me.x = w.x; me.y = w.y; me.z = w.z; me.vx = me.vy = me.vz = 0;
@@ -765,6 +799,18 @@
       case 'pk+': addPickup(e.p); break;
       case 'pk-': if (e.by === G.myId) { const m = G.pickups.get(e.id); if (m) fx.burst(m.position.x, m.position.y, m.position.z, '#ffd84d', 10, 4, 0.5, 0.4, 0); C.sfx('pickup'); } removePickup(e.id); break;
       case 'npc+': addNpc(e.n); break;
+      case 'house': {
+        if (e.h) setHouse(e.h);
+        if (e.by === G.myId) UI.toast('House: ' + e.say, 3000);
+        else if (e.h) UI.toast('The Smith house: ' + MM.DEFENSES[e.id].name.toLowerCase() + '!', 2500);
+        break;
+      }
+      case 'look': {
+        const q = G.players.get(e.id);
+        if (q) { const info = Object.assign({}, q.info, { look: e.look }); removePlayer(e.id); addPlayer(info); }
+        break;
+      }
+      case 'nship': { const n = G.npcs.get(e.n); if (n && n.m.av) C.setShip(n.m.av, !!e.on); break; }
       case 'npc-': removeNpc(e.id, e.die); break;
       case 'po+': addPortal(e.po); break;
       case 'po-': removePortal(e.id); break;
@@ -837,11 +883,17 @@
   }
 
   // ----- Ring races (shared/races.js) -----
-  // Every race in this world: its rings glowing in its colour, the start ring with a sign.
-  // While you race, the next ring is bright and the rest fade; the clock runs at the top.
+  // Every race in this world has a start pad with a sign: two or more players standing on it
+  // start a race. Its rings only show while you race it: the next one bright, the rest faint;
+  // the clock runs at the top. Playing alone with bots, there are no races at all.
   function buildRaceRings(dimId) {
     G.raceRings = [];
+    if (G.net && G.net.host) return;   // offline, with bots: no races
     for (const R of MM.racesIn(dimId)) {
+      const q0 = MM.ringAt(R, 0, dimId), pad = new T.Mesh(new T.RingGeometry(R.r + 1.6, R.r + 2.4, 48), new T.MeshBasicMaterial({ color: R.color, transparent: true, opacity: 0.55, side: T.DoubleSide, fog: false }));
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(q0.x, R.abs ? q0.y - R.r : MM.heightAt(dimId, q0.x, q0.z) + 0.06, q0.z);
+      G.world.group.add(pad);
       const geo = new T.TorusGeometry(R.r, Math.max(0.18, R.r * 0.07), 8, 32);
       R.rings.forEach((_, i) => {
         const q = MM.ringAt(R, i, dimId), n = MM.ringAt(R, (i + 1) % R.rings.length, dimId);
@@ -849,7 +901,7 @@
         m.position.set(q.x, q.y, q.z);
         m.lookAt(n.x, n.y, n.z);
         if (!i) {
-          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · through here to start', R.color);
+          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · 2+ players here to start', R.color);
           tag.draw(-1);
           tag.sprite.position.set(q.x, q.y + R.r + 1.2, q.z); tag.sprite.scale.multiplyScalar(R.ship ? 4 : 1.6);
           G.world.group.add(tag.sprite);
@@ -863,8 +915,9 @@
     const r = G.race, hud = $('raceHud');
     for (const g of G.raceRings || []) {
       const on = r && r.id === g.R.id, next = on && g.i === r.next;
-      g.m.material.opacity = on ? (next ? 1 : g.i < r.next ? 0.08 : 0.3) : g.i ? 0.25 : 0.9;
-      const s = next || (!r && !g.i) ? 1 + Math.sin(now() * 5) * 0.06 : 1;
+      g.m.visible = !!on && g.i >= r.next;
+      g.m.material.opacity = next ? 1 : 0.3;
+      const s = next ? 1 + Math.sin(now() * 5) * 0.06 : 1;
       g.m.scale.set(s, s, s);
     }
     if (!r) { hud.hidden = true; return; }
@@ -884,7 +937,8 @@
     G.race = null;
     if (e.done) {
       const R = MM.RACE_BY_ID[e.done], got = e.give ? Object.keys(e.give).map(k => '+' + e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ') : '';
-      UI.banner(R.name + (e.record ? ': new record!' : ': finished!'), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
+      const place = e.of > 1 ? ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th' : '';
+      UI.banner(R.name + (place ? ': ' + place + ' of ' + e.of : '') + (e.record ? ' · new record!' : ''), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
       C.sfx('craft');
     }
   }
@@ -892,6 +946,10 @@
   function onPrivate(e) {
     const me = G.me;
     if (e.k === 'race') { onRace(e); return; }
+    if (e.k === 'hmenu') { openDefenses(e.own); return; }
+    if (e.k === 'hack') { UI.banner('Hacking another Rick\'s house', 'Stay close for ' + e.t + ' seconds...'); C.sfx('craft', 0.6); return; }
+    if (e.k === 'hacked') { UI.banner('Hacked', 'You can use this Rick\'s house for ten minutes. Press H or use the console.'); C.sfx('cheer'); return; }
+    if (e.k === 'wardrobe') { openWardrobe(); return; }
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
     else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
@@ -940,7 +998,9 @@
     $('hpFill').dataset.lvl = y.hp / y.max > 0.5 ? 'ok' : y.hp / y.max > 0.25 ? 'mid' : 'low';
     $('hpText').textContent = Math.max(0, y.hp) + ' / ' + y.max;
     for (const k of MM.MAT_IDS) $('mat-' + k).textContent = y.inv[k] || 0;
-    $('charges').textContent = y.chMax ? 'Portal ' + '●'.repeat(y.ch) + '○'.repeat(Math.max(0, y.chMax - y.ch)) : 'No portal gun';
+    // Portal charges only for someone with a gun (their own or Rick's, borrowed).
+    $('charges').hidden = !y.chMax && !y.bor;
+    $('charges').textContent = y.chMax ? 'Portal ' + '●'.repeat(y.ch) + '○'.repeat(Math.max(0, y.chMax - y.ch)) : y.bor ? 'Borrowed gun ' + '●'.repeat(y.bor) : '';
     if (G.meAv && !!y.ship !== !!G.meAv.inShip) { C.setShip(G.meAv, y.ship, myGear()); if (y.ship) { G.me.vy = 0; G.me.grounded = false; } }
     $('chaos').textContent = y.chaos;
     $('kos').textContent = y.kills;
@@ -1040,6 +1100,7 @@
     mk('meeseeks', '4', 'Meeseeks', () => useGadget('meeseeks'));
     mk('timecrystal', '5', 'Time', () => useGadget('timecrystal'));
     mk('freeze', '6', 'Freeze', () => useGadget('freeze'));
+    mk('chalk', '7', 'Chalk', () => useGadget('chalk'));
     mk('items', 'I', 'Items', () => openInventory());
     mk('pair', 'R', 'Portals', () => shootPair());
     mk('scan', 'X', 'Scan', () => scan());
@@ -1069,10 +1130,16 @@
     $('tPair').style.setProperty('--pc', pcs[G.pairNext || 0]);
     // Only Ricks and Evil Morty know how to make a Time Crystal: no slot for everyone else.
     slots.timecrystal.hidden = !(y.inv.timecrystal > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'timecrystal'));
+    slots.chalk.hidden = !(y.inv.chalk > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'chalk'));
     const st = G.st;
     slots.portal.querySelector('.n').textContent = y.chMax ? String(y.ch) : y.bor ? String(y.bor) : '';
     $('tPortal').querySelector('.n').textContent = slots.portal.querySelector('.n').textContent;
     slots.portal.classList.toggle('off', !(y.chMax && y.ch > 0) && !(y.bor > 0) && !nearKiosk() && !y.ship);
+    // No gun, no ship, no station: no travel button at all. Otherwise say what it does.
+    const gun = !!(y.chMax || y.bor), travel = gun || nearKiosk() || (y.ship && st && st.ship);
+    slots.portal.hidden = !travel; $('tPortal').hidden = !travel;
+    slots.portal.querySelector('.l').textContent = gun ? 'Portal' : nearKiosk() ? 'Station' : 'Travel';
+    tLabel('tPortal', gun ? 'PORTAL' : nearKiosk() ? 'STATION' : 'TRAVEL');
     slots.ship.hidden = !(st && st.ship);
     slots.ship.querySelector('.l').textContent = y.ship ? 'Land' : 'Ship';
     $('tShip').hidden = !(st && st.ship);
@@ -1164,8 +1231,7 @@
     const m = travelModes();
     if (m.length) return openDims(m[0]);
     if (G.you.chMax && G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
-    UI.toast(MM.DIM_BY_ID[G.dimId].station ? 'Walk up to the ' + MM.kioskOf(G.dimId).name + ' to travel.'
-      : 'No portal gun. Step through someone else\'s portal, fly a ship, find a portal station (the Citadel), borrow Rick\'s gun from his workbench, or build your own (J).', 5000);
+    if (MM.DIM_BY_ID[G.dimId].station) UI.toast('Walk up to the ' + MM.kioskOf(G.dimId).name + ' to travel.');
   }
   function lightspeedKey() {
     if (!canAct() || pickled()) return;
@@ -1188,13 +1254,19 @@
     }
     return best;
   }
-  // The landmark you are closest to (by its edge), on your floor of the house.
+  // The landmark you mean: close by, on your floor of the house, and the one you are looking
+  // at. A big place you are standing in (the garage, the back yard) gives way to the things
+  // in it (the workbench, the Meeseeks box...), so you can use what is in front of you.
   function nearLandmark() {
-    let best = null, bd = Infinity;
+    let best = null, bs = Infinity;
+    const fx = Math.sin(G.camYaw), fz = Math.cos(G.camYaw);
     for (const l of MM.LANDMARKS) {
       if (l.dim !== G.dimId || !MM.sameFloor(l, G.me.y)) continue;
-      const d = Math.hypot(l.x - G.me.x, l.z - G.me.z) - l.r;
-      if (d < MM.USE_RADIUS && d < bd) { bd = d; best = l; }
+      const dx = l.x - G.me.x, dz = l.z - G.me.z, d = Math.hypot(dx, dz), edge = d - l.r;
+      if (edge >= MM.USE_RADIUS) continue;
+      let score = l.r > 3 && d < l.r ? 3.5 : Math.max(0, d - Math.min(l.r, 1.2));
+      if (d > 0.6) score += (1 - (dx * fx + dz * fz) / d) * 1.2;   // behind you counts for less
+      if (score < bs) { bs = score; best = l; }
     }
     return best;
   }
@@ -1231,6 +1303,91 @@
   function emote() { if (!canAct()) return; send({ t: 'em', e: 0 }); G.me.emoteT = 2; }
 
   // ---------- Dialogs ----------
+  // ---------- Rick's house (shared/house.js) ----------
+  // "House, ...": the console in the garage, or (your own house) H anywhere near it.
+  function houseKey() {
+    if (profile.arch !== 'genius') { UI.toast('Only a Rick can talk to a Rick\'s house.'); return; }
+    openDefenses(true);
+  }
+  function openDefenses(own) {
+    openModal('house', 'House defences', box => {
+      box.append(el('p', { class: 'note', text: own ? 'Your house answers to your voice: say it (H) anywhere near it, or use the console in the garage.' : 'Hacked: another Rick\'s house, for now.' }));
+      const list = el('div', { class: 'deflist' });
+      for (const id of MM.DEFENSE_IDS) {
+        const D = MM.DEFENSES[id];
+        if (id === 'tele') {
+          for (let i = 0; i < MM.TELE_SPOTS.length; i++) list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: 'tele', d: i }); UI.closeModal(); } },
+            el('b', { text: D.icon + ' Teleport: ' + MM.TELE_SPOTS[i].name }), el('span', { text: D.desc })));
+          continue;
+        }
+        list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: id }); if (id !== 'wardrobe') UI.closeModal(); } },
+          el('b', { text: D.icon + ' ' + D.name + (D.dur ? ' (' + D.dur + ' s)' : '') }), el('span', { text: D.desc })));
+      }
+      box.append(list);
+    });
+  }
+  // The retractable wardrobe: change what you wear (everyone sees it).
+  function openWardrobe() {
+    const L = Object.assign({}, profile.look);
+    openModal('wardrobe', 'Wardrobe', box => {
+      const row = (label, input) => el('label', { class: 'grp' }, el('span', { text: label }), input);
+      const sel = (k, opts) => { const s = el('select', { class: 'field' }); for (const o of opts) s.append(el('option', { value: o, text: o })); s.value = L[k]; s.onchange = () => { L[k] = s.value; }; return s; };
+      const col = k => { const i = el('input', { type: 'color', class: 'field', value: L[k] }); i.oninput = () => { L[k] = i.value; }; return i; };
+      box.append(row('Top', sel('top', MM.LOOK.top)), row('Top colour', col('topColor')), row('Shirt', col('shirtColor')), row('Trousers', col('pantsColor')),
+        row('Hat or glasses', sel('acc', MM.LOOK.acc)), row('Its colour', col('accColor')), row('Hair', sel('hair', MM.LOOK.hair)), row('Hair colour', col('hairColor')),
+        el('div', { class: 'chips' }, el('button', { class: 'btn go', onclick: () => {
+          profile.look = MM.sanitizeLook(L); UI.save('profile', profile);
+          send({ t: 'lk', look: profile.look });
+          if (G.meAv) { scene.remove(G.meAv.root); G.meAv.dispose(); G.meAv = null; }
+          G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!(G.prog && G.prog.up.ratsuit) });
+          scene.add(G.meAv.root);
+          if (G.prog) C.setGear(G.meAv, myGear());
+          C.setShip(G.meAv, !!(G.you && G.you.ship), myGear());
+          UI.closeModal();
+        } }, 'Wear it')));
+    });
+  }
+  // What the house's defences look like: the forcefield dome, the blast shutters, the laser grid.
+  const houseFx = { root: null, dome: null, shutters: null, grid: null };
+  function setHouse(h) {
+    const t = now();
+    G.house = h ? { s: t + h.s, d: t + h.d, g: t + h.g, l: t + h.l } : null;
+    const D = MM.DIM_BY_ID[G.dimId];
+    if (houseFx.root) { scene.remove(houseFx.root); houseFx.root = null; }
+    if (!G.house || !D || D.interior || MM.worldOf(G.dimId) !== 'earth') return;
+    const root = houseFx.root = new T.Group();
+    const gy = MM.heightAt(G.dimId, MM.HOUSE.x, MM.HOUSE.z);
+    const dome = houseFx.dome = new T.Mesh(new T.SphereGeometry(MM.HOUSE.r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#7ae8ff', transparent: true, opacity: 0.16, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(MM.HOUSE.x, gy, MM.HOUSE.z); root.add(dome);
+    const wire = new T.Mesh(dome.geometry, new T.MeshBasicMaterial({ color: '#bff4ff', wireframe: true, transparent: true, opacity: 0.25, depthWrite: false }));
+    dome.add(wire);
+    const home = MM.LANDMARKS.find(l => l.dim === G.dimId && MM.isAt(l, 'home'));
+    const sh = houseFx.shutters = new T.Group();
+    if (home) {
+      const steel = new T.MeshLambertMaterial({ color: '#7a828c' }), seam = new T.MeshLambertMaterial({ color: '#4a525c' });
+      const shell = new T.Mesh(new T.BoxGeometry(14.5, 7.2, 10.5), steel);
+      shell.position.set(0, 3.6, 0); sh.add(shell);
+      for (let i = -3; i <= 3; i++) { const b = new T.Mesh(new T.BoxGeometry(14.6, 0.08, 10.6), seam); b.position.y = 3.6 + i; sh.add(b); }
+      sh.position.set(home.x, MM.heightAt(G.dimId, home.x, home.z), home.z); sh.rotation.y = home.rot || 0;
+      root.add(sh);
+    }
+    const grid = houseFx.grid = new T.Group(), red = new T.MeshBasicMaterial({ color: '#ff2a2a' });
+    for (let y = 0.4; y < 4; y += 0.45) { const b = new T.Mesh(new T.BoxGeometry(0.04, 0.04, 9.8), red); b.position.set(-9.3, gy + y, 28.55); grid.add(b); }
+    for (let i = 0; i < 6; i++) { const b = new T.Mesh(new T.BoxGeometry(10, 0.04, 0.04), red); b.position.set(-14.6, gy + 0.6 + i * 0.55, 23.7 + (i % 2) * 9.7); grid.add(b); }
+    root.add(grid);
+    scene.add(root);
+    tickHouseFx();
+  }
+  function tickHouseFx() {
+    if (!houseFx.root || !G.house) return;
+    const t = now();
+    houseFx.dome.visible = G.house.s > t;
+    if (houseFx.dome.visible) houseFx.dome.material.opacity = 0.12 + Math.sin(t * 3) * 0.04;
+    houseFx.shutters.visible = G.house.d > t;
+    houseFx.grid.visible = G.house.g > t;
+  }
+
   function openModal(kind, title, build) {
     if (document.pointerLockElement) document.exitPointerLock();
     G.modal = kind;
@@ -1579,10 +1736,12 @@
         row('Volume', el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: settings.volume, oninput: e => { settings.volume = Number(e.target.value); C.setVolume(settings.volume); UI.save('settings', settings); } })),
         row('Fights', el('div', { class: 'chips' }, ...[[true, 'On: anyone with fights on can hurt you'], [false, 'Off: nobody can hurt you']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String((settings.pvp !== false) === v), onclick: () => { settings.pvp = v; UI.save('settings', settings); if (G.net) send({ t: 'pvp', on: v }); openMenu(); } }, t)))),
         row('View', el('div', { class: 'chips' }, ...[['third', 'Third person'], ['first', 'First person']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String(settings.view === v), onclick: () => { setView(v); openMenu(); } }, t)))),
+        row('Look', el('div', { class: 'chips' }, ...[['real', 'Realistic'], ['cartoon', 'Cartoon']].map(([q, label]) => el('button', { class: 'chip', 'aria-pressed': String(settings.style === q), onclick: () => { if (settings.style === q) return; settings.style = q; UI.save('settings', settings); UI.toast('The new look applies when you reload the game.', 3500); openMenu(); } }, label)))),
         row('Graphics', el('div', { class: 'chips' }, ...['high', 'low'].map(q => el('button', { class: 'chip', 'aria-pressed': String(settings.quality === q), onclick: () => { settings.quality = q; applyQuality(); resize(); UI.save('settings', settings); openMenu(); } }, q)))),
         row('Options', el('div', { class: 'chips' },
           el('button', { class: 'chip', 'aria-pressed': String(settings.invert), onclick: () => { settings.invert = !settings.invert; UI.save('settings', settings); openMenu(); } }, 'Invert look'),
-          el('button', { class: 'chip', 'aria-pressed': String(settings.botChat), onclick: () => { settings.botChat = !settings.botChat; UI.save('settings', settings); openMenu(); } }, 'Show bot chat'))),
+          el('button', { class: 'chip', 'aria-pressed': String(settings.botChat), onclick: () => { settings.botChat = !settings.botChat; UI.save('settings', settings); openMenu(); } }, 'Show bot chat'),
+          isTouch ? null : el('button', { class: 'chip', 'aria-pressed': String(!!document.fullscreenElement), onclick: () => { toggleFullscreen(); UI.closeModal(); } }, 'Full screen'))),
         el('div', { class: 'chips' },
           el('button', { class: 'btn go', onclick: () => UI.closeModal() }, 'Resume'),
           el('button', { class: 'btn', onclick: () => UI.help() }, 'How to play'),
@@ -1615,6 +1774,9 @@
   window.addEventListener('keydown', e => {
     if (G.mode !== 'play') return;
     if (e.target && (e.target.tagName === 'INPUT' || e.target.tagName === 'SELECT')) return;
+    // Ctrl is "down" in the ship: keep Ctrl+W, Ctrl+R, Ctrl+S... from closing, reloading or
+    // saving the page while you play (Ctrl+W can only be caught in full screen, see lockKeys).
+    if (e.ctrlKey || e.metaKey) e.preventDefault();
     if (UI.modalOpen()) { if (e.key === 'Escape' || e.key === 'Tab') { e.preventDefault(); UI.closeModal(); } return; }
     if (e.key === 'Tab') { e.preventDefault(); openBoard(); return; }
     keys.add(e.code);
@@ -1628,6 +1790,7 @@
       case 'KeyX': scan(); break;
       case 'KeyR': shootPair(); break;
       case 'KeyJ': openJournal(); break;
+      case 'KeyH': houseKey(); break;
       case 'KeyB': toggleShip(); break;
       case 'KeyL': lightspeedKey(); break;
       case 'KeyQ': ability(); break;
@@ -1637,6 +1800,7 @@
       case 'Digit4': useGadget('meeseeks'); break;
       case 'Digit5': useGadget('timecrystal'); break;
       case 'Digit6': useGadget('freeze'); break;
+      case 'Digit7': useGadget('chalk'); break;
       case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emote(); break;
@@ -1645,6 +1809,24 @@
   });
   window.addEventListener('keyup', e => keys.delete(e.code));
   window.addEventListener('blur', () => { keys.clear(); mouseDown = false; touch.fire = false; touch.jump = false; });
+
+  // Take the mouse back for looking around (after a menu closes, so you don't have to click
+  // the game again). Only works inside a click or key press, which is when menus close.
+  function relock() {
+    if (G.mode !== 'play' || isTouch || UI.modalOpen() || chatOpen() || document.pointerLockElement || !canvas.requestPointerLock) return;
+    if (G.you && G.you.dead) return;
+    try { const p = canvas.requestPointerLock(); if (p && p.catch) p.catch(() => {}); } catch (_) {}
+  }
+  UI.afterClose = () => setTimeout(relock, 0);
+  // Full screen also lets the game keep Ctrl+W and friends (Ctrl is "down" in the ship).
+  function toggleFullscreen() {
+    const d = document;
+    if (d.fullscreenElement) { d.exitFullscreen().catch(() => {}); return; }
+    const p = d.documentElement.requestFullscreen && d.documentElement.requestFullscreen();
+    if (p && p.then) p.then(() => { if (navigator.keyboard && navigator.keyboard.lock) navigator.keyboard.lock(['KeyW', 'KeyR', 'KeyT', 'KeyN', 'KeyQ', 'KeyS', 'KeyD', 'KeyF']).catch(() => {}); }).catch(() => {});
+  }
+  // Closing the window by accident (Ctrl+W outside full screen) asks first.
+  window.addEventListener('beforeunload', e => { if (G.mode === 'play' && !G.leaving) { e.preventDefault(); e.returnValue = ''; } });
 
   // Mouse: pointer lock when the page allows it; otherwise drag to look.
   canvas.addEventListener('mousedown', e => {
@@ -1781,7 +1963,8 @@
     const mult = (fxb & 2 ? 1.8 : 1) * (fxb & 8 ? 0.75 : 1) * (fxb & 16 ? 0.6 : 1) * (fxb & 256 ? 0.5 : 1) * (fxb & 1024 ? 0.12 : 1);
     const shift = !chatOpen() && !UI.modalOpen() && (keys.has('ShiftLeft') || keys.has('ShiftRight'));
     me.sprinting = !inShip && !dead && il > 0.3 && (shift || touch.sprint) && iz > -0.2;
-    const speed = inShip ? st.ship.speed * mult : st.speed * mult * (st.fly && !me.grounded ? 1.3 : 1) * (me.sprinting ? st.sprint || 1.3 : 1);
+    me.boosting = inShip && !dead && (shift || touch.sprint);   // Shift in the ship: afterburner
+    const speed = inShip ? st.ship.speed * mult * (me.boosting ? MM.SHIP_BOOST : 1) : st.speed * mult * (st.fly && !me.grounded ? 1.3 : 1) * (me.sprinting ? st.sprint || 1.3 : 1);
     const sy = Math.sin(G.camYaw), cy = Math.cos(G.camYaw);
     const wx = (sy * iz - cy * ix) * speed, wz = (cy * iz + sy * ix) * speed;
     const accel = me.kbT > 0 ? 2 : inShip ? 5 : me.grounded ? 40 : 10;
@@ -1789,10 +1972,11 @@
     me.vx += (wx - me.vx) * k; me.vz += (wz - me.vz) * k;
     me.kbT = Math.max(0, me.kbT - dt);
     const jumpHeld = !chatOpen() && !UI.modalOpen() && (keys.has('Space') || touch.jump) && !dead;
-    const downHeld = !chatOpen() && !UI.modalOpen() && (shift || touch.down);
+    const ctrl = !chatOpen() && !UI.modalOpen() && (keys.has('ControlLeft') || keys.has('ControlRight'));
+    const downHeld = !chatOpen() && !UI.modalOpen() && (ctrl || touch.down);
     me.flying = false;
     if (inShip) {
-      // Ship: fly where you look. Space climbs, Shift dives.
+      // Ship: fly where you look. Space climbs, Ctrl dives, Shift boosts.
       const climb = (jumpHeld ? 1 : 0) - (downHeld ? 1 : 0) + (iz > 0 ? -Math.sin(G.camPitch) * iz * 0.8 : 0);
       me.vy += (climb * 12 - me.vy) * Math.min(1, dt * 4);
       me.grounded = false;
@@ -1810,7 +1994,8 @@
     if (me.grounded) me.fly = Math.min(st.flyTime || 6, me.fly + dt * 1.5);
     // World rules: swim up underwater; in the dream, now and then you remember you can fly.
     let quirkGrav = 1;
-    if (!inShip && dim.quirk === 'swim') { quirkGrav = 0.35; if (jumpHeld && !me.grounded && (me.jumpLock -= dt) <= 0) { me.vy += (5 - me.vy) * Math.min(1, dt * 4); me.flying = true; } }
+    const seaSwim = !inShip && MM.inSea(G.dimId, me.x, me.z) && me.y < MM.SEA_LEVEL + 0.3;   // swimming off the beach
+    if (!inShip && (dim.quirk === 'swim' || seaSwim)) { quirkGrav = 0.35; if (jumpHeld && !me.grounded && (me.jumpLock -= dt) <= 0) { me.vy += (5 - me.vy) * Math.min(1, dt * 4); me.flying = true; } }
     if (!inShip && dim.quirk === 'dreamy') {
       if (now() > (G.lucidNext || 0)) { G.lucidNext = now() + 18 + Math.random() * 20; G.lucidUntil = now() + 6; UI.toast('A lucid moment: you remember you can fly! (hold Jump)', 2500); }
       if (now() < (G.lucidUntil || 0) && jumpHeld && !me.grounded) { me.vy += (6 - me.vy) * Math.min(1, dt * 5); me.flying = true; }
@@ -1836,7 +2021,7 @@
       ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight);
       if (dim.planets) {
         // Space: fly between the planets; touch one to land on it (you can't fly through it).
-        ny = Math.min(ny, 880);
+        ny = Math.min(ny, 1150);
         for (const P of dim.planets) {
           const dx = nx - P.x, dy = ny + 1 - P.y, dz = nz - P.z, d = Math.hypot(dx, dy, dz), R = P.r + 4;
           if (d < R + 6 && now() > (G.orbitT || 0)) { G.orbitT = now() + 2.5; send({ t: 'land', d: P.dim }); }
@@ -1877,6 +2062,7 @@
     if (me.sprinting && me.grounded && hs > 3 && Math.random() < dt * 14) fx.puff(me.x - me.vx * 0.05, me.y + 0.1, me.z - me.vz * 0.05, '#e8e2d4', 1, 0.5, 0.6, 0.4);
     const fovT = G.baseFov + (me.sprinting && hs > 3 ? 6 : 0);
     if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
+    tickHouseFx();
     // Climbing towards space, the sky darkens and you see further.
     if (G.atmo && !dim.interior && !dim.planets) {
       const k = Math.max(0, Math.min(1, (me.y - MM.heightAt(G.dimId, me.x, me.z) - 70) / (MM.ORBIT_ALT - 70)));
@@ -2019,7 +2205,7 @@
     for (const q of G.pairs.values()) {
       q.mesh.userData.tick(dt);
       const op = Math.min(1, (t - q.born) * 4);
-      q.mesh.material.uniforms.open.value = op; q.mesh.userData.rim.scale.set(0.85 * op, 0.85 * 1.35 * op, 1);
+      q.mesh.material.uniforms.open.value = op;
       if (Math.random() < 0.15) fx.glow.emit(q.P.x + (Math.random() - 0.5) * 1.4, q.P.y + (Math.random() - 0.5) * 1.8, q.P.z + (Math.random() - 0.5) * 1.4, q.P.nx, q.P.ny, q.P.nz, q.col, 0.25, 0.4, 0);
     }
     for (const po of G.portals.values()) {
@@ -2178,6 +2364,7 @@
     updateRace();
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
+    if (G.life) G.life.update(dt, camWorld);
     fx.update(dt);
     const w = window.innerWidth, h = window.innerHeight;
     UI.updateNums(dt, n => {

@@ -45,8 +45,8 @@
       ground: ['#5fae3e', '#78c24b', '#4c9636'], accent: '#ffffff',
       props: [['tree', 40], ['hedge', 20]], streets: { grid: 44, extent: 150 }, spawn: { x: 2, z: -3, spread: 5 },
       // Rick's things in his open garage (the interactive ones are landmarks).
-      fixed: [['schoolbus', 40.5, 31, Math.PI], ['ambulance', 40.5, -31, Math.PI], ['spacecruiser', -13.0, 33.0, Math.PI / 2, 0.8], ['shelf', -17.2, 27.1, 0], ['washer', -13.4, 27.1, 0], ['curioshelf', -11.6, 35.0, Math.PI]],
-      npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 29.5]], pickups: { s: 18, c: 2 }, mat: 's',
+      fixed: [['schoolbus', 40.5, 31, Math.PI], ['ambulance', 40.5, -31, Math.PI], ['spacecruiser', -13.0, 30.55, Math.PI / 2, 0.8], ['shelf', -11.6, 24.9, 0], ['washer', -12.9, 24.9, 0], ['curioshelf', -11.6, 32.55, Math.PI]],
+      npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 27.05]], pickups: { s: 18, c: 2 }, mat: 's',
     },
     {
       // The same Earth as C-137, all of it (the suburb, Downtown, D.C., Area 51), after the love
@@ -72,7 +72,7 @@
       sky: ['#000006', '#151536'], fog: '#0d0d24', fogFar: 260, sun: '#ffffff', ambient: '#7a86b8',
       ground: ['#9a9aa6', '#b4b4c0', '#7c7c88'], accent: '#7affea',
       props: [['crystal', 50], ['rock', 50], ['rover', 6], ['antenna', 8]],
-      npc: [['mooncrab', 11], ['moonminer', 4]], pickups: { s: 6, c: 16 }, mat: 'c',
+      npc: [['mooncrab', 11], ['moonminer', 4], ['gordonlunas', 1, 20, 18]], pickups: { s: 6, c: 16 }, mat: 'c',
     },
     {
       id: 'featherhold', flat: 65, name: 'Bird World', code: 'BW-1', seed: 3131, gravity: 18, amp: 16, scale: 0.011,
@@ -402,6 +402,190 @@
       fixed: [['barrel', -8, -2, 0], ['barrel', -8, 2, 0], ['barrel', 8, -2, 0], ['barrel', 8, 2, 0], ['bottlerack', -6, -9, 0], ['bottlerack', 6, -9, 0]],
       props: [], npc: [], pickups: { p: 2 }, mat: 'p',
     },
+    // ----- The solar system (C-137's, the one every Earth sees in its sky) -----
+    // From "Something Ricked This Way Comes" and "A Rick in King Mortur's Mort": every planet
+    // has its people, and they all went to war over the Solar Scepter.
+    {
+      id: 'mercury', flat: 40, name: 'Mercury', code: 'SOL-1', seed: 1101, gravity: 14, amp: 10, scale: 0.016, solar: true,
+      blurb: 'Hot rock, closest to the Sun. The Mercurians ride horses across it and once stole the Solar Scepter from Jupiter.',
+      sky: ['#3a1a08', '#ffb060'], fog: '#c87a40', fogFar: 240, sun: '#fff0c8', ambient: '#c89070',
+      ground: ['#8a7a6a', '#a08a74', '#6a5a4e'], accent: '#ffb060',
+      props: [['rock', 50], ['redmesa', 10], ['rockspire', 14], ['crystal', 10]],
+      npc: [['mercurian', 9], ['mercuhorse', 8]], pickups: { s: 8, c: 6 }, mat: 'c',
+    },
+    {
+      id: 'venus', flat: 45, name: 'Venus', code: 'SOL-2', seed: 1102, gravity: 20, amp: 9, scale: 0.013, solar: true,
+      blurb: 'A yellow, sulphurous sky over the statues of the Viscounts of Venus, a very old and very rich family.',
+      sky: ['#a88a20', '#ffe27a'], fog: '#d8b84a', fogFar: 160, sun: '#fff0a0', ambient: '#c8b060',
+      ground: ['#c8a050', '#b88a40', '#8a6a30'], accent: '#ffe27a',
+      props: [['rock', 40], ['volcano', 4], ['rockspire', 18], ['sludgepool', 8]],
+      npc: [['venusian', 10], ['lithdor', 1, 0, -26]], pickups: { c: 8, p: 4 }, mat: 'c',
+    },
+    {
+      id: 'mars', flat: 50, name: 'Mars', code: 'SOL-4', seed: 1104, gravity: 12, amp: 16, scale: 0.012, solar: true,
+      blurb: 'Red dust, old rovers, and the keep of the one-armed Marquis of Mars. The government keeps things here it would rather you never found.',
+      sky: ['#5a2010', '#e89060'], fog: '#c06a44', fogFar: 230, sun: '#ffe0c0', ambient: '#c07a5a',
+      ground: ['#b4532e', '#c8683a', '#8a3a22'], accent: '#ff8a4a',
+      props: [['redmesa', 18], ['rock', 40], ['rover', 6], ['antenna', 6], ['rockspire', 12]],
+      npc: [['martian', 10], ['marquis', 1, 0, -28]], pickups: { s: 8, c: 4 }, mat: 'c',
+    },
+    {
+      id: 'jupiter', flat: 70, name: 'Jupiter', code: 'SOL-5', seed: 1105, gravity: 30, amp: 4, scale: 0.008, solar: true,
+      blurb: 'You stand on the floating cloud-decks of the Jovians, above a storm older than people. Heavy gravity.',
+      sky: ['#8a4a20', '#f0c890'], fog: '#e0b080', fogFar: 200, sun: '#fff0d8', ambient: '#d0a078',
+      ground: ['#e8c8a0', '#d89a6a', '#b8704a'], accent: '#ff7a3a', gasGiant: true,
+      props: [['cloudpuff', 60], ['crystal', 10], ['pipe', 8]],
+      npc: [['jovian', 12]], pickups: { g: 6, c: 6 }, mat: 'c',
+    },
+    {
+      id: 'saturn', flat: 60, name: 'Saturn', code: 'SOL-6', seed: 1106, gravity: 24, amp: 5, scale: 0.009, solar: true,
+      blurb: 'Pale gold cloud-decks under the rings. The Saturnians will tell you about the rings. Many times.',
+      sky: ['#5a4a2a', '#f4e0a8'], fog: '#e8d4a0', fogFar: 230, sun: '#fff8e0', ambient: '#d8c090',
+      ground: ['#e8d8a8', '#d8c088', '#c0a070'], accent: '#ffe08a', gasGiant: true, ring: ['#d8c49a', 1.5, 2.4],
+      props: [['cloudpuff', 50], ['crystal', 16], ['biggear', 3]],
+      npc: [['saturnian', 12]], pickups: { c: 8, s: 4 }, mat: 'c',
+    },
+    {
+      id: 'titan', flat: 40, name: 'Titan', code: 'SOL-6b', seed: 1116, gravity: 8, amp: 12, scale: 0.014, solar: true,
+      blurb: 'Saturn\'s biggest moon, under an orange haze. The Warlord of Titan rules it, and he likes to make people choose.',
+      sky: ['#3a1a00', '#d88a3a'], fog: '#a85a20', fogFar: 170, sun: '#ffd8a0', ambient: '#b07040',
+      ground: ['#8a5a2a', '#6a4220', '#a8703a'], accent: '#ff9a3a',
+      props: [['rock', 40], ['rockspire', 20], ['sludgepool', 8], ['bonepile', 6]],
+      npc: [['titanguard', 7], ['titanwarlord', 1, 0, -30]], pickups: { s: 6, c: 6, m: 1 }, mat: 'c',
+    },
+    {
+      id: 'uranus', flat: 60, name: 'Uranus', code: 'SOL-7', seed: 1107, gravity: 16, amp: 6, scale: 0.01, solar: true,
+      blurb: 'Pale blue ice, and nobody at all. The only planet that stayed out of the Solar War. Go ahead, make the joke.',
+      sky: ['#1a4a5a', '#a8ecf0'], fog: '#8ad0d8', fogFar: 260, sun: '#e8fcff', ambient: '#90c8d0',
+      ground: ['#b8e8ec', '#9ad8e0', '#d8f6f8'], accent: '#a8ecf0',
+      props: [['crystal', 40], ['rock', 20]],
+      npc: [], pickups: { c: 12 }, mat: 'c',
+    },
+    {
+      id: 'neptune', flat: 60, name: 'Neptune', code: 'SOL-8', seed: 1108, gravity: 18, amp: 7, scale: 0.01, solar: true, quirk: 'swim',
+      blurb: 'A deep blue ocean planet with one inhabitant: Neptune himself, beard, trident and all.',
+      sky: ['#081a5a', '#3a6ae8'], fog: '#1a3a9a', fogFar: 150, sun: '#c8d8ff', ambient: '#4a6ad0',
+      ground: ['#2a4a9a', '#3a5aaa', '#1a3a7a'], accent: '#7ab0ff',
+      props: [['coral', 30], ['kelp', 40], ['column', 10], ['shell', 10]],
+      npc: [['neptune', 1, 0, -28], ['seamonster', 3]], pickups: { c: 10 }, mat: 'c',
+    },
+    {
+      id: 'pluto', flat: 55, name: 'Pluto', code: 'SOL-9', seed: 1109, gravity: 10, amp: 7, scale: 0.012, solar: true, ring: ['#8a8a7a', 1.35, 1.8],
+      blurb: 'Blue-green flats, mushroom houses and pyramids. Four billion Plutonians, and every one of them will tell you Pluto is a planet.',
+      sky: ['#0a1a2a', '#6ac8b8'], fog: '#4a9a90', fogFar: 220, sun: '#e0f0ff', ambient: '#7ab8b0',
+      ground: ['#5aa890', '#4a9a80', '#7ab8a0'], accent: '#ffd84d',
+      props: [['mushroom', 40], ['rock', 24], ['crystal', 10]],
+      npc: [['plutonian', 16], ['flippynips', 1, 0, -30], ['scroopy', 1, 38, 12]], pickups: { c: 6, g: 4, s: 4 }, mat: 'c',
+    },
+    {
+      id: 'sun', flat: 40, name: 'The Sun', code: 'SOL-0', seed: 1100, gravity: 26, amp: 3, scale: 0.02, solar: true, quirk: 'hot',
+      blurb: 'A great walkway over the burning surface, where the Knights of the Sun serve the King of the Sun and guard the Solar Scepter.',
+      sky: ['#ff5a00', '#ffe08a'], fog: '#ff9a2a', fogFar: 140, sun: '#ffffff', ambient: '#ffb070',
+      ground: ['#ffb02a', '#ff8a1a', '#ffd84d'], accent: '#ffffff',
+      props: [['column', 30], ['banner', 12], ['lantern', 14]],
+      npc: [['sunknight', 10], ['sunking', 1, 0, -38]], pickups: { c: 6, k: 2 }, mat: 'c',
+    },
+    // ----- The rest of the Smith house: rooms off the main floors -----
+    {
+      id: 'ensuite', name: "Beth and Jerry's bathroom", code: 'C-137', seed: 141, gravity: 24, interior: true, hidden: true, bound: 4.2, boundZ: 3.2,
+      blurb: 'The en-suite off Beth and Jerry\'s room. Two sinks, one hair dryer, a lot of history.',
+      sky: ['#2a2a30', '#2a2a30'], fog: '#2a2a30', fogFar: 400, sun: '#fff4e0', ambient: '#c8c8c0',
+      ground: ['#e8e8e0', '#d8dcd8', '#f4f4ee'], accent: '#7ad8ff', spawn: { x: -2.8, z: 0 },
+      room: { w: 8.6, d: 6.6, h: 3.2, wall: '#a8d8e0', trim: '#f4f4f0', style: 'tile' },
+      fixed: [['bathtub', 2.6, -2.2, 0], ['toilet', 3.6, 2.6, Math.PI], ['bathsink', 0.4, -3.0, 0], ['bathsink', -1.2, -3.0, 0], ['bathmirror', -0.4, -3.25, 0], ['in_plant', -3.7, 2.8, 0]],
+      props: [], npc: [], pickups: {}, mat: 's',
+    },
+    {
+      id: 'holodeck', name: "Rick's Holodeck", code: 'C-137', seed: 142, gravity: 24, interior: true, hidden: true, bound: 7.3,
+      blurb: 'A room that can be anywhere. Beth and Space Beth used it for a very long simulation once.',
+      sky: ['#05070a', '#05070a'], fog: '#05070a', fogFar: 400, sun: '#ffffff', ambient: '#8a96a8',
+      ground: ['#14181e', '#181d24', '#101318'], accent: '#ffd84d', spawn: { x: 0, z: 5 },
+      room: { w: 15, d: 15, h: 6, wall: '#101318', trim: '#ffd84d', style: 'holo' },
+      fixed: [], props: [], npc: [], pickups: {}, mat: 'c',
+    },
+    {
+      id: 'mancave', name: "Jerry's Man Cave", code: 'C-137', seed: 143, gravity: 24, interior: true, hidden: true, bound: 5.3, boundZ: 4.3,
+      blurb: 'Jerry\'s place to be a man, in the shed. A couch, a TV, a Titanic poster and the Lovefinderrz app, abandoned.',
+      sky: ['#2a2018', '#2a2018'], fog: '#2a2018', fogFar: 400, sun: '#ffe8c8', ambient: '#b09878',
+      ground: ['#6a5040', '#5a4436', '#7a5c48'], accent: '#ffd84d', spawn: { x: 0, z: 3 },
+      room: { w: 11, d: 9, h: 3.2, wall: '#7a5a3e', trim: '#4a3424' },
+      fixed: [['in_sofa', 0, 0.6, Math.PI], ['tvscreen', 0, -4.1, 0], ['titanicposter', -3.4, -4.3, 0], ['in_desk', 4.2, -2.6, -Math.PI / 2], ['in_counter', -4.4, 1.2, Math.PI / 2], ['golfbag', 4.6, 3.2, 0]],
+      props: [], npc: [], pickups: { p: 1 }, mat: 'p',
+    },
+    // ----- Under the lab: the garage's sublevels, down the elevator -----
+    {
+      id: 'sublevels', name: 'Garage Elevator (sublevels)', code: 'C-137', seed: 150, gravity: 24, interior: true, hidden: true, bound: 11, boundZ: 7.2,
+      blurb: 'Rick\'s elevator, from the lab down to the sublevels. There are more of them than there should be.',
+      sky: ['#0c1014', '#0c1014'], fog: '#0c1014', fogFar: 400, sun: '#cfe8ff', ambient: '#7a90a8',
+      ground: ['#3a424e', '#424a58', '#343c46'], accent: '#5ff8ff', spawn: { x: 0, z: 4.5 },
+      room: { w: 23, d: 15, h: 5, wall: '#4a5462', trim: '#22303a', style: 'lab' },
+      fixed: [], props: [], npc: [], pickups: {}, mat: 'c',
+    },
+    {
+      id: 'sub_b1', name: 'Sublevel B1: clones and weapons', code: 'B1', seed: 151, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'Operation Phoenix: rows of spare Rick bodies, and the walls are weapons. Blim Blam was kept down here once.',
+      sky: ['#0c1014', '#0c1014'], fog: '#0c1014', fogFar: 400, sun: '#cfe8ff', ambient: '#7a90a8',
+      ground: ['#4a5260', '#566070', '#3e4652'], accent: '#5ff8ff', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 6, wall: '#5a6474', trim: '#2a3240', style: 'lab' },
+      fixed: [[-9, -11], [-6, -11], [-3, -11], [3, -11], [6, -11], [9, -11], [-9, -6], [-6, -6], [6, -6], [9, -6]].map(([x, z]) => ['clonetank', x, z, 0])
+        .concat([-8, -4, 0, 4, 8].map(z => ['weaponrack', -12.6, z, Math.PI / 2]), [-8, -4, 0, 4, 8].map(z => ['weaponrack', 12.6, z, -Math.PI / 2])),
+      props: [], npc: [], pickups: { s: 3 }, mat: 's',
+    },
+    {
+      id: 'sub_b2', name: 'Sublevel B2: the Killer Plant Lab', code: 'B2', seed: 152, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'Sentient, man-eating plants that need feeding all the time. Summer says there is a Phantom Zone down here too.',
+      sky: ['#0a140c', '#0a140c'], fog: '#0a140c', fogFar: 400, sun: '#d8ffd0', ambient: '#7aa878',
+      ground: ['#3a4a32', '#44583a', '#33402c'], accent: '#7aff6a', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 6, wall: '#3a5a3e', trim: '#1e2a1e', style: 'lab' },
+      fixed: [[-9, -9], [-3, -10], [3, -10], [9, -9], [-10, -3], [10, -3], [-10, 3], [10, 3], [-6, 6], [6, 6]].map(([x, z], i) => ['killerplant', x, z, i]).concat([['f_vat', 0, -6, 0]]),
+      props: [], npc: [['maneater', 5]], pickups: { g: 4 }, mat: 'g',
+    },
+    {
+      id: 'sub_b3', name: 'Sublevel B3: the Globaflyn Prison', code: 'B3', seed: 153, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'People Rick wants gone but not dead, each in a sac of globaflyn, living forever in a dream of what they want most.',
+      sky: ['#140c18', '#140c18'], fog: '#140c18', fogFar: 400, sun: '#f0d8ff', ambient: '#9a80a8',
+      ground: ['#3e3448', '#4a3e56', '#342c3e'], accent: '#e08aff', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 6, wall: '#4a3e5a', trim: '#221a2a', style: 'lab' },
+      fixed: [].concat(...[-10, -5, 0, 5].map(z => [-10, -6, -2, 2, 6, 10].map((x, i) => ['globaflyn', x, z, i]))),
+      props: [], npc: [], pickups: { p: 3 }, mat: 'p',
+    },
+    {
+      id: 'sub_b7', name: 'Sublevel B7: the Valuables Vault', code: 'B7', seed: 157, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'Important objects and machines. In the middle, a giant ant-farm brain holding a memory of Diane.',
+      sky: ['#14120a', '#14120a'], fog: '#14120a', fogFar: 400, sun: '#fff4d0', ambient: '#a89a78',
+      ground: ['#5a5446', '#665e4e', '#4e483c'], accent: '#ffd84d', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 6, wall: '#6a6050', trim: '#2e2a20', style: 'lab' },
+      fixed: [['antbrain', 0, -7, 0]].concat([-9, -3, 3, 9].map(x => ['curioshelf', x, -12.5, 0]), [-8, -2, 4].map(z => ['curioshelf', -12.5, z, Math.PI / 2]), [-8, -2, 4].map(z => ['curioshelf', 12.5, z, -Math.PI / 2]), [['goldorb', -7, 2, 0], ['goldorb', 7, 2, 0], ['voidcrystal', -7, 7, 0], ['voidcrystal', 7, 7, 0]]),
+      props: [], npc: [], pickups: { k: 3, c: 3 }, mat: 'c',
+    },
+    {
+      id: 'sub_b10', name: 'Sublevel B10: the Rick Prime room', code: 'B10', seed: 160, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'Rick\'s secret base for hunting Rick Prime: maps, screens, red string and a lot of empty bottles. Shut down after "Unmortricken".',
+      sky: ['#0a0a10', '#0a0a10'], fog: '#0a0a10', fogFar: 400, sun: '#ffd0c8', ambient: '#806878',
+      ground: ['#2e2e36', '#36363e', '#28282e'], accent: '#ff4a4a', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 6, wall: '#34343e', trim: '#1a1a20', style: 'lab' },
+      fixed: [['f_tvwall', 0, -12.4, 0], ['bigcomputer', -8, -11, 0], ['mapboard', -12.6, -4, Math.PI / 2], ['mapboard', -12.6, 4, Math.PI / 2], ['mapboard', 12.6, -4, -Math.PI / 2], ['mapboard', 12.6, 4, -Math.PI / 2], ['in_desk', 0, -6, Math.PI], ['barrel', 9, -10, 0], ['bottlerack', 9, 8, -Math.PI / 2]],
+      props: [], npc: [], pickups: { k: 2 }, mat: 'k',
+    },
+    {
+      id: 'sub_b15', name: "Sublevel B15: Jiro's", code: 'B15', seed: 165, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'A sushi restaurant, under the garage. The top-rated restaurant in all the sublevels, ahead of Luigi\'s.',
+      sky: ['#1a1410', '#1a1410'], fog: '#1a1410', fogFar: 400, sun: '#fff0d8', ambient: '#b8a080',
+      ground: ['#8a6a4a', '#9a7a58', '#7a5c3e'], accent: '#ff5a4a', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 5, wall: '#e8dcc8', trim: '#5a3a22' },
+      fixed: [['in_counter', -3.6, -6, 0], ['in_counter', 0, -6, 0], ['in_counter', 3.6, -6, 0], ['in_bench', -3.6, -4, 0], ['in_bench', 0, -4, 0], ['in_bench', 3.6, -4, 0], ['lantern', -8, -10, 0], ['lantern', 8, -10, 0], ['in_table', -8, 4, 0], ['in_table', 8, 4, 0], ['in_plant', -11.5, -11.5, 0], ['in_plant', 11.5, -11.5, 0]],
+      props: [], npc: [['jiro', 1, 0, -8.5]], pickups: { f: 3 }, mat: 'f',
+    },
+    {
+      id: 'sub_b17', name: 'Sublevel B17: the dead prison', code: 'B17', seed: 167, gravity: 24, interior: true, hidden: true, bound: 13,
+      blurb: 'A prison full of prisoners who are, inexplicably, all dead. Past it, a storeroom of landline portals.',
+      sky: ['#0a0c0c', '#0a0c0c'], fog: '#0a0c0c', fogFar: 400, sun: '#d8e8e0', ambient: '#6a7a74',
+      ground: ['#3a3e3c', '#444846', '#323634'], accent: '#9affd8', spawn: { x: 0, z: 10 },
+      room: { w: 27, d: 27, h: 5, wall: '#4a504c', trim: '#1e2220', style: 'lab' },
+      fixed: [-9, -4.5, 0, 4.5].map(x => ['cellbars', x, -11, 0]).concat([-6, 0, 6].map(z => ['cellbars', -11.5, z, Math.PI / 2]), [[-9, -12, 0.3], [0, -12.2, 2.1], [-12.2, -1, 1.2], [-12.4, 5, 2.6]].map(([x, z, r]) => ['deadprisoner', x, z, r]),
+        [[8, -10], [10, -8], [8, -6], [10, -4], [8, -2]].map(([x, z], i) => ['landline', x, z, -Math.PI / 2 + i * 0.2])),
+      props: [], npc: [], pickups: { s: 2 }, mat: 's',
+    },
   ];
   MM.DIM_BY_ID = {};
   for (const d of MM.DIMS) MM.DIM_BY_ID[d.id] = d;
@@ -484,19 +668,29 @@
     { id: 'unity', name: 'Unity\'s Planet', icon: '🫧', prime: 'unityworld', blurb: 'A planet that is one mind.' },
     { id: 'federation', name: 'Galactic Federation', icon: '🏛️', prime: 'federation', blurb: 'The Federation\'s capital planet.' },
     { id: 'bazaar', name: 'Alien Bazaar', icon: '🛍️', prime: 'bazaar', blurb: 'A market planet.' },
-    { id: 'blips', name: 'Blips and Chitz', icon: '🕹️', prime: 'blips', blurb: 'The arcade, somewhere in the galaxy.' },
-    { id: 'citadel', name: 'The Citadel', icon: '🏙️', prime: 'citadel', blurb: 'The city of Ricks and Mortys, hidden between dimensions.' },
+    { id: 'blips', name: 'Blips and Chitz', icon: '🕹️', prime: 'blips', unique: true, blurb: 'The arcade, somewhere in the galaxy.' },
+    { id: 'citadel', name: 'The Citadel', icon: '🏙️', prime: 'citadel', unique: true, blurb: 'The city of Ricks and Mortys, hidden between dimensions. There is only one.' },
     { id: 'snake', name: 'Snake Planet', icon: '🐍', prime: 'snakeplanet', blurb: 'Snakes, snake jazz and snake time travel.' },
     { id: 'megaseed', name: 'Mega Seed World', icon: '🌱', prime: 'megaseed', blurb: 'Where the Mega Seeds grow.' },
     { id: 'plumbus', name: 'Plumbubo Prime 51b', icon: '🔧', prime: 'plumbus', blurb: 'Where plumbuses come from.' },
     { id: 'giant', name: 'Giant World', icon: '🫘', prime: 'giantland', blurb: 'Up the beanstalk.' },
     { id: 'atlantis', name: 'Atlantis', icon: '🔱', prime: 'atlantis', blurb: 'Mr. Nimbus\'s sunken city.' },
-    { id: 'dream', name: 'The Dream World', icon: '💤', prime: 'dreamworld', realm: true, blurb: 'Inside a dream. Not a planet at all.' },
-    { id: 'storytrain', name: 'The Story Train', icon: '🚂', prime: 'storytrain', realm: true, blurb: 'An endless train of stories.' },
+    { id: 'dream', name: 'The Dream World', icon: '💤', prime: 'dreamworld', realm: true, unique: true, blurb: 'Inside a dream. Not a planet at all.' },
+    { id: 'storytrain', name: 'The Story Train', icon: '🚂', prime: 'storytrain', realm: true, unique: true, blurb: 'An endless train of stories. There is only one.' },
     { id: 'toxic', name: 'The Toxic Dimension', icon: '☣️', prime: 'toxicworld', realm: true, blurb: 'Where everything toxic ends up.' },
-    { id: 'cable', name: 'Interdimensional Cable', icon: '📺', prime: 'cableworld', realm: true, blurb: 'The dimension of the commercials.' },
+    { id: 'cable', name: 'Interdimensional Cable', icon: '📺', prime: 'cableworld', realm: true, unique: true, blurb: 'The dimension of the commercials. There is only one.' },
     { id: 'hamster', name: 'Hamster-in-Butt World', icon: '🐹', prime: 'hamsterworld', blurb: 'It is exactly what it sounds like.' },
-    { id: 'beyond', name: 'Beyond the Curve', icon: 'Ω', prime: 'beyond', realm: true, blurb: 'Outside the Central Finite Curve.' },
+    { id: 'sun', name: 'The Sun', icon: '☀️', prime: 'sun', solar: true, blurb: 'The middle of the solar system: the Knights of the Sun and their King.' },
+    { id: 'mercury', name: 'Mercury', icon: '🐎', prime: 'mercury', solar: true, blurb: 'Hot rock and Mercurian horsemen.' },
+    { id: 'venus', name: 'Venus', icon: '🟡', prime: 'venus', solar: true, blurb: 'The Viscounts of Venus, under a yellow sky.' },
+    { id: 'mars', name: 'Mars', icon: '🔴', prime: 'mars', solar: true, blurb: 'The red planet and its one-armed Marquis.' },
+    { id: 'jupiter', name: 'Jupiter', icon: '🟠', prime: 'jupiter', solar: true, blurb: 'The Jovians\' cloud-decks over the Great Red Spot.' },
+    { id: 'saturn', name: 'Saturn', icon: '🪐', prime: 'saturn', solar: true, blurb: 'All the rings, and Saturnians who won\'t shut up about them.' },
+    { id: 'titan', name: 'Titan', icon: '🌑', prime: 'titan', solar: true, blurb: 'Saturn\'s moon, and its Warlord.' },
+    { id: 'uranus', name: 'Uranus', icon: '🧊', prime: 'uranus', solar: true, blurb: 'Nobody lives here.' },
+    { id: 'neptune', name: 'Neptune', icon: '🔱', prime: 'neptune', solar: true, blurb: 'An ocean planet, and the god it is named after.' },
+    { id: 'pluto', name: 'Pluto', icon: '🍄', prime: 'pluto', solar: true, blurb: 'Is it a planet? Do NOT ask a Plutonian that.' },
+    { id: 'beyond', name: 'Beyond the Curve', icon: 'Ω', prime: 'beyond', realm: true, unique: true, blurb: 'Outside the Central Finite Curve. There is only one of it, by definition.' },
   ];
   // Other timelines, as [id, of (the dimension), name, code, blurb, look].
   const TIMELINES = [
@@ -515,7 +709,20 @@
     { k: 'DK', label: 'dark dimension', blurb: n => n + ' where the sun went out a long time ago. Everyone just got used to it.', hue: 0, sat: 0.8, light: 0.45, extra: [['lamp', 16]] },
     { k: 'JG', label: 'jungle dimension', blurb: n => n + ', where the jungle got everything back.', hue: 40, sat: 1.25, light: 0.95, extra: [['seedtree', 12], ['fungus', 10]] },
     { k: 'CT', label: 'cat dimension', blurb: n => n + ', where everyone is a cat. Nobody remembers it ever being different.', hue: 15, sat: 1, light: 1.05, npc: [['catfolk', 8]] },
+    { k: 'TY', label: 'toy dimension', blurb: n => n + ' in a dimension made of plastic and candy. Everything squeaks.', hue: -10, sat: 1.6, light: 1.12, extra: [['lollipop', 10], ['candyrock', 6]] },
   ];
+  MM.PARALLEL_BY_K = {};
+  for (const T of PARALLEL) MM.PARALLEL_BY_K[T.k] = T;
+  // Each kind of parallel dimension has a place of its own and something to do there.
+  MM.TWIST_SPOTS = {
+    CR: { name: 'The Flesh Shrine', model: 'lm_tw_cr', task: ['Feed the Flesh Shrine', { g: 3 }, 'It ate the scraps you offered, and then it purred. Best not to think about it.'] },
+    MR: { name: 'The Great Mirror', model: 'lm_tw_mr', task: ['Shake hands with your reflection', { k: 2, m: 1 }, 'Your reflection shook your left hand with its right. It seemed nicer than you. Suspicious.'] },
+    IC: { name: 'The Frozen Lake', model: 'lm_tw_ic', task: ['Go ice fishing', { c: 2 }, 'You caught a fish frozen mid-sentence. It finished the sentence when it thawed. It was rude.'], heal: true },
+    DK: { name: 'The Last Lighthouse', model: 'lm_tw_dk', task: ['Relight the lighthouse', { p: 2, s: 1 }, 'For a moment the whole dark dimension could see. Everyone said thanks, then went back to the dark.'] },
+    JG: { name: 'The Overgrown Temple', model: 'lm_tw_jg', task: ['Explore the overgrown temple', { m: 1, s: 2 }, 'Vines, snakes, a booby trap, and at the very end a Mega Seed in a little bowl. Classic.'] },
+    CT: { name: 'The Great Scratching Post', model: 'lm_tw_ct', task: ['Nap in a sunbeam', { f: 2 }, 'You napped for nine hours. Nobody thought this was strange. You feel amazing.'], heal: true },
+    TY: { name: 'The Giant Toy Box', model: 'lm_tw_ty', task: ['Wind up the giant toy', { s: 3 }, 'The giant tin robot marched once round the box and fell over. The crowd went wild.'] },
+  };
   const tint = (hex, h, sat, light) => {
     const c = parseInt(hex.slice(1), 16); let r = (c >> 16) / 255, g = (c >> 8 & 255) / 255, b = (c & 255) / 255;
     const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
@@ -536,16 +743,28 @@
   };
   for (const [id, of, name, code, blurb, look] of TIMELINES) derive(MM.DIM_BY_ID[of], id, Object.assign({ name, code, blurb, timeline: true, timelineOf: of }, look));
   MM.DIM_BY_ID.splitearth.timelineOf = 'suburbia'; MM.DIM_BY_ID.dinoearth.timelineOf = 'suburbia';
+  // Every world that is not one of a kind gets parallel dimensions, three of them (a world the
+  // show already gave some, like Earth, keeps its own). Each has its own twist, its own look,
+  // its own place and its own thing to do (MM.TWIST_SPOTS).
   MM.WORLDS.forEach((W, i) => {
     const B = MM.DIM_BY_ID[W.prime];
     W.dims = [W.prime].concat(W.dims || []);
-    if (W.dims.length === 1 && !B.interior) {
-      const T = PARALLEL[i % PARALLEL.length], t = c => tint(c, T.hue, T.sat, T.light);
-      const d = derive(B, W.prime + '_' + T.k.toLowerCase(), { name: W.name + ' (' + T.label + ')', code: B.code + '/' + T.k, twist: T.k, blurb: T.blurb(W.name),
+    if (W.dims.length > 1 || B.interior || W.unique || W.solar) return;
+    for (let j = 0; j < 3; j++) {
+      const T = PARALLEL[(i + j * 3) % PARALLEL.length], t = c => tint(c, T.hue, T.sat, T.light);
+      const id = W.prime + '_' + T.k.toLowerCase();
+      if (MM.DIM_BY_ID[id]) continue;
+      const d = derive(B, id, { name: W.name + ' (' + T.label + ')', code: B.code + '/' + T.k, twist: T.k, blurb: T.blurb(W.name),
         sky: B.sky.map(t), fog: t(B.fog), ground: B.ground.map(t), ambient: t(B.ambient), extra: T.extra || [], npc: T.npc || [] });
       W.dims.push(d.id);
+      const S = MM.TWIST_SPOTS[T.k], l = { id: id + '_twist', dim: id, name: S.name, x: -58, z: -58, r: 6, h: 8, model: S.model, alias: 'twist_' + T.k, rot: Math.PI / 4 };
+      MM.LANDMARKS.push(l); MM.LANDMARK_BY_ID[l.id] = l;
     }
   });
+  for (const k in MM.TWIST_SPOTS) {
+    const S = MM.TWIST_SPOTS[k];
+    MM.TASKS['twist_' + k] = { at: 'twist_' + k, any: true, name: S.task[0], cd: 180, give: S.task[1], heal: S.heal ? 1 : 0, text: S.task[2] };
+  }
   for (const d of MM.DIMS) if (d.variantOf) fillVariant(d);
   MM.fillVariant = fillVariant;
   // Which world a dimension belongs to (alternate and home Earths are Earth), and which
@@ -567,8 +786,9 @@
   // and its moon). pocket: only reachable through its entrance (a door, a battery, a man).
   // Everything else is another dimension: portal guns, the Dimension Drive, the Citadel's
   // portal station or Federation customs. Outside the Central Finite Curve: gold portals only.
-  const SPACE = { suburbia: 'c137', downtown: 'c137', dc: 'c137', area51: 'c137', moon: 'c137', featherhold: 'c137', gazorp: 'c137', squanch: 'c137', purge: 'c137', gearworld: 'c137', unityworld: 'c137', federation: 'c137', blips: 'c137', bazaar: 'c137' };
-  const NEAR = { suburbia: 1, downtown: 1, dc: 1, area51: 1, moon: 1 };
+  const SPACE = { suburbia: 'c137', downtown: 'c137', dc: 'c137', area51: 'c137', moon: 'c137', featherhold: 'c137', gazorp: 'c137', squanch: 'c137', purge: 'c137', gearworld: 'c137', unityworld: 'c137', federation: 'c137', blips: 'c137', bazaar: 'c137', snakeplanet: 'c137', megaseed: 'c137', plumbus: 'c137', giantland: 'c137', hamsterworld: 'c137', sun: 'c137', mercury: 'c137', venus: 'c137', mars: 'c137', jupiter: 'c137', saturn: 'c137', titan: 'c137', uranus: 'c137', neptune: 'c137', pluto: 'c137' };
+  // The solar system is a short hop too: Rick flies to Pluto for an awards dinner.
+  const NEAR = { suburbia: 1, downtown: 1, dc: 1, area51: 1, moon: 1, sun: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1, titan: 1, uranus: 1, neptune: 1, pluto: 1 };
   const POCKET = { microverse: 1, anatomy: 1, froopy: 1 };
   for (const d of MM.DIMS) { if (SPACE[d.id]) d.space = SPACE[d.id]; if (NEAR[d.id]) d.near = true; if (POCKET[d.id]) d.pocket = true; }
   // Public interdimensional stations, only where they exist in the lore.
@@ -735,6 +955,7 @@
     radar:       { r: 2.2, h: 8, hp: 140, drop: { c: 1, s: 1 } },
     jeep:        { r: 2.2, h: 2, hp: 90, drop: { s: 3 } },
     banner:      { r: 0.4, h: 6.5, hp: 30, drop: { s: 1 } },
+    powerpole:   { r: 0.3, h: 9, hp: 90, drop: { s: 2 } },
     watchtower:  { r: 2.0, h: 9, hp: 160, drop: { s: 3, p: 1 } },
     shrimpstatue:{ r: 1.6, h: 5.5, hp: 220, drop: { g: 2 } },
     teddystatue: { r: 1.6, h: 5, hp: 220, drop: { f: 2 } },
@@ -762,12 +983,25 @@
     labmachine:  { r: 1.8, h: 3.0, hp: 1e9, drop: {}, fixed: true },
     barrel:      { r: 1.0, h: 1.8, hp: 1e9, drop: {}, fixed: true },
     bottlerack:  { r: 1.6, h: 3.0, hp: 1e9, drop: {}, fixed: true },
+    // The sublevels and the rest of the house.
+    killerplant: { r: 0.9, h: 2.8, hp: 1e9, drop: {}, fixed: true },
+    globaflyn:   { r: 0.8, h: 2.6, hp: 1e9, drop: {}, fixed: true },
+    antbrain:    { r: 2.6, h: 4.5, hp: 1e9, drop: {}, fixed: true },
+    mapboard:    { r: 1.6, h: 2.6, hp: 1e9, drop: {}, fixed: true, box: [-1.6, 1.6, -0.15, 0.15] },
+    cellbars:    { r: 2.0, h: 3.0, hp: 1e9, drop: {}, fixed: true, box: [-2.0, 2.0, -0.15, 0.15] },
+    deadprisoner:{ r: 0.4, h: 0.6, hp: 1e9, drop: {}, fixed: true, arch: true },
+    landline:    { r: 0.4, h: 1.3, hp: 1e9, drop: {}, fixed: true },
+    titanicposter: { r: 0.1, h: 0.1, hp: 1e9, drop: {}, fixed: true, arch: true },
+    golfbag:     { r: 0.3, h: 1.1, hp: 1e9, drop: {}, fixed: true },
   });
 
   // Landmarks are solid, can't be destroyed, and each has its own model.
   for (const l of MM.LANDMARKS) MM.PROPS[l.model] = { r: l.r, h: l.h, hp: 1e9, drop: {}, fixed: true };
   // Rings on the floor that mark a spot: you walk over them.
   MM.PROPS.lm_marker = { r: 0.6, h: 0.1, hp: 1e9, drop: {}, fixed: true, arch: true };
+  // Doors set into a wall (and Rick's elevator doors): you walk up to them, not into them.
+  MM.PROPS.lm_walldoor = { r: 0.6, h: 2.2, hp: 1e9, drop: {}, fixed: true, arch: true };
+  MM.PROPS.lm_elevator = { r: 1.2, h: 3.2, hp: 1e9, drop: {}, fixed: true, arch: true };
 
   // NPCs. hostile ones chase and bite; the rest are locals you can talk to (F).
   //   human: built like a player, from these look options.  fly: hover height.
@@ -810,6 +1044,116 @@
       talk: ['Can you take our picture? No, with the giant mushroom.', 'We came for the plasma tasting tour.', 'Is this the line for the dimension where everyone is a chair?',
         'My ship is double-parked. In time.', 'I lost my group. They are in a different century.'],
       moods: { line: 45, gift: 10, trade: 8, errand: 15, buff: 4, angry: 4, follow: 10, prank: 2, dance: 2 } },
+    // ----- The solar system's people -----
+    plutonian: { name: 'Plutonian', hp: 34, speed: 3, hostile: false, dmg: 0, drop: { c: 1, g: 1 }, r: 0.6, h: 1.6,
+      human: { species: ['alien'], top: ['none', 'vest'], acc: ['antennae'], eyes: ['wide'], height: [0.85, 1.0],
+        look: { hair: 'bald', brow: 'none', skin: '#ffd84d', topColor: '#ff9a3a', shirtColor: '#ff9a3a', pantsColor: '#ff9a3a', shoeColor: '#e07a2a', accColor: '#ff9a3a' } },
+      names: ['Blorp Flonk', 'Ziggy Noopers', 'Flarn', 'Mipsy', 'Grobbo Nips', 'Twee'],
+      talk: ['Pluto is a planet. Say it.', 'We have four billion people and a king. Planets have kings. Checkmate.', 'Earth scientists say we are shrinking. Earth scientists are jealous.',
+        'Have you seen the plutonium mine? It is perfectly safe and not shrinking anything.', 'Two fingers is plenty. Ask anyone.'],
+      moods: { line: 55, gift: 12, trade: 10, errand: 12, buff: 6, dance: 5 } },
+    flippynips: { name: 'King Flippy Nips', hp: 220, speed: 2.6, hostile: false, guard: true, dmg: 14, drop: { c: 6, k: 3 }, r: 0.7, h: 1.9,
+      human: { species: ['alien'], top: ['labcoat'], acc: ['crown'], look: { hair: 'bald', brow: 'angry', eyes: 'wide', mouth: 'grin', face: 'round', height: 1.0, width: 1.25, head: 1.15,
+        skin: '#ffd84d', topColor: '#8a1a3a', shirtColor: '#ff9a3a', pantsColor: '#ff9a3a', shoeColor: '#3a1a12', accColor: '#ffd84d' } },
+      names: ['King Flippy Nips'],
+      talk: ['Pluto\'s a planet, b***h!', 'My son says the mining is shrinking Pluto. My son is in Plutanamo Bay.', 'You are a scientist? Wonderful. Say Pluto is a planet, in front of everyone.',
+        'Welcome, welcome! Have a medal. Everyone gets a medal who agrees with me.'] },
+    scroopy: { name: 'Scroopy Noopers', hp: 60, speed: 3, hostile: false, dmg: 0, drop: { c: 3 }, r: 0.6, h: 1.6,
+      human: { species: ['alien'], top: ['labcoat'], acc: ['goggles'], look: { hair: 'bald', brow: 'normal', eyes: 'wide', mouth: 'frown', height: 0.92, width: 0.9, head: 1.05,
+        skin: '#ffd84d', topColor: '#f2f5f7', shirtColor: '#ff9a3a', pantsColor: '#ff9a3a', shoeColor: '#3a2a1a', accColor: '#4a4a4a' } },
+      names: ['Scroopy Noopers'],
+      talk: ['The mining is shrinking Pluto. I have the data. Nobody wants the data.', 'My father the king calls me a traitor. I call it peer review.', 'If you see a lot of yellow people shouting "planet", run.',
+        'Plutanamo Bay was cold. Pluto is cold. Everything is cold.'] },
+    martian: { name: 'Martian', hp: 60, speed: 3.2, hostile: false, dmg: 0, drop: { s: 2, c: 1 }, r: 0.6, h: 1.9,
+      human: { species: ['alien'], top: ['armor'], acc: ['none', 'cap'], eyes: ['normal', 'tired'], height: [1.05, 1.25],
+        look: { hair: 'bald', face: 'long', skin: '#c8705a', topColor: '#a8282a', shirtColor: '#7a1a1a', pantsColor: '#3a1a1a', shoeColor: '#2a1210', accColor: '#d8a83a' } },
+      names: ['Sir Rusk', 'Dame Ochre', 'Squire Dusten', 'Lord Ferrous', 'Pell of Olympus'],
+      talk: ['For the Marquis! Er, hello.', 'In the Solar War we took Phobos AND Deimos. Little ones, but still.', 'The Earth government keeps something in a bunker over the ridge. We do not ask.',
+        'Mind the rovers. They keep running over our gardens.'],
+      moods: { line: 55, gift: 10, trade: 10, errand: 12, buff: 8, angry: 5 } },
+    marquis: { name: 'The Marquis of Mars', hp: 260, speed: 2.8, hostile: false, guard: true, dmg: 18, drop: { s: 6, k: 4 }, r: 0.7, h: 2.2,
+      human: { species: ['alien'], top: ['armor'], acc: ['crown'], look: { hair: 'bald', brow: 'angry', eyes: 'tired', mouth: 'flat', face: 'long', height: 1.25, width: 1.05, head: 1.2,
+        skin: '#c8705a', topColor: '#c8282a', shirtColor: '#ffd84d', pantsColor: '#2a1a1a', shoeColor: '#ffd84d', accColor: '#ffd84d' }, oneArm: true },
+      names: ['The Marquis of Mars'],
+      talk: ['I gave my arm for Mars. Every planet gives something. Ask a Knight of the Sun what THEY give.', 'The Scepter belongs to whoever holds it. Today that is not you.', 'Kneel, or at least lean forward politely.'] },
+    venusian: { name: 'Venusian', hp: 40, speed: 2.8, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8,
+      human: { species: ['human'], top: ['vest', 'labcoat'], acc: ['tophat', 'none'], height: [1.0, 1.2],
+        colors: { topColor: '#d8b84a', shirtColor: '#fff4c8', pantsColor: '#5a4a2a', accColor: '#3a2a1a' } },
+      names: ['Lady Aurelia', 'Count Sulphur', 'Baroness Haze', 'Sir Dimmond', 'Viscountess Ama'],
+      talk: ['One is a Viscount\'s cousin. Twice removed. Bow.', 'The air? One gets used to the sulphur. One stops smelling things entirely.', 'Saturn gassed us in the war. We do not talk about Saturn.',
+        'We were the first to use new weapons in the war. We are very proud of that. Probably.'],
+      moods: { line: 60, gift: 12, trade: 12, errand: 10, buff: 6 } },
+    lithdor: { name: 'Viscount Lithdor', hp: 200, speed: 2.6, hostile: false, guard: true, dmg: 14, drop: { c: 6, k: 3 }, r: 0.7, h: 2.0,
+      human: { species: ['human'], top: ['labcoat'], acc: ['crown'], look: { hair: 'slick', brow: 'angry', eyes: 'tired', mouth: 'grin', face: 'long', height: 1.2, width: 1.0, head: 1.05,
+        skin: '#f2dcb0', hairColor: '#3a2a1a', topColor: '#d8a83a', shirtColor: '#5a3a1a', pantsColor: '#3a2a1a', shoeColor: '#1a1210', accColor: '#ffd84d' } },
+      names: ['Viscount Lithdor'],
+      talk: ['The Viscounts of Venus do not surrender. We negotiate, very slowly, until you leave.', 'Peace? Peace is what you call it when you have lost the Scepter.', 'Those statues are my ancestors. Do not lean on them.'] },
+    mercurian: { name: 'Mercurian Rider', hp: 55, speed: 4.8, hostile: false, dmg: 0, drop: { s: 2, f: 1 }, r: 0.6, h: 1.9,
+      human: { species: ['human'], top: ['armor'], acc: ['cap', 'headband'], height: [1.0, 1.15],
+        colors: { topColor: '#a8a8b0', shirtColor: '#c8682a', pantsColor: '#5a3a2a', shoeColor: '#2a1a12', accColor: '#c8682a' } },
+      names: ['Rider Quickfoot', 'Hermes the Lesser', 'Dame Swift', 'Sir Gallop'],
+      talk: ['We stole the Scepter from Jupiter. On horseback. In a vacuum. Do not ask how.', 'A year here is eighty-eight days. Birthdays are exhausting.', 'Want to ride? The horses bite. Lovingly.'],
+      moods: { line: 55, gift: 12, trade: 10, errand: 12, buff: 8, follow: 3 } },
+    mercuhorse: { name: 'Mercurian Horse', hp: 70, speed: 5.5, hostile: false, dmg: 0, drop: { f: 2 }, r: 1.0, h: 2.0 },
+    jovian: { name: 'Jovian', hp: 70, speed: 2.4, hostile: false, dmg: 0, drop: { g: 2, c: 1 }, r: 0.8, h: 1.9,
+      human: { species: ['blob'], top: ['none', 'vest'], acc: ['none', 'antennae'], height: [1.0, 1.3], skin: '#e8945a',
+        colors: { topColor: '#c84a2a', shirtColor: '#e8945a', pantsColor: '#a8582a' } },
+      names: ['Io-Jo', 'Big Ganymede', 'Callisto Clem', 'Europa Lou'],
+      talk: ['Biggest planet, smallest ego. That is the Jovian way.', 'We had the Scepter first. Then Mercury happened.', 'The Red Spot? It is a storm. It has been a storm for longer than you have had words.'],
+      moods: { line: 60, gift: 12, trade: 10, errand: 10, buff: 8 } },
+    saturnian: { name: 'Saturnian', hp: 50, speed: 3, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8,
+      human: { species: ['alien'], top: ['armor', 'tank'], acc: ['halo', 'none'], height: [1.0, 1.2], skin: '#d8c08a',
+        colors: { topColor: '#8a6a3a', shirtColor: '#e8d4a0', pantsColor: '#5a4a2a', accColor: '#e8d4a0' } },
+      names: ['Ringo', 'Cassini', 'Big Enceladus', 'Rhea Belle', 'Iapetus Ike'],
+      talk: ['We got all the rings and all the balls.', 'Count the rings. Go on. We will wait. We have time. We have RINGS.', 'Venus? We gassed them. They know what they did.',
+        'Jupiter is bigger, sure. Does Jupiter have rings? Not good ones.'],
+      moods: { line: 60, gift: 10, trade: 10, errand: 10, buff: 6, angry: 4 } },
+    titanguard: { name: 'Titanian Guard', hp: 90, speed: 4.2, hostile: true, dmg: 12, drop: { s: 3, c: 1 }, r: 0.7, h: 2.1,
+      human: { species: ['alien'], top: ['armor'], acc: ['eyepatch', 'none'], height: [1.15, 1.3], skin: '#e0782a',
+        colors: { topColor: '#3a2a1a', shirtColor: '#5a3a1a', pantsColor: '#2a1a12', accColor: '#1a1a1a' } } },
+    titanwarlord: { name: 'The Warlord of Titan', hp: 420, speed: 3.6, hostile: true, dmg: 22, drop: { m: 1, c: 6, k: 4 }, r: 1.0, h: 3.4,
+      human: { species: ['alien'], top: ['armor'], acc: ['crown'], scale: 1.6, look: { hair: 'mohawk', brow: 'angry', eyes: 'three', mouth: 'grin', face: 'wide', height: 1.3, width: 1.35, head: 1.2,
+        skin: '#e0782a', hairColor: '#2a1a12', topColor: '#2a1a12', shirtColor: '#8a2a1a', pantsColor: '#2a1a12', shoeColor: '#1a1a1a', accColor: '#8a8a8a' } },
+      names: ['The Warlord of Titan'] },
+    neptune: { name: 'Neptune', hp: 320, speed: 2.8, hostile: false, guard: true, dmg: 20, drop: { c: 8, k: 3 }, r: 0.9, h: 3.0, fly: 0.6,
+      human: { species: ['human'], top: ['none'], acc: ['crown'], scale: 1.5, look: { hair: 'afro', brow: 'angry', eyes: 'tired', mouth: 'flat', face: 'wide', height: 1.3, width: 1.25, head: 1.1,
+        skin: '#8ab8e0', hairColor: '#f2f6fa', topColor: '#8ab8e0', shirtColor: '#8ab8e0', pantsColor: '#1a4a8a', shoeColor: '#1a4a8a', accColor: '#ffd84d' } },
+      names: ['Neptune'],
+      talk: ['Yes, the planet is named after me. No, I do not get royalties.', 'Mr. Nimbus? A cousin. He controls a sea. I am a sea.', 'Nobody else lives here. It is quiet. I like quiet.'] },
+    sunknight: { name: 'Knight of the Sun', hp: 110, speed: 3.4, hostile: false, guard: true, dmg: 16, drop: { k: 1, c: 2 }, r: 0.7, h: 2.0,
+      human: { species: ['human'], top: ['armor'], acc: ['cap'], height: [1.1, 1.25],
+        colors: { topColor: '#e8c04a', shirtColor: '#c8282a', pantsColor: '#a88a2a', shoeColor: '#6a4a1a', accColor: '#ffd84d' } },
+      names: ['Sir Corona', 'Sir Flare', 'Dame Solstice', 'Sir Sunspot', 'Sir Prominence'],
+      talk: ['To join the Knights you throw something precious into the Sun. Do not ask what.', 'We are pseudo-immortal. The pension plan is a nightmare.', 'Long live the King of the Sun! Long live the Scepter!',
+        'The Sons of the Moon? Rabble. Very cold rabble.'],
+      moods: { line: 60, gift: 8, trade: 8, errand: 12, buff: 12 } },
+    sunking: { name: 'The King of the Sun', hp: 360, speed: 2.8, hostile: false, guard: true, dmg: 24, drop: { k: 5, c: 6 }, r: 0.8, h: 2.4,
+      human: { species: ['human'], top: ['armor'], acc: ['crown'], look: { hair: 'slick', brow: 'angry', eyes: 'tired', mouth: 'flat', face: 'long', height: 1.3, width: 1.1, head: 1.05,
+        skin: '#f0c890', hairColor: '#ffd84d', topColor: '#ffd84d', shirtColor: '#c8282a', pantsColor: '#c89a2a', shoeColor: '#6a4a1a', accColor: '#fff4c8' } },
+      names: ['The King of the Sun'],
+      talk: ['Whoever defeats the King holds the Solar Scepter. Nobody has, in ten thousand years.', 'Kneel before the Sun.', 'The Scepter keeps the peace. Take it, and every planet goes to war.'] },
+    gordonlunas: { name: 'Gordon Lunas', hp: 60, speed: 2.6, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8,
+      human: { species: ['human'], top: ['sweater'], acc: ['none'], look: { hair: 'tuft', brow: 'normal', eyes: 'tired', mouth: 'flat', face: 'round', height: 1.05, width: 1.05, head: 1.0,
+        skin: '#e8c8a8', hairColor: '#8a6a4a', topColor: '#6a8aa8', shirtColor: '#f2f2f2', pantsColor: '#4a4a5a', shoeColor: '#2a2a2a', accColor: '#2a2a2a' } },
+      names: ['Gordon Lunas, the Man on the Moon'],
+      talk: ['I am the man on the moon. It is lonely. I am thinking of a career change. Guidance counselling.', 'The flag is real. The footprints are real. The reptile footprints... we do not talk about those.'] },
+    // ----- The Smith house's defences (shared/house.js) -----
+    killbot: { name: 'Kill bot', hp: 140, speed: 4.6, hostile: false, dmg: 14, drop: { s: 3 }, r: 0.7, h: 2.3 },
+    boomdrone: { name: 'Boombox drone', hp: 50, speed: 5.5, hostile: false, dmg: 5, drop: { s: 2 }, r: 0.5, h: 0.8, fly: 3.2, voice: true,
+      talk: ['THIS IS $\'S HOUSE. GET OFF MY LAWN.', 'YOU ARE BEING RECORDED BY $. HE IS NOT HAPPY.', '$ SAYS: WUBBA LUBBA DUB DUB, INTRUDER.', 'TURN BACK. THIS IS YOUR ONLY WARNING. ALSO YOUR SECOND.'] },
+    yardplant: { name: 'Carnivorous plant', hp: 90, speed: 0.8, hostile: false, dmg: 10, drop: { g: 2 }, r: 0.9, h: 2.2 },
+    hologram: { name: 'Hologram Rick', hp: 9999, speed: 0, hostile: false, dmg: 0, drop: {}, r: 0.5, h: 1.9, decoy: true, human: { fixed: 'genius' },
+      talk: ['I am a hologram. Hit me. Go on.', 'The real one is somewhere else, laughing.'] },
+    fungusclone: { name: 'Fungus clone', hp: 60, speed: 1.8, hostile: false, dmg: 0, drop: { g: 3 }, r: 0.6, h: 1.4,
+      talk: ['It\'s me! The real one. Not a fungus.', 'Beth? Beth, I\'m home. In a normal voice.', 'I... WILL... um. Hi!', 'Why is everyone looking at me like that?'] },
+    funguseater: { name: 'Fungus clone (hungry)', hp: 320, speed: 3.4, hostile: true, dmg: 15, drop: { g: 8, m: 1 }, r: 1.6, h: 3.4 },
+    // ----- Under the Smith garage -----
+    maneater: { name: 'Killer plant', hp: 70, speed: 0.6, hostile: true, dmg: 9, drop: { g: 2 }, r: 0.9, h: 2.2 },
+    jiro: { name: 'Jiro', hp: 80, speed: 1.5, hostile: false, dmg: 0, drop: { f: 2 }, r: 0.6, h: 1.7,
+      human: { species: ['human'], top: ['tshirt'], acc: ['headband'], look: { hair: 'bald', brow: 'normal', eyes: 'tired', mouth: 'flat', face: 'round', height: 0.95, width: 0.95, head: 1.0,
+        skin: '#f0d0a8', hairColor: '#d8d8d8', topColor: '#f6f6f2', shirtColor: '#f6f6f2', pantsColor: '#2a2a2a', shoeColor: '#2a2a2a', accColor: '#f6f6f2' } },
+      names: ['Jiro'],
+      talk: ['Sit. Eat. Do not ask what fish. It is the best fish.', 'Luigi\'s? Pasta, under a garage. Disgraceful.', 'Rick-san eats here every Tuesday. He never pays. He is Rick-san.', 'Seventy years I make sushi. Thirty of them in a sublevel.'] },
     mooncrab: { name: 'Moon Crab', hp: 40, speed: 5, hostile: true, dmg: 6, drop: { c: 2 }, r: 0.8, h: 1.0 },
     moonminer: { name: 'Miner', hp: 50, speed: 2.5, hostile: false, dmg: 0, drop: { c: 3 }, r: 0.6, h: 1.8,
       human: { species: ['robot', 'human'], top: ['armor', 'vest'], acc: ['goggles', 'headband', 'cap'] },
@@ -1180,10 +1524,10 @@
       const k = 1 - smooth(162, 196, m);
       h += (cellHeight(c.D, lx, lz) - h) * k;
     }
-    // Roads between the towns stay level.
-    for (const s of MM.EARTH_LINKS) {
-      const d = segD(x, z, s);
-      if (d < 16) h *= smooth(6, 16, d);
+    // Roads between the towns stay level (only the roads whose box the point is in).
+    for (const R of MM.EARTH_ROUTES) {
+      if (x < R.box[0] || x > R.box[1] || z < R.box[2] || z > R.box[3]) continue;
+      for (const s of R.segs) { const d = segD(x, z, s); if (d < 16) h *= smooth(6, 16, d); }
     }
     // South (+z): the beach, then the sea. No mountains on that side.
     if (z > MM.BEACH_Z - 40) {
@@ -1203,8 +1547,28 @@
     const t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / l2));
     return Math.hypot(x - (s[0] + dx * t), z - (s[1] + dz * t));
   }
-  // The roads joining the suburb to the other towns.
-  MM.EARTH_LINKS = [[140, 0, 262, 0], [-140, 0, -262, 0], [0, -140, 0, -262]];
+  // The roads joining the suburb to the other towns, and down to the beach: country roads that
+  // wind a little through the hills (from, to, how far they swing out, and an S-bend), with
+  // power lines along one side.
+  const ROUTES = [[140, 0, 262, 0, 16, 5], [-140, 0, -262, 0, -14, 6], [0, -140, 0, -262, 18, -5], [0, 140, 0, 288, 12, -7]];
+  MM.EARTH_ROUTES = ROUTES.map(([x1, z1, x2, z2, A, B]) => {
+    const len = Math.hypot(x2 - x1, z2 - z1), ux = (x2 - x1) / len, uz = (z2 - z1) / len, n = Math.ceil(len / 8), pts = [];
+    for (let i = 0; i <= n; i++) {
+      const t = i / n, off = A * Math.sin(Math.PI * t) + B * Math.sin(2 * Math.PI * t);
+      pts.push([x1 + (x2 - x1) * t - uz * off, z1 + (z2 - z1) * t + ux * off]);
+    }
+    const segs = [];
+    for (let i = 1; i < pts.length; i++) segs.push([pts[i - 1][0], pts[i - 1][1], pts[i][0], pts[i][1]]);
+    const xs = pts.map(q => q[0]), zs = pts.map(q => q[1]);
+    // Power poles every few segments, 7.5 m off the road on its left.
+    const poles = [];
+    for (let i = 1; i < pts.length - 1; i += 4) {
+      const [ax, az] = pts[i - 1], [bx, bz] = pts[i + 1], dx = bx - ax, dz = bz - az, l = Math.hypot(dx, dz) || 1;
+      poles.push([pts[i][0] - dz / l * 7.5, pts[i][1] + dx / l * 7.5, Math.atan2(dx, dz)]);
+    }
+    return { pts, segs, poles, box: [Math.min(...xs) - 18, Math.max(...xs) + 18, Math.min(...zs) - 18, Math.max(...zs) + 18] };
+  });
+  MM.EARTH_LINKS = [].concat(...MM.EARTH_ROUTES.map(R => R.segs));
   function cellHeight(dim, x, z) {
     const dimId = dim.shapeOf || dim.id;   // a parallel dimension has the same lie of the land
     const r = Math.sqrt(x * x + z * z);
@@ -1328,6 +1692,8 @@
         i++;
       }
     }
+    // The power lines along the country roads.
+    if (dim.regions) for (const R of MM.EARTH_ROUTES) for (const [x, z, rot] of R.poles) add('powerpole', x, z, rot, 1);
     // The other towns of a composite world, each planned in its own space and moved into place.
     if (dim.regions) {
       const roads = [], plazas = [];
@@ -1337,7 +1703,7 @@
         for (const q of L.roads) roads.push(Object.assign({}, q, { x1: q.x1 + R.ox, z1: q.z1 + R.oz, x2: q.x2 + R.ox, z2: q.z2 + R.oz }));
         for (const q of L.plazas) plazas.push(Object.assign({}, q, { x: q.x + R.ox, z: q.z + R.oz }));
       }
-      for (const [x1, z1, x2, z2] of MM.EARTH_LINKS) roads.push({ x1, z1, x2, z2, w: 9, style: 'asphalt' });
+      for (const [x1, z1, x2, z2] of MM.EARTH_LINKS) roads.push({ x1, z1, x2, z2, w: 8, style: 'highway' });
       layoutCache[dimId] = { roads, plazas };
     }
     for (const p of out) p.y = p.fy !== undefined ? p.fy : MM.heightAt(dimId, p.x, p.z);
@@ -1402,14 +1768,14 @@
   for (const k in BOX) if (MM.PROPS[k]) MM.PROPS[k].box = BOX[k];
   // Rick's garage is open: three walls and the front either side of the big door (and the
   // side door), as segments [x1, z1, x2, z2] in the model's own frame. You walk in.
-  MM.PROPS.lm_garage.walls = [[-4.5, -4.5, 4.5, -4.5], [-4.5, -4.5, -4.5, 4.5], [4.5, -4.5, 4.5, 4.5], [-4.5, 4.5, -3.4, 4.5], [2.2, 4.5, 3.05, 4.5], [4.15, 4.5, 4.5, 4.5]];
+  MM.PROPS.lm_garage.walls = [[-4.5, -4.5, 4.5, -4.5], [-4.5, -4.5, -4.5, 4.5], [4.5, -4.5, 4.5, -2.5], [4.5, -1.1, 4.5, 4.5], [-4.5, 4.5, -3.4, 4.5], [2.2, 4.5, 3.05, 4.5], [4.15, 4.5, 4.5, 4.5]];
   delete MM.PROPS.lm_garage.box;
   MM.PROPS.lm_garage.boxR = 6.4;
   // The Smiths' back yard: a brick wall round three sides (the house and the garage close the
   // fourth), the shed in the corner and the big tree over the graves. Front = toward the house.
   MM.PROPS.lm_backyard.walls = [[-13.5, -8.5, 13.5, -8.5], [-13.5, -8.5, -13.5, 8.0], [13.5, -8.5, 13.5, 8.9],
     [-10, -6.8, -7, -6.8], [-10, -6.8, -10, -4.2], [-7, -6.8, -7, -4.2], [-10, -4.2, -7, -4.2],   // the shed
-    [9.3, -6.2, 9.7, -6.2], [9.3, -5.8, 9.7, -5.8], [9.3, -6.2, 9.3, -5.8], [9.7, -6.2, 9.7, -5.8]];   // the tree
+    [-1.7, -6.7, -1.3, -6.7], [-1.7, -6.3, -1.3, -6.3], [-1.7, -6.7, -1.7, -6.3], [-1.3, -6.7, -1.3, -6.3]];   // the tree
   MM.PROPS.lm_backyard.boxR = 16.3;
   MM.PROPS.lm_backyard.noTop = true;   // the walls stop you, but there is nothing to stand on
 
@@ -1586,6 +1952,7 @@
     dreamy: 'A dream: now and then you remember you can fly (hold Jump).',
     regen: 'The flesh is warm and alive: it slowly heals you while you stand on it.',
     toxic: 'The air is toxic: it slowly hurts you unless your shield is up.',
+    hot: 'You are standing on the Sun: it slowly burns you unless your shield is up (or you are in your ship).',
   };
   MM.quirkOf = dimId => { const D = MM.DIM_BY_ID[dimId]; return D && D.quirk; };
 
@@ -1595,30 +1962,71 @@
   // universe: Earth and its moon, Bird World, Gazorpazorp, Planet Squanch...). Fly into a
   // planet to land on it. A world with no neighbours just has itself, alone in the dark.
   MM.ORBIT_ALT = 250;          // how high above the ground the atmosphere ends
-  MM.spaceKey = dimId => { const D = MM.DIM_BY_ID[dimId]; return D.space || D.id; };
+  // Which universe's space a world sits in. Atlantis (and every Earth's Atlantis) is under its
+  // Earth's sea, not a planet: fly up from it and you are above that Earth. A parallel
+  // dimension (the ice dimension, the cat dimension...) has its own universe: the same twist
+  // on every world, and its own version of Earth where the show has one (Cronenberged Earth).
+  MM.TWIST_EARTH = { CR: 'meatlands' };
+  MM.spaceKey = dimId => {
+    const D = MM.DIM_BY_ID[dimId];
+    if (D.earthOf) return MM.spaceKey(D.earthOf);
+    if (D.twist && MM.PARALLEL_BY_K[D.twist]) return 'tw_' + D.twist;   // (home Earths' twists are their own)
+    for (const k in MM.TWIST_EARTH) if (MM.TWIST_EARTH[k] === dimId) return 'tw_' + k;
+    return D.space || D.id;
+  };
   MM.spaceDimOf = dimId => MM.DIM_BY_ID['sp_' + MM.spaceKey(dimId)];
+  // Where the planets hang: the home planet in the middle, its moon close by, the other
+  // worlds of the universe in a ring around it, and the solar system further out, in order
+  // from the Sun (on the far side) to Pluto.
+  MM.SOLAR_ORDER = ['mercury', 'venus', 'mars', 'jupiter', 'saturn', 'titan', 'uranus', 'neptune', 'pluto'];
+  const SOLAR_R = { sun: 230, mercury: 24, venus: 44, mars: 36, jupiter: 120, saturn: 100, titan: 22, uranus: 66, neptune: 64, pluto: 18 };
   function ensureSpaceDim(id) {
     const key = id.slice(3);
-    if (!MM.DIM_BY_ID[key] && !MM.DIMS.some(d => d.space === key)) return undefined;
-    const inC137 = k => MM.DIMS.filter(d => d.space === k && !d.hidden && !d.interior && !d.pocket).map(d => d.id);
-    let list = inC137(key);
-    // Every Earth (the alternate ones, everyone's home) has its own sky with the same Moon and
-    // planets around it.
-    const K = MM.DIM_BY_ID[key];
-    if (K && K.variantOf === 'suburbia') list = [key].concat(inC137('c137').filter(d => d !== 'suburbia'));
-    if (!list.length) list = [key];
+    const tw = key.startsWith('tw_') ? key.slice(3) : null;
+    if (!tw && !MM.DIM_BY_ID[key] && !MM.DIMS.some(d => d.space === key)) return undefined;
+    if (tw && !MM.DIMS.some(d => d.twist === tw)) return undefined;
+    const ok = d => !d.hidden && !d.interior && !d.pocket && !d.earthOf && !d.timeline;
+    const inC137 = k => MM.DIMS.filter(d => d.space === k && ok(d)).map(d => d.id);
+    let list;
+    if (tw) {
+      // A twisted universe: that twist's version of every world that has one (realms, like
+      // the Toxic Dimension, are not planets), with its own Earth first if it has one.
+      const realm = d => { const W = MM.WORLD_BY_ID[MM.worldOf(d.id)]; return W && W.realm; };
+      list = MM.DIMS.filter(d => d.twist === tw && ok(d) && !realm(d) && d.shapeOf !== 'atlantis' && MM.worldOf(d.id) !== 'atlantis').map(d => d.id);
+      if (MM.TWIST_EARTH[tw]) list.unshift(MM.TWIST_EARTH[tw]);
+    } else {
+      list = inC137(key);
+      // Every Earth (the alternate ones, everyone's home) has its own sky with the same Moon,
+      // the same solar system, and the same planets of the galaxy around it.
+      const K = MM.DIM_BY_ID[key];
+      if (K && K.variantOf === 'suburbia') list = [key].concat(inC137('c137').filter(d => d !== 'suburbia'));
+      if (!list.length) list = [key];
+    }
     // The home planet in the middle (Earth, if it is there), its moon close by, the rest around.
     list.sort((a, b) => (b === 'suburbia') - (a === 'suburbia'));
     const planets = [];
-    const rest = list.filter((d, i) => i > 0 && d !== 'moon');
-    planets.push({ dim: list[0], x: 0, y: 0, z: 0, r: 110 });
-    if (list.includes('moon') && list[0] !== 'moon') planets.push({ dim: 'moon', x: 230, y: 30, z: -90, r: 32 });
+    const home = list[0], moon = list.find(d => d !== home && (d === 'moon' || MM.DIM_BY_ID[d].shapeOf === 'moon' || d.startsWith('moon_')));
+    const solar = list.filter(d => MM.DIM_BY_ID[d].solar);
+    const rest = list.filter(d => d !== home && d !== moon && !MM.DIM_BY_ID[d].solar);
+    planets.push({ dim: home, x: 0, y: 0, z: 0, r: MM.DIM_BY_ID[home].solar ? SOLAR_R[home] || 80 : 110 });
+    if (moon) planets.push({ dim: moon, x: 230, y: 30, z: -90, r: 32 });
     rest.forEach((d, i) => { const a = (i + 0.5) / rest.length * Math.PI * 2; planets.push({ dim: d, x: Math.cos(a) * 470, y: ((i % 3) - 1) * 90 + 120, z: Math.sin(a) * 470, r: 52 + (i % 3) * 8 }); });
-    const home = MM.DIM_BY_ID[list[0]];
+    if (solar.length && home !== 'sun') {
+      // The Sun far out on one side, the planets along an arc from it, in order.
+      if (solar.includes('sun')) planets.push({ dim: 'sun', x: -980, y: 160, z: -620, r: SOLAR_R.sun, star: true });
+      const order = MM.SOLAR_ORDER.filter(d => solar.includes(d));
+      order.forEach((d, i) => {
+        const a = -2.7 + (i / Math.max(1, order.length - 1)) * 3.6, R = 820;
+        let x = Math.cos(a) * R, z = Math.sin(a) * R, y = -60 + (i % 2) * 120;
+        if (d === 'titan') { const S = planets.find(q => q.dim === 'saturn'); if (S) { x = S.x + 150; z = S.z + 40; y = S.y + 40; } }
+        planets.push({ dim: d, x, y, z, r: SOLAR_R[d] });
+      });
+    }
+    const H = MM.DIM_BY_ID[home];
     const d = {
-      id, name: 'Space around ' + home.name, code: home.code, hidden: true, planets, spaceOf: key,
-      blurb: 'Out of the atmosphere. Fly into a planet to land on it.', seed: 4242, gravity: 0, amp: 0, scale: 0.01, bound: 650,
-      sky: ['#000004', '#060a1e'], fog: '#02030a', fogFar: 1450, sun: '#ffffff', ambient: '#8a96c8',
+      id, name: tw ? 'Space (' + (MM.PARALLEL_BY_K[tw] || {}).label + ')' : 'Space around ' + H.name, code: tw ? '?/' + tw : H.code, hidden: true, planets, spaceOf: key,
+      blurb: 'Out of the atmosphere. Fly into a planet to land on it.', seed: 4242, gravity: 0, amp: 0, scale: 0.01, bound: 1250,
+      sky: ['#000004', '#060a1e'], fog: '#02030a', fogFar: 2400, sun: '#ffffff', ambient: '#8a96c8',
       ground: ['#000000', '#000000', '#000000'], accent: '#ffffff', props: [], npc: [], pickups: {}, mat: 's', spawn: { x: 0, z: 0 },
     };
     MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
