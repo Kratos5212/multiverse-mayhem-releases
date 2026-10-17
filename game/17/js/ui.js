@@ -37,6 +37,7 @@
     down: '<path d="M6 5l6 6 6-6M6 11l6 6 6-6"/>',
     light: '<path d="M3 12h7M5 7l6 3M5 17l6-3M14 12h7M13 9l3-3M13 15l3 3"/><circle cx="12" cy="12" r="1.6"/>',
     talk: '<path d="M4 5h16v11H9l-5 4z"/>',
+    emote: '<circle cx="12" cy="12" r="9"/><path d="M8 14a5 5 0 0 0 8 0M9 9.5h.01M15 9.5h.01"/>',
     gadget: '<circle cx="11" cy="14" r="6"/><path d="M11 8V5h4M15 5l3-2"/>',
   };
   const icon = name => {
@@ -183,7 +184,7 @@
       add('F', 'Talk to locals, do daily tasks, go through doors (Rick\'s garage!), use the kiosk'); add('J', 'Journal: your life, your path, errands');
       add('B', 'Board or leave your ship (Space up, Ctrl down, Shift boost; keep climbing for space)');
       add('L', 'Lightspeed, from space: to another world, dimension or timeline');
-      add('1 2 3 4', 'Grenade / turret / shrink ray / Meeseeks Box'); add('C', 'Workbench: build gadgets and upgrades'); add('Enter', 'Chat with the whole multiverse');
+      add('1 2 3 4', 'Grenade / turret / shrink ray / Meeseeks Box'); add('C', 'Workbench: build gadgets and upgrades'); add('H', 'Rick: "House, ..." (your house\'s defences, near it or at the garage console)'); add('Enter', 'Chat with the whole multiverse');
       add('Tab', 'Players, leaderboard and mute'); add('V', 'First or third person (or scroll the mouse wheel)'); add('G', 'Emote (wave)'); add('Esc', 'Menu and settings');
       box.append(el('p', { text: 'Live your character\'s life, or break out of it. Do daily tasks at buildings, talk to locals (they do strange things), and follow your path in the journal (J). Every world has its own material, and the big upgrades (your body, a portal gun, a ship) are built at stations in different worlds. Every dimension holds up to 64 players.' }), keys,
         el('p', { class: 'note', text: 'On a phone: left stick to move, drag the right side to look, and use the round buttons.' }));

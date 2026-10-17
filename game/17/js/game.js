@@ -22,6 +22,8 @@
   if (profile.startDim && !MM.DIM_BY_ID[profile.startDim]) profile.startDim = '';
   C.setVolume(settings.volume);
   C.bevelSegs = settings.quality === 'low' ? 2 : 3;   // rounded-edge smoothness
+  if (!settings.style) settings.style = 'real';
+  C.setStyle(settings.style, settings.quality);
 
   // ---------- Renderer ----------
   const canvas = $('view');
@@ -29,6 +31,11 @@
   C.renderer = renderer;
   const applyQuality = () => renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, settings.quality === 'high' ? 2 : 1.25));
   applyQuality();
+  // The realistic look: filmic tone mapping, and soft sun shadows on high quality.
+  if (C.style === 'real') {
+    renderer.toneMapping = T.ACESFilmicToneMapping; renderer.toneMappingExposure = 0.95;
+    if (settings.quality === 'high') { renderer.shadowMap.enabled = true; renderer.shadowMap.type = T.PCFSoftShadowMap; }
+  }
   renderer.setClearColor('#0b0f1e');
   const camera = new T.PerspectiveCamera(62, 1, 0.1, 1500);
   C.camera = camera;
@@ -256,6 +263,8 @@
     }
     m = C.npcModel(type, seed);
     m.root.position.set(x, y, z); m.root.rotation.y = r;
+    if (C.style === 'real') m.root.traverse(o => { if (o.isMesh && o.material && o.material.side !== T.BackSide) o.castShadow = true; });
+    if (type === 'hologram') m.root.traverse(o => { if (o.isMesh && o.material) { o.material = o.material.clone(); o.material.transparent = true; o.material.opacity = 0.45; if (o.material.color) o.material.color.lerp(new T.Color('#7ad8ff'), 0.5); o.material.depthWrite = false; } });
     const NT = MM.NPCS[type];
     // Locals you can talk to wear a small name tag; monsters don't.
     let tag = null;
@@ -394,10 +403,11 @@
     }
   }
   function addTurret(row) {
-    const [id, owner, x, y, z] = row;
+    const [id, owner, x, y, z, big] = row;
     if (G.turrets.has(id)) return;
     const m = C.turretModel();
     m.position.set(x, y, z);
+    if (big) m.scale.setScalar(2.4);   // the house's large energy weapon
     scene.add(m);
     G.turrets.set(id, { m, owner, aim: 0 });
   }
@@ -428,8 +438,15 @@
       G.world = C.buildDimension(w.dim, settings.quality);
       scene.add(G.world.group);
       buildRaceRings(w.dim);
+      if (G.life) G.life.dispose();
+      G.life = C.makeLife(w.dim, scene, settings.quality);
+      if (G.rides) G.rides.dispose();
+      G.rides = C.makeRides(w.dim, scene);
+      if (G.eggs) G.eggs.dispose();
+      G.eggs = C.makeEggs(w.dim, scene);
       const dim = MM.DIM_BY_ID[w.dim];
       scene.fog = new T.Fog(dim.fog, 40, dim.fogFar);
+      camera.far = dim.planets ? 3200 : 1500; camera.updateProjectionMatrix();
       const skyU = G.world.group.children[0].material.uniforms;
       G.atmo = { fog: new T.Color(dim.fog), far: dim.fogFar, top: skyU.top.value.clone(), bot: skyU.bot.value.clone(), k: -1 };
       renderer.setClearColor(dim.fog);
@@ -444,6 +461,12 @@
     for (const pk of w.pickups) addPickup(pk);
     for (const po of w.portals) addPortal(po);
     for (const t of w.turrets) addTurret(t);
+    setHouse(w.house);
+    if (G.offset === null || G.offset === undefined) G.offset = now() - w.tm;
+    G.riders = new Map();
+    for (const [id, r, t0, s] of w.riders || []) G.riders.set(id, { R: MM.RIDE_BY_ID[r], t0, seat: s });
+    G.me.sit = null;
+    galHud(null);
     for (const P of w.pairs || []) addPair(P);
     const me = G.me;
     me.x = w.x; me.y = w.y; me.z = w.z; me.vx = me.vy = me.vz = 0;
@@ -785,6 +808,30 @@
       case 'pk+': addPickup(e.p); break;
       case 'pk-': if (e.by === G.myId) { const m = G.pickups.get(e.id); if (m) fx.burst(m.position.x, m.position.y, m.position.z, '#ffd84d', 10, 4, 0.5, 0.4, 0); C.sfx('pickup'); } removePickup(e.id); break;
       case 'npc+': addNpc(e.n); break;
+      case 'rd': {
+        if (e.r) G.riders.set(e.id, { R: MM.RIDE_BY_ID[e.r], t0: e.t0, seat: e.s });
+        else { G.riders.delete(e.id); const q = G.players.get(e.id); if (q) q.av.root.rotation.x = 0; else if (e.id === G.myId && G.meAv) G.meAv.root.rotation.x = 0; }
+        break;
+      }
+      case 'gal': galHud(e); break;
+      case 'pop': fx.burst(e.x, e.y, e.z, '#ffd84d', 18, 6, 0.5, 0.5, 2); numAt(e.x, e.y + 0.6, e.z, '+1', '#ffd84d', false); if (e.by === G.myId) C.sfx('pickup', 0.6); break;
+      case 'judge': {
+        const p = posOf(e.id);
+        if (p) fx.burst(p.x, p.y + 2, p.z, e.s >= 80 ? '#ffd84d' : '#5ff8ff', 30, 6, 0.8, 0.8, 2);
+        if (e.id === G.myId) UI.banner(e.s + (e.s <= 100 && !/years/.test(e.line) ? '%' : ''), e.line); else UI.toast(e.name + ': ' + e.s + (/years/.test(e.line) ? ' years' : '%') + ' · ' + e.line, 3500);
+        break;
+      }
+      case 'house': {
+        if (e.h) setHouse(e.h);
+        if (e.by === G.myId) UI.toast('House: ' + e.say, 3000);
+        else if (e.h) UI.toast('The Smith house: ' + MM.DEFENSES[e.id].name.toLowerCase() + '!', 2500);
+        break;
+      }
+      case 'look': {
+        const q = G.players.get(e.id);
+        if (q) { const info = Object.assign({}, q.info, { look: e.look }); removePlayer(e.id); addPlayer(info); }
+        break;
+      }
       case 'nship': { const n = G.npcs.get(e.n); if (n && n.m.av) C.setShip(n.m.av, !!e.on); break; }
       case 'npc-': removeNpc(e.id, e.die); break;
       case 'po+': addPortal(e.po); break;
@@ -798,7 +845,15 @@
         abilityFx(e.a, p, e.id);
         break;
       }
-      case 'em': { const p = G.players.get(e.id); if (p) p.emoteT = 2; break; }
+      case 'em': {
+        if (e.id === G.myId) { G.me.emoteT = e.e === 1 ? 6 : 2.5; G.me.emoteKind = e.e; break; }
+        const p = G.players.get(e.id); if (p) { p.emoteT = e.e === 1 ? 6 : 2.5; p.emoteKind = e.e; }
+        break;
+      }
+      // The chat's easter eggs.
+      case 'burp': { const p = posOf(e.id); if (p) { fx.puff(p.x, p.y + 1.7, p.z, '#9aff6a', 14, 2, 1.2, 0.8); numAt(p.x, p.y + 2.6, p.z, '*BUUURP*', '#9aff6a', true); sfxAt('bite', p.x, p.z); } break; }
+      case 'cromulon': cromulon(e.x, e.z); break;
+      case 'pickle': pickleFor(e.id, e.t); break;
       case 'dodge': { const p = posOf(e.id); if (p) { numAt(p.x, p.y + 2.4, p.z, 'DODGE!', '#5ff8ff', false); sfxAt('dodge', p.x, p.z); } break; }
       case 'kiosk': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1, p.z, '#ffd84d', 25, 6, 0.6, 0.5, 2); break; }
       case 'timestop': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1.2, p.z, '#8fd8ff', 90, 14, 1.2, 1.4, 0); fx.burst(p.x, p.y + 1.2, p.z, '#ffffff', 30, 8, 0.8, 1.0, 0); } C.sfx('ability'); if (e.id === G.myId) UI.toast('Time stopped. Someone will have noticed.', 3000); break; }
@@ -858,11 +913,17 @@
   }
 
   // ----- Ring races (shared/races.js) -----
-  // Every race in this world: its rings glowing in its colour, the start ring with a sign.
-  // While you race, the next ring is bright and the rest fade; the clock runs at the top.
+  // Every race in this world has a start pad with a sign: two or more players standing on it
+  // start a race. Its rings only show while you race it: the next one bright, the rest faint;
+  // the clock runs at the top. Playing alone with bots, there are no races at all.
   function buildRaceRings(dimId) {
     G.raceRings = [];
+    if (G.net && G.net.host) return;   // offline, with bots: no races
     for (const R of MM.racesIn(dimId)) {
+      const q0 = MM.ringAt(R, 0, dimId), pad = new T.Mesh(new T.RingGeometry(R.r + 1.6, R.r + 2.4, 48), new T.MeshBasicMaterial({ color: R.color, transparent: true, opacity: 0.55, side: T.DoubleSide, fog: false }));
+      pad.rotation.x = -Math.PI / 2;
+      pad.position.set(q0.x, R.abs ? q0.y - R.r : MM.heightAt(dimId, q0.x, q0.z) + 0.06, q0.z);
+      G.world.group.add(pad);
       const geo = new T.TorusGeometry(R.r, Math.max(0.18, R.r * 0.07), 8, 32);
       R.rings.forEach((_, i) => {
         const q = MM.ringAt(R, i, dimId), n = MM.ringAt(R, (i + 1) % R.rings.length, dimId);
@@ -870,7 +931,7 @@
         m.position.set(q.x, q.y, q.z);
         m.lookAt(n.x, n.y, n.z);
         if (!i) {
-          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · through here to start', R.color);
+          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · 2+ players here to start', R.color);
           tag.draw(-1);
           tag.sprite.position.set(q.x, q.y + R.r + 1.2, q.z); tag.sprite.scale.multiplyScalar(R.ship ? 4 : 1.6);
           G.world.group.add(tag.sprite);
@@ -884,8 +945,9 @@
     const r = G.race, hud = $('raceHud');
     for (const g of G.raceRings || []) {
       const on = r && r.id === g.R.id, next = on && g.i === r.next;
-      g.m.material.opacity = on ? (next ? 1 : g.i < r.next ? 0.08 : 0.3) : g.i ? 0.25 : 0.9;
-      const s = next || (!r && !g.i) ? 1 + Math.sin(now() * 5) * 0.06 : 1;
+      g.m.visible = !!on && g.i >= r.next;
+      g.m.material.opacity = next ? 1 : 0.3;
+      const s = next ? 1 + Math.sin(now() * 5) * 0.06 : 1;
       g.m.scale.set(s, s, s);
     }
     if (!r) { hud.hidden = true; return; }
@@ -905,7 +967,8 @@
     G.race = null;
     if (e.done) {
       const R = MM.RACE_BY_ID[e.done], got = e.give ? Object.keys(e.give).map(k => '+' + e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ') : '';
-      UI.banner(R.name + (e.record ? ': new record!' : ': finished!'), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
+      const place = e.of > 1 ? ['1st', '2nd', '3rd'][e.place - 1] || e.place + 'th' : '';
+      UI.banner(R.name + (place ? ': ' + place + ' of ' + e.of : '') + (e.record ? ' · new record!' : ''), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
       C.sfx('craft');
     }
   }
@@ -913,6 +976,25 @@
   function onPrivate(e) {
     const me = G.me;
     if (e.k === 'race') { onRace(e); return; }
+    if (e.k === 'hmenu') { openDefenses(e.own); return; }
+    if (e.k === 'egg') {
+      const E = MM.EGG_BY_ID[e.id];
+      if (G.prog) (G.prog.eggs || (G.prog.eggs = [])).push(e.id);
+      UI.banner('🥚 Easter egg: ' + E.name + ' (' + e.n + '/' + e.total + ')', E.text + ' +3 Schmeckles');
+      C.sfx('cheer');
+      return;
+    }
+    if (e.k === 'catch') { UI.banner('You caught ' + e.name + '!', ['A tiddler.', 'A decent one.', 'A big one!', 'A MONSTER!'][e.size] + (e.n > 1 ? ' (' + e.n + ' caught so far)' : ' First one!')); C.sfx('cheer'); return; }
+    if (e.k === 'stamp') {
+      const D = MM.DIM_BY_ID[e.d];
+      if (e.title) UI.banner('Passport: ' + e.title + '!', e.n + ' dimensions stamped. Reward: ' + Object.keys(e.give).map(k => e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' '));
+      else UI.toast('🛂 Passport stamped: ' + (D ? D.name : e.d) + ' (' + e.n + ')', 2600);
+      if (G.prog) (G.prog.stamps || (G.prog.stamps = [])).push(e.d);
+      return;
+    }
+    if (e.k === 'hack') { UI.banner('Hacking another Rick\'s house', 'Stay close for ' + e.t + ' seconds...'); C.sfx('craft', 0.6); return; }
+    if (e.k === 'hacked') { UI.banner('Hacked', 'You can use this Rick\'s house for ten minutes. Press H or use the console.'); C.sfx('cheer'); return; }
+    if (e.k === 'wardrobe') { openWardrobe(); return; }
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
     else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
@@ -1235,6 +1317,10 @@
   }
   function interact() {
     if (!canAct()) return;
+    if (G.riders && G.riders.has(G.myId)) { send({ t: 'fun', a: 'off' }); return; }
+    if (G.me.sit) { G.me.sit = null; return; }
+    const lf = nearLandmark();
+    if (lf && (lf.ride || lf.gallery || lf.game) && !tasksAt(lf).length) { funAt(lf); return; }
     const n = nearestLocal();
     if (n) { send({ t: 'talk', n: n.id }); return; }
     const l = nearLandmark();
@@ -1250,6 +1336,7 @@
     const tasks = tasksAt(l);
     const builds = MM.RECIPE_IDS.filter(r => MM.RECIPES[r].at && MM.isAt(l, MM.RECIPES[r].at));
     openModal('landmark', l.name, box => {
+      if (l.ride || l.gallery || l.game) box.append(el('button', { class: 'btn go', onclick: () => { UI.closeModal(); funAt(l); } }, l.ride ? 'Ride ' + l.name : l.gallery ? 'Play the shooting gallery' : l.game === 'fish' ? 'Go fishing' : l.game === 'dance' ? 'Dance!' : 'Play'));
       const list = el('div', { class: 'list' });
       for (const t of tasks) {
         const T = MM.TASKS[t], wait = G.prog ? G.prog.tasks[t] : 0;
@@ -1263,9 +1350,173 @@
       if (builds.length) box.append(el('p', { class: 'note', text: 'Built here: ' + builds.map(r => MM.RECIPES[r].name).join(', ') + '.' }), el('button', { class: 'btn gold', onclick: () => openCraft() }, 'Open workbench'));
     });
   }
-  function emote() { if (!canAct()) return; send({ t: 'em', e: 0 }); G.me.emoteT = 2; }
+  function emote(e) {
+    if (!canAct()) return;
+    e = e || 0;
+    send({ t: 'em', e }); G.me.emoteT = e === 1 ? 8 : 2.5; G.me.emoteKind = e; G.me.sit = null;
+  }
+  // G: the emote bar (wave, dance, laugh, point, cheer, facepalm, sit).
+  function emoteBar() {
+    const bar = $('emoteBar');
+    if (!bar.hidden) { bar.hidden = true; return; }
+    bar.textContent = '';
+    MM.EMOTES.forEach((name, i) => bar.append(el('button', { class: 'btn', onclick: () => { bar.hidden = true; emote(i); } }, (i + 1) + ' ' + name)));
+    bar.append(el('button', { class: 'btn', onclick: () => { bar.hidden = true; sitDown(); } }, '7 Sit'));
+    bar.hidden = false;
+  }
+  // Sit: on the bench, couch or chair you are next to, or right where you are.
+  const SEATS = new Set(['citbench', 'in_bench', 'in_sofa', 'couch', 'giantchair', 'in_bed', 'bench']);
+  function sitDown() {
+    if (!canAct() || (G.riders && G.riders.has(G.myId))) return;
+    const me = G.me;
+    let best = null, bd = 2.6;
+    for (const p of MM.propsNear(G.dimId, me.x, me.z, 3)) { if (!SEATS.has(p.type)) continue; const d = Math.hypot(p.x - me.x, p.z - me.z); if (d < bd) { bd = d; best = p; } }
+    me.sit = best ? { x: best.x, z: best.z, y: best.y + 0.45 * best.s, yaw: best.rot } : { x: me.x, z: me.z, y: me.y - 0.25, yaw: me.yaw };
+    me.vx = me.vz = me.vy = 0;
+  }
+  // "Show me what you got": a Cromulon's giant head rises over the horizon for a while.
+  function cromulon(x, z) {
+    const s = new C.Shape({ smooth: false });
+    s.add(C.prim.sphere, '#f2c8b0', [0, 0, 0], null, [22, 30, 20]);
+    for (const sx of [-1, 1]) { s.add(C.prim.sphere, '#ffffff', [sx * 8, 6, 17], null, [6, 6, 3]); s.add(C.prim.sphere, '#1a1a1a', [sx * 8, 5, 19.5], null, [2.4, 2.4, 1]); s.add(C.prim.box, '#5a3a2a', [sx * 8, 13, 17], [0, 0, sx * 0.2], [9, 1.5, 2]); }
+    s.add(C.prim.sphere, '#3a0d16', [0, -12, 17], null, [9, 4, 3]);
+    s.add(C.prim.sphere, '#e0b098', [0, -1, 20], null, [3, 5, 3]);
+    const head = C.meshOf(s.build(), 0.4);
+    const a = Math.random() * Math.PI * 2;
+    head.position.set(x + Math.sin(a) * 140, MM.heightAt(G.dimId, x, z) + 10, z + Math.cos(a) * 140);
+    head.lookAt(x, head.position.y, z);
+    scene.add(head);
+    UI.banner('SHOW ME WHAT YOU GOT!', 'A Cromulon heard you. It wants to see what you got. (Dance! G)');
+    const t0 = now();
+    const rise = () => {
+      const t = now() - t0;
+      head.position.y = MM.heightAt(G.dimId, x, z) - 20 + Math.min(1, t / 3) * 60 - Math.max(0, t - 12) * 20;
+      if (t < 15 && G.dimId) requestAnimationFrame(rise); else scene.remove(head);
+    };
+    rise();
+  }
+  // "Pickle Rick!": turned into a pickle for a while.
+  function pickleFor(id, secs) {
+    const swap = (getAv, setAv, look, arch) => {
+      const old = getAv();
+      if (!old) return;
+      const pk = C.buildAvatar(Object.assign({}, look, { species: 'pickle', skin: '#7cbf3a', hairColor: '#4a7a22' }), arch);
+      pk.root.position.copy(old.root.position);
+      scene.remove(old.root); scene.add(pk.root); setAv(pk);
+      fx.burst(old.root.position.x, old.root.position.y + 1, old.root.position.z, '#7ad85a', 30, 6, 0.6, 0.6, 2);
+      setTimeout(() => { const cur = getAv(); if (cur !== pk) return; const back = C.buildAvatar(look, arch); back.root.position.copy(pk.root.position); scene.remove(pk.root); pk.dispose(); scene.add(back.root); setAv(back); if (id === G.myId && G.prog) C.setGear(back, myGear()); }, secs * 1000);
+    };
+    if (id === G.myId) swap(() => G.meAv, a => { G.meAv = a; }, profile.look, profile.arch);
+    else { const p = G.players.get(id); if (p) swap(() => p.av, a => { const tag = p.tag.sprite; a.root.add(tag); p.av = a; collectOutlines(a); }, p.info.look, p.info.arch); }
+  }
+  // The server's clock (for the rides' trains).
+  function serverNow() { return now() - (G.offset || 0); }
+  // A ride, a shooting gallery or a mini-game at this spot.
+  function funAt(l) {
+    if (l.ride) { send({ t: 'fun', a: 'ride', l: l.id }); return; }
+    if (l.gallery) { send({ t: 'fun', a: 'gallery', l: l.id }); return; }
+    if (document.pointerLockElement) document.exitPointerLock();
+    const report = s => { send({ t: 'mg', g: l.game, l: l.id, s }); UI.afterClose && UI.afterClose(); };
+    if (l.game === 'fish') C.playFishing(l.fish, report);
+    else if (l.game === 'dance') C.playDance(l.name, report, b => { if (b % 6 === 0) send({ t: 'em', e: 1 }); G.me.emoteT = 1.2; G.me.emoteKind = 1; });
+    else if (l.game === 'roy') C.playRoy(report);
+  }
+  // The shooting gallery's scoreboard (top right), while one runs here.
+  function galHud(e) {
+    const h = $('galHud');
+    if (!e || !e.on) { h.hidden = true; if (e && e.sc) UI.banner(MM.GALLERIES[e.id] ? MM.GALLERIES[e.id].name + ': over!' : 'Over!', e.sc.length ? e.sc.map((q, i) => (i + 1) + '. ' + q[0] + ' ' + q[1]).join('  ') : 'Nobody hit anything.'); return; }
+    if (e.by) UI.toast(e.by + ' started the ' + MM.GALLERIES[e.id].name + '. Shoot the targets!', 3000);
+    h.hidden = false; h.textContent = '';
+    h.append(el('b', { text: '🎯 ' + MM.GALLERIES[e.id].name + ' · ' + e.left + ' s' }));
+    for (const [name, n] of e.sc || []) h.append(el('div', { text: name + ' — ' + n }));
+  }
 
   // ---------- Dialogs ----------
+  // ---------- Rick's house (shared/house.js) ----------
+  // "House, ...": the console in the garage, or (your own house) H anywhere near it.
+  function houseKey() {
+    if (profile.arch !== 'genius') { UI.toast('Only a Rick can talk to a Rick\'s house.'); return; }
+    openDefenses(true);
+  }
+  function openDefenses(own) {
+    openModal('house', 'House defences', box => {
+      box.append(el('p', { class: 'note', text: own ? 'Your house answers to your voice: say it (H) anywhere near it, or use the console in the garage.' : 'Hacked: another Rick\'s house, for now.' }));
+      const list = el('div', { class: 'deflist' });
+      for (const id of MM.DEFENSE_IDS) {
+        const D = MM.DEFENSES[id];
+        if (id === 'tele') {
+          for (let i = 0; i < MM.TELE_SPOTS.length; i++) list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: 'tele', d: i }); UI.closeModal(); } },
+            el('b', { text: D.icon + ' Teleport: ' + MM.TELE_SPOTS[i].name }), el('span', { text: D.desc })));
+          continue;
+        }
+        list.append(el('button', { class: 'btn defbtn', onclick: () => { send({ t: 'hd', o: id }); if (id !== 'wardrobe') UI.closeModal(); } },
+          el('b', { text: D.icon + ' ' + D.name + (D.dur ? ' (' + D.dur + ' s)' : '') }), el('span', { text: D.desc })));
+      }
+      box.append(list);
+    });
+  }
+  // The retractable wardrobe: change what you wear (everyone sees it).
+  function openWardrobe() {
+    const L = Object.assign({}, profile.look);
+    openModal('wardrobe', 'Wardrobe', box => {
+      const row = (label, input) => el('label', { class: 'grp' }, el('span', { text: label }), input);
+      const sel = (k, opts) => { const s = el('select', { class: 'field' }); for (const o of opts) s.append(el('option', { value: o, text: o })); s.value = L[k]; s.onchange = () => { L[k] = s.value; }; return s; };
+      const col = k => { const i = el('input', { type: 'color', class: 'field', value: L[k] }); i.oninput = () => { L[k] = i.value; }; return i; };
+      box.append(row('Top', sel('top', MM.LOOK.top)), row('Top colour', col('topColor')), row('Shirt', col('shirtColor')), row('Trousers', col('pantsColor')),
+        row('Hat or glasses', sel('acc', MM.LOOK.acc)), row('Its colour', col('accColor')), row('Hair', sel('hair', MM.LOOK.hair)), row('Hair colour', col('hairColor')),
+        el('div', { class: 'chips' }, el('button', { class: 'btn go', onclick: () => {
+          profile.look = MM.sanitizeLook(L); UI.save('profile', profile);
+          send({ t: 'lk', look: profile.look });
+          if (G.meAv) { scene.remove(G.meAv.root); G.meAv.dispose(); G.meAv = null; }
+          G.meAv = C.buildAvatar(profile.look, profile.arch, { ratsuit: !!(G.prog && G.prog.up.ratsuit) });
+          scene.add(G.meAv.root);
+          if (G.prog) C.setGear(G.meAv, myGear());
+          C.setShip(G.meAv, !!(G.you && G.you.ship), myGear());
+          UI.closeModal();
+        } }, 'Wear it')));
+    });
+  }
+  // What the house's defences look like: the forcefield dome, the blast shutters, the laser grid.
+  const houseFx = { root: null, dome: null, shutters: null, grid: null };
+  function setHouse(h) {
+    const t = now();
+    G.house = h ? { s: t + h.s, d: t + h.d, g: t + h.g, l: t + h.l } : null;
+    const D = MM.DIM_BY_ID[G.dimId];
+    if (houseFx.root) { scene.remove(houseFx.root); houseFx.root = null; }
+    if (!G.house || !D || D.interior || MM.worldOf(G.dimId) !== 'earth') return;
+    const root = houseFx.root = new T.Group();
+    const gy = MM.heightAt(G.dimId, MM.HOUSE.x, MM.HOUSE.z);
+    const dome = houseFx.dome = new T.Mesh(new T.SphereGeometry(MM.HOUSE.r, 40, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#7ae8ff', transparent: true, opacity: 0.16, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(MM.HOUSE.x, gy, MM.HOUSE.z); root.add(dome);
+    const wire = new T.Mesh(dome.geometry, new T.MeshBasicMaterial({ color: '#bff4ff', wireframe: true, transparent: true, opacity: 0.25, depthWrite: false }));
+    dome.add(wire);
+    const home = MM.LANDMARKS.find(l => l.dim === G.dimId && MM.isAt(l, 'home'));
+    const sh = houseFx.shutters = new T.Group();
+    if (home) {
+      const steel = new T.MeshLambertMaterial({ color: '#7a828c' }), seam = new T.MeshLambertMaterial({ color: '#4a525c' });
+      const shell = new T.Mesh(new T.BoxGeometry(14.5, 7.2, 10.5), steel);
+      shell.position.set(0, 3.6, 0); sh.add(shell);
+      for (let i = -3; i <= 3; i++) { const b = new T.Mesh(new T.BoxGeometry(14.6, 0.08, 10.6), seam); b.position.y = 3.6 + i; sh.add(b); }
+      sh.position.set(home.x, MM.heightAt(G.dimId, home.x, home.z), home.z); sh.rotation.y = home.rot || 0;
+      root.add(sh);
+    }
+    const grid = houseFx.grid = new T.Group(), red = new T.MeshBasicMaterial({ color: '#ff2a2a' });
+    for (let y = 0.4; y < 4; y += 0.45) { const b = new T.Mesh(new T.BoxGeometry(0.04, 0.04, 9.8), red); b.position.set(-9.3, gy + y, 28.55); grid.add(b); }
+    for (let i = 0; i < 6; i++) { const b = new T.Mesh(new T.BoxGeometry(10, 0.04, 0.04), red); b.position.set(-14.6, gy + 0.6 + i * 0.55, 23.7 + (i % 2) * 9.7); grid.add(b); }
+    root.add(grid);
+    scene.add(root);
+    tickHouseFx();
+  }
+  function tickHouseFx() {
+    if (!houseFx.root || !G.house) return;
+    const t = now();
+    houseFx.dome.visible = G.house.s > t;
+    if (houseFx.dome.visible) houseFx.dome.material.opacity = 0.12 + Math.sin(t * 3) * 0.04;
+    houseFx.shutters.visible = G.house.d > t;
+    houseFx.grid.visible = G.house.g > t;
+  }
+
   function openModal(kind, title, build) {
     if (document.pointerLockElement) document.exitPointerLock();
     G.modal = kind;
@@ -1540,6 +1791,28 @@
       if (!pg.errands.length) box.append(el('p', { class: 'note', text: 'None. Talk to locals (F) and some will ask for favours.' }));
       for (const e of pg.errands) box.append(el('div', { class: 'row' }, el('div', { class: 't' }, el('b', { text: e.n + ' ' + MM.MATERIALS[e.m].name + ' → any ' + MM.NPCS[e.npc].name + ' in ' + MM.DIM_BY_ID[e.dim].name }),
         el('small', { text: 'From ' + e.from + '. Reward: ' + Object.keys(e.rew).map(k => e.rew[k] + ' ' + MM.MATERIALS[k].name).join(', ') }))));
+      const stamps = pg.stamps || [];
+      box.append(el('h3', { text: '🛂 Multiverse passport: ' + stamps.length + ' dimensions stamped' }));
+      const nextM = MM.PASSPORT.find(q => q[0] > stamps.length);
+      box.append(el('p', { class: 'note', text: (nextM ? 'Next reward at ' + nextM[0] + ' stamps: ' + nextM[1] + '. ' : 'Every reward collected. ') + 'Every dimension and timeline you set foot in gets a stamp.' }));
+      const pass = el('div', { class: 'coll' });
+      for (const W of MM.WORLDS) {
+        const ds = W.dims.concat(...W.dims.map(d => MM.timelinesOf(d)));
+        const got = ds.filter(d => stamps.includes(d)).length;
+        pass.append(el('span', { class: 'chip' + (got ? ' have' : ''), title: W.name, text: W.icon + ' ' + got + '/' + ds.length }));
+      }
+      box.append(pass);
+      const rides = pg.rides || {}, fish = pg.fish || {}, best = pg.best || {};
+      box.append(el('h3', { text: '🎢 Fun' }));
+      box.append(el('p', { class: 'note', text: 'Rides ridden: ' + Object.keys(rides).length + ' of ' + MM.RIDES.length + (Object.keys(rides).length ? ' (' + Object.keys(rides).map(k => MM.RIDE_BY_ID[k].name).join(', ') + ')' : '') + '.' }));
+      box.append(el('p', { class: 'note', text: 'Rides to find: ' + MM.RIDES.filter(R => !rides[R.id]).map(R => R.name + ' (' + (MM.DIM_BY_ID[R.dim] ? MM.DIM_BY_ID[R.dim].name : '') + ')').join(', ') || 'none, you rode them all!' }));
+      box.append(el('p', { class: 'note', text: 'Fish caught: ' + (Object.keys(fish).length ? Object.keys(fish).map(k => k + ' ×' + fish[k]).join(', ') : 'none yet (fish at the beach by the pier, on frozen lakes, in the Teenyverse)') + '.' }));
+      const scores = Object.keys(best).filter(k => MM.GALLERIES[k] || /^(dance|roy):/.test(k));
+      if (scores.length) box.append(el('p', { class: 'note', text: 'Best scores: ' + scores.map(k => (MM.GALLERIES[k] ? MM.GALLERIES[k].name + ' ' + best[k] + ' hits' : /^roy/.test(k) ? 'Roy ' + best[k] + ' years' : 'Dancing ' + best[k] + '%')).join(' · ') }));
+      const eggs = pg.eggs || [];
+      box.append(el('h3', { text: '🥚 Easter eggs: ' + eggs.length + ' of ' + MM.EGGS.length }));
+      box.append(el('p', { class: 'note', text: (eggs.length ? 'Found: ' + eggs.map(id => MM.EGG_BY_ID[id].name).join(', ') + '. ' : '') + 'Hidden things from the show, cameos to meet, and things to say in chat. ' +
+        MM.EGGS.filter(E => !eggs.includes(E.id)).length + ' left.' }));
       const st = G.st;
       box.append(el('h3', { text: 'You' }), el('p', { class: 'note', text: 'Health ' + st.maxHp + ' · speed ' + st.speed.toFixed(1) + ' · damage ×' + st.dmg.toFixed(2) +
         (st.fly ? ' · ' + (st.fly === 'jet' ? 'jetpack' : 'wings') : '') + (st.gun ? ' · portal gun ×' + st.gun.charges : '') + (st.ship ? ' · ship' + (st.ship.drive ? ' with dimension drive' : '') + (st.ship.quantum ? ' with quantum drive' : '') : '') }));
@@ -1614,6 +1887,7 @@
         row('Volume', el('input', { type: 'range', min: 0, max: 1, step: 0.05, value: settings.volume, oninput: e => { settings.volume = Number(e.target.value); C.setVolume(settings.volume); UI.save('settings', settings); } })),
         row('Fights', el('div', { class: 'chips' }, ...[[true, 'On: anyone with fights on can hurt you'], [false, 'Off: nobody can hurt you']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String((settings.pvp !== false) === v), onclick: () => { settings.pvp = v; UI.save('settings', settings); if (G.net) send({ t: 'pvp', on: v }); openMenu(); } }, t)))),
         row('View', el('div', { class: 'chips' }, ...[['third', 'Third person'], ['first', 'First person']].map(([v, t]) => el('button', { class: 'chip', 'aria-pressed': String(settings.view === v), onclick: () => { setView(v); openMenu(); } }, t)))),
+        row('Look', el('div', { class: 'chips' }, ...[['real', 'Realistic'], ['cartoon', 'Cartoon']].map(([q, label]) => el('button', { class: 'chip', 'aria-pressed': String(settings.style === q), onclick: () => { if (settings.style === q) return; settings.style = q; UI.save('settings', settings); UI.toast('The new look applies when you reload the game.', 3500); openMenu(); } }, label)))),
         row('Graphics', el('div', { class: 'chips' }, ...['high', 'low'].map(q => el('button', { class: 'chip', 'aria-pressed': String(settings.quality === q), onclick: () => { settings.quality = q; applyQuality(); resize(); UI.save('settings', settings); openMenu(); } }, q)))),
         row('Options', el('div', { class: 'chips' },
           el('button', { class: 'chip', 'aria-pressed': String(settings.invert), onclick: () => { settings.invert = !settings.invert; UI.save('settings', settings); openMenu(); } }, 'Invert look'),
@@ -1658,6 +1932,8 @@
     if (e.key === 'Tab') { e.preventDefault(); openBoard(); return; }
     keys.add(e.code);
     if (e.repeat) return;
+    // The emote bar is open: 1-7 pick from it.
+    if (!$('emoteBar').hidden && /^Digit[1-7]$/.test(e.code)) { const i = +e.code.slice(5) - 1; $('emoteBar').hidden = true; if (i < 6) emote(i); else sitDown(); return; }
     switch (e.code) {
       case 'Enter': case 'KeyT': e.preventDefault(); openChat(); break;
       case 'Escape': openMenu(); break;
@@ -1667,6 +1943,7 @@
       case 'KeyX': scan(); break;
       case 'KeyR': shootPair(); break;
       case 'KeyJ': openJournal(); break;
+      case 'KeyH': houseKey(); break;
       case 'KeyB': toggleShip(); break;
       case 'KeyL': lightspeedKey(); break;
       case 'KeyQ': ability(); break;
@@ -1679,7 +1956,7 @@
       case 'Digit7': useGadget('chalk'); break;
       case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
-      case 'KeyG': emote(); break;
+      case 'KeyG': emoteBar(); break;
       case 'Space': e.preventDefault(); if (G.you && G.you.dead && now() >= G.rsAt) send({ t: 'rs' }); break;
     }
   });
@@ -1780,6 +2057,7 @@
   $('tTalk').addEventListener('pointerdown', () => interact());
   $('tShip').addEventListener('pointerdown', () => toggleShip());
   $('tPair').addEventListener('pointerdown', () => shootPair());
+  $('tEmote').addEventListener('pointerdown', () => emoteBar());
   $('bJournal').onclick = () => openJournal();
   // Offline progress lives in this browser: save it when the page goes away.
   window.addEventListener('pagehide', () => { if (G.net && G.net.host) G.net.host.saveAll(); });
@@ -1817,6 +2095,28 @@
 
   function updateMe(dt) {
     const me = G.me, y = G.you;
+    // On a ride: the ride carries you (the server does the same), you just look around.
+    const rideMe = G.riders && G.riders.get(G.myId);
+    if (rideMe && rideMe.R && y && !y.dead) {
+      const q = MM.rideAt(rideMe.R, serverNow() - rideMe.t0, rideMe.seat);
+      me.x = q.x; me.y = q.y; me.z = q.z; me.vx = me.vy = me.vz = 0; me.yaw = q.yaw; me.anim = MM.ANIM.ride; me.grounded = true;
+      if (G.meAv) {
+        G.meAv.root.position.set(me.x, me.y, me.z); G.meAv.root.rotation.order = 'YXZ'; G.meAv.root.rotation.set(q.pitch * 0.8, me.yaw, 0);
+        G.meAv.animate(dt, { speed: 0, anim: me.anim, fx: y.fx, armsUp: q.pitch > 0.25 });
+        G.meAv.body.visible = !firstPerson();
+      }
+      tickHouseFx();
+      return;
+    }
+    if (me.sit) {
+      const moving = keys.has('KeyW') || keys.has('KeyA') || keys.has('KeyS') || keys.has('KeyD') || keys.has('Space') || Math.hypot(touch.mx, touch.mz) > 0.2;
+      if (moving || !y || y.dead) me.sit = null;
+      else {
+        me.x = me.sit.x; me.z = me.sit.z; me.y = me.sit.y; me.yaw = me.sit.yaw; me.vx = me.vy = me.vz = 0; me.anim = MM.ANIM.sit;
+        if (G.meAv) { G.meAv.root.position.set(me.x, me.y, me.z); G.meAv.root.rotation.y = me.yaw; G.meAv.animate(dt, { speed: 0, anim: me.anim, fx: y.fx }); }
+        return;
+      }
+    }
     const A = MM.ARCHETYPES[profile.arch];
     const dim = MM.DIM_BY_ID[G.dimId];
     const dead = !y || y.dead;
@@ -1897,8 +2197,27 @@
       ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight);
       if (dim.planets) {
         // Space: fly between the planets; touch one to land on it (you can't fly through it).
-        ny = Math.min(ny, 880);
+        ny = Math.min(ny, 1150);
         for (const P of dim.planets) {
+          if (P.body) {
+            // Anatomy Park's corpse: fly into a hole to go in; everywhere else it is solid.
+            const B = MM.BODY, c = Math.cos(B.yaw), sn = Math.sin(B.yaw), wx = nx - P.x, wy = ny + 1 - P.y, wz = nz - P.z;
+            const lx = wx * c - wz * sn, lz = wx * sn + wz * c;
+            let near = false;
+            B.holes.forEach((H, i) => {
+              const d = Math.hypot(lx - H[2][0], wy - H[2][1], lz - H[2][2]);
+              if (d < 12) near = true;
+              if (d < 6 && now() > (G.orbitT || 0)) { G.orbitT = now() + 2.5; send({ t: 'land', d: 'anatomy', h: i }); }
+            });
+            if (!near) for (const [px, py, pz, pr] of B.parts) {
+              const ddx = lx - px, ddy = wy - py, ddz = lz - pz, d = Math.hypot(ddx, ddy, ddz), R = pr + 3;
+              if (d < R && d > 0.01) {
+                const k = (R - d) / d, ox = ddx * k, oz = ddz * k;
+                nx += ox * c + oz * sn; nz += -ox * sn + oz * c; ny += ddy * k;
+              }
+            }
+            continue;
+          }
           const dx = nx - P.x, dy = ny + 1 - P.y, dz = nz - P.z, d = Math.hypot(dx, dy, dz), R = P.r + 4;
           if (d < R + 6 && now() > (G.orbitT || 0)) { G.orbitT = now() + 2.5; send({ t: 'land', d: P.dim }); }
           if (d < R) { nx = P.x + dx / d * R; ny = P.y - 1 + dy / d * R; nz = P.z + dz / d * R; }
@@ -1915,6 +2234,9 @@
       if (!me.grounded && me.vy < -14) fx.puff(nx, g, nz, '#ddd', 6, 1, 1, 0.5);
       if (!me.grounded && me.vy < -24 && !inShip) C.ragdoll(G.meAv, me.vx || Math.sin(me.yaw), me.vz || Math.cos(me.yaw), Math.min(0.8, -me.vy / 50));   // a hard landing: stumble over
       ny = g; me.vy = 0; me.grounded = true;
+      // A jump pad: up you go.
+      const pad = !inShip && MM.padAt(G.dimId, nx, nz);
+      if (pad) { me.vy = pad[2]; me.grounded = false; me.kbT = 0.4; fx.burst(nx, ny + 0.3, nz, '#7affea', 20, 7, 0.5, 0.5, 2); C.sfx('jump', 0.8); }
     } else if (ny > g + 0.15) me.grounded = false;
     else if (me.grounded && me.vy <= 0) ny = g;
     me.x = nx; me.y = ny; me.z = nz;
@@ -1929,7 +2251,8 @@
     if (G.meAv) {
       G.meAv.root.position.set(me.x, me.y, me.z);
       G.meAv.root.rotation.y = me.yaw;
-      G.meAv.animate(dt, { speed: me.grounded ? hs : 0, anim: me.anim, fx: fxb });
+      G.meAv.root.rotation.x = 0;
+      G.meAv.animate(dt, { speed: me.grounded ? hs : 0, anim: me.anim, fx: fxb, ek: me.emoteKind || 0 });
       if (!firstPerson()) ongoingFx(me, fxb, me.grounded ? hs : 0, dt);
       G.meAv.body.visible = !firstPerson() || dead;
       vm.bob += (me.grounded && !inShip ? hs : 0) * dt * 1.6; vm.speed = me.grounded && !inShip ? Math.min(1, hs / 5) : 0;
@@ -1938,6 +2261,7 @@
     if (me.sprinting && me.grounded && hs > 3 && Math.random() < dt * 14) fx.puff(me.x - me.vx * 0.05, me.y + 0.1, me.z - me.vz * 0.05, '#e8e2d4', 1, 0.5, 0.6, 0.4);
     const fovT = G.baseFov + (me.sprinting && hs > 3 ? 6 : 0);
     if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
+    tickHouseFx();
     // Climbing towards space, the sky darkens and you see further.
     if (G.atmo && !dim.interior && !dim.planets) {
       const k = Math.max(0, Math.min(1, (me.y - MM.heightAt(G.dimId, me.x, me.z) - 70) / (MM.ORBIT_ALT - 70)));
@@ -2039,8 +2363,14 @@
       p.av.root.rotation.y = p.r;
       const inShip = !!(s.fx & 512);
       if (inShip !== !!p.av.inShip) { C.setShip(p.av, inShip, p.info.gear); collectOutlines(p.av); }
-      const anim = s.a === MM.ANIM.dead ? s.a : p.emoteT > 0 ? MM.ANIM.emote : s.a;
-      p.av.animate(dt, { speed: s.a === MM.ANIM.run ? Math.max(p.speed, 3) : p.speed * 0.3, anim, fx: s.fx });
+      const rider = G.riders && G.riders.get(p.id);
+      let anim = s.a === MM.ANIM.dead ? s.a : p.emoteT > 0 ? MM.ANIM.emote : s.a, up = false;
+      if (rider && rider.R) {
+        const q = MM.rideAt(rider.R, serverNow() - rider.t0, rider.seat);
+        p.x = q.x; p.y = q.y; p.z = q.z; p.av.root.position.set(q.x, q.y, q.z); p.av.root.rotation.order = 'YXZ'; p.av.root.rotation.set(q.pitch * 0.8, q.yaw, 0);
+        anim = MM.ANIM.ride; up = q.pitch > 0.25;
+      }
+      p.av.animate(dt, { speed: s.a === MM.ANIM.run ? Math.max(p.speed, 3) : p.speed * 0.3, anim, fx: s.fx, ek: p.emoteKind || 0, armsUp: up });
       if (d < 40) ongoingFx(p, s.fx, p.speed, dt);
       wantDetail(p.av, p.x, p.z);
       const near = d < 40;
@@ -2193,13 +2523,14 @@
       // Keep the camera inside the walls and under the ceiling.
       const hx = room.w / 2 - 0.5, hz = room.d / 2 - 0.5;
       cx = Math.max(-hx, Math.min(hx, cx)); cz = Math.max(-hz, Math.min(hz, cz));
-      // A house with an upstairs: stay on your floor, and only show the upstairs when you are
-      // up there (downstairs you see the rooms with the upper floor lifted off).
+      // A house with an upstairs: the camera stays on your floor (on the stairs it may rise
+      // with you). The upstairs is always there: from below the ceiling hides it, and up the
+      // stairwell you see it.
       const Fl = MM.DIM_BY_ID[G.dimId].floors, up = Fl && MM.levelAt(G.dimId, me.y) === 1;
+      const S = Fl && Fl.stair, onStair = S && me.x > S.x0 - 0.3 && me.x < S.x1 + 0.3 && me.z > S.z0 - 0.3 && me.z < S.z1 + 0.3;
       if (up) cy = Math.max(Fl.y + 0.4, Math.min(Fl.y + room.h - 0.5, cy));
-      else cy = Math.min(Fl ? Fl.y - 0.3 : room.h - 0.5, cy);
-      if (G.upperFor !== G.world) { G.upperFor = G.world; G.upperRoom = G.world && G.world.group.getObjectByName('roomUpper'); }
-      if (G.upperRoom) G.upperRoom.visible = !!up;
+      else if (!onStair) cy = Math.min(Fl ? Fl.y - 0.3 : room.h - 0.5, cy);
+      if (G.upperFor !== G.world) { G.upperFor = G.world; G.upperRoom = G.world && G.world.group.getObjectByName('roomUpper'); if (G.upperRoom) G.upperRoom.visible = true; }
     }
     if (G.shake > 0) { cx += (Math.random() - 0.5) * G.shake; cy += (Math.random() - 0.5) * G.shake; cz += (Math.random() - 0.5) * G.shake; G.shake = Math.max(0, G.shake - dt * 1.5); }
     camera.position.set(cx, cy, cz);
@@ -2239,6 +2570,8 @@
     updateRace();
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
+    if (G.life) G.life.update(dt, camWorld);
+    if (G.rides) G.rides.update(serverNow());
     fx.update(dt);
     const w = window.innerWidth, h = window.innerHeight;
     UI.updateNums(dt, n => {
