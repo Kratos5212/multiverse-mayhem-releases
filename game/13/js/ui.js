@@ -32,6 +32,9 @@
     scan: '<circle cx="12" cy="12" r="8"/><path d="M12 4v3M12 17v3M4 12h3M17 12h3"/><circle cx="12" cy="12" r="2.5"/>',
     fire: '<circle cx="12" cy="12" r="7"/><circle cx="12" cy="12" r="1.5"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4"/>',
     jump: '<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>',
+    pair: '<ellipse cx="7" cy="12" rx="3.5" ry="7"/><ellipse cx="17" cy="12" rx="3.5" ry="7"/><path d="M10.5 12h3"/>',
+    down: '<path d="M6 5l6 6 6-6M6 11l6 6 6-6"/>',
+    light: '<path d="M3 12h7M5 7l6 3M5 17l6-3M14 12h7M13 9l3-3M13 15l3 3"/><circle cx="12" cy="12" r="1.6"/>',
     talk: '<path d="M4 5h16v11H9l-5 4z"/>',
     gadget: '<circle cx="11" cy="14" r="6"/><path d="M11 8V5h4M15 5l3-2"/>',
   };
@@ -109,7 +112,8 @@
       Face: [['eyes', 'Eyes'], ['brow', 'Brows'], ['mouth', 'Mouth']],
       Hair: [['hair', 'Style'], ['hairColor', 'Colour (or feathers)', COLORS]],
       Outfit: [['top', 'Top'], ['topColor', 'Top / coat colour', COLORS], ['shirtColor', 'Shirt underneath', COLORS], ['pantsColor', 'Pants', COLORS], ['shoeColor', 'Shoes', COLORS]],
-      Extras: [['acc', 'Accessory'], ['accColor', 'Accessory colour', COLORS], ['portalColor', 'Portal and gun glow', PORTALS]],
+      Extras: [['acc', 'Accessory'], ['accColor', 'Accessory colour', COLORS]],
+      Portals: [['portalColor', 'Portal and gun glow', PORTALS], ['portalColor2', 'Second end of your portal pair (blank: a deeper shade)', PORTALS], ['portalStyle', 'Portal style']],
     };
     let tab = 'Body';
     const tabs = $('lookTabs');
@@ -128,8 +132,9 @@
           box.append(el('input', { type: 'range', min: lo, max: hi, step: 0.01, value: profile.look[key], 'aria-label': label, oninput: e => { profile.look[key] = Number(e.target.value); onChange(); } }));
         } else {
           const sws = el('div', { class: 'swatches' });
+          if (key === 'portalColor2') sws.append(el('button', { class: 'chip', 'aria-pressed': String(!profile.look.portalColor2), onclick: () => { profile.look.portalColor2 = ''; renderLook(); onChange(); } }, 'Auto'));
           for (const c of palette) sws.append(el('button', { class: 'sw', style: 'background:' + c, 'aria-label': label + ' ' + c, 'aria-pressed': String(profile.look[key] === c), onclick: () => { profile.look[key] = c; renderLook(); onChange(); } }));
-          sws.append(el('input', { type: 'color', value: profile.look[key], 'aria-label': 'Custom ' + label, onchange: e => { profile.look[key] = e.target.value; renderLook(); onChange(); } }));
+          sws.append(el('input', { type: 'color', value: profile.look[key] || MM.pairColors(profile.look)[1], 'aria-label': 'Custom ' + label, onchange: e => { profile.look[key] = e.target.value; renderLook(); onChange(); } }));
           box.append(sws);
         }
         panel.append(box);
@@ -152,7 +157,7 @@
   let onModalClose = null;
   UI.modal = function (title, build, onClose) {
     const box = $('modalBox');
-    box.textContent = '';
+    box.textContent = ''; box.classList.remove('travel');
     box.append(el('h2', null, el('span', { text: title }), el('button', { class: 'btn', 'aria-label': 'Close', onclick: () => UI.closeModal() }, '✕')));
     build(box);
     $('modal').hidden = false;
@@ -174,7 +179,8 @@
       add('W A S D', 'Move'); add('Mouse', 'Look (click the game to capture the mouse)'); add('Click', 'Fire / attack'); add('Space', 'Jump (hold to fly as a Birdfolk)');
       add('Q', 'Archetype ability'); add('E', 'Portal gun: open a portal to another dimension'); add('F', 'Use the Portal Kiosk (when standing at it)');
       add('F', 'Talk to locals, do daily tasks, go through doors (Rick\'s garage!), use the kiosk'); add('J', 'Journal: your life, your path, errands');
-      add('B', 'Board or leave your ship (Space up, Shift down)');
+      add('B', 'Board or leave your ship (Space up, Shift down; keep climbing for space)');
+      add('L', 'Lightspeed, from space: to another world, dimension or timeline');
       add('1 2 3 4', 'Grenade / turret / shrink ray / Meeseeks Box'); add('C', 'Workbench: build gadgets and upgrades'); add('Enter', 'Chat with the whole multiverse');
       add('Tab', 'Players, leaderboard and mute'); add('V', 'First or third person (or scroll the mouse wheel)'); add('G', 'Emote (wave)'); add('Esc', 'Menu and settings');
       box.append(el('p', { text: 'Live your character\'s life, or break out of it. Do daily tasks at buildings, talk to locals (they do strange things), and follow your path in the journal (J). Every world has its own material, and the big upgrades (your body, a portal gun, a ship) are built at stations in different worlds. Every dimension holds up to 64 players.' }), keys,
