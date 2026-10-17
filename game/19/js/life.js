@@ -97,7 +97,25 @@
     if (!outdoor) return { update() {}, dispose() { scene.remove(root); } };
 
     // Birds: a few flocks wheeling over the world, wings flapping.
-    if (!under && D.gravity > 0 && !/^(beyond|cableworld|storytrain)/.test(D.shapeOf || dimId)) {
+    // Anatomy Park: the giant Heart beats in the middle of the park, and blood cells drift by.
+    if (dimId === 'anatomy') {
+      const l = MM.LANDMARK_BY_ID.bigheart, hs = new C.Shape();
+      hs.add(P.sphere, '#c8203a', [-1.4, 0.6, 0], null, [2.4, 2.4, 2]); hs.add(P.sphere, '#c8203a', [1.4, 0.6, 0], null, [2.4, 2.4, 2]);
+      hs.add(P.cone, '#c8203a', [0, -1.6, 0], [Math.PI, 0, 0], [3.4, 3.4, 1.9]);
+      hs.add(P.sphereLo, '#ff6a7a', [-1.6, 1.6, 1.2], null, [0.8, 0.6, 0.5]);
+      const heart = C.meshOf(hs.build(), 0.06);
+      heart.position.set(l.x, H(l.x, l.z) + 5.4, l.z);
+      root.add(heart);
+      life.heart = heart;
+      life.cells = [];
+      for (let i = 0; i < Math.round(26 * k); i++) {
+        const m = model('rbc', s => { s.add(P.cyl, '#c8283a', [0, 0, 0], null, [1, 0.35, 1]); s.add(P.cyl, '#a81a2a', [0, 0.05, 0], null, [0.55, 0.36, 0.55]); }, 0.03);
+        m.scale.setScalar(rnd(0.8, 2));
+        root.add(m);
+        life.cells.push({ m, x: rnd(-120, 120), z: rnd(-120, 120), y: rnd(12, 40), vx: rnd(-2, 2), vz: rnd(-2, 2), sp: rnd(0.3, 1) });
+      }
+    }
+    if (!under && D.gravity > 0 && !/^(beyond|cableworld|storytrain|anatomy)/.test(D.shapeOf || dimId)) {
       const col = earth ? '#3a3a42' : new T.Color(D.accent).lerp(new T.Color('#202028'), 0.6).getStyle();
       for (let f = 0; f < 3; f++) {
         const flock = { x: rnd(-80, 80), z: rnd(-80, 80), y: rnd(26, 44), vx: rnd(-3, 3), vz: rnd(-3, 3), birds: [] };
@@ -126,9 +144,16 @@
       }
       life.schools = [0, 1, 2, 3].map(() => ({ x: 0, z: 0, set: false }));
     }
-    // Animals in the woods, near the trees: deer, rabbits, squirrels and foxes on Earth,
-    // little six-legged critters anywhere else green.
-    const trees = MM.genProps(dimId).filter(p => TREES.has(p.type));
+    // Animals in the woods: deer, rabbits, squirrels and foxes in Earth's forests, little
+    // six-legged critters in the thickets anywhere else green. Never in a town: only trees in
+    // a wood count (a planted forest, or a thicket away from the roads and buildings).
+    const props = MM.genProps(dimId), woods = MM.forestsOf(dimId), roads = MM.layoutOf(dimId).roads;
+    const built = props.filter(p => !TREES.has(p.type) && p.r > 2);
+    const segDist = (x, z, rd) => { const dx = rd.x2 - rd.x1, dz = rd.z2 - rd.z1, l2 = dx * dx + dz * dz || 1, u = Math.max(0, Math.min(1, ((x - rd.x1) * dx + (z - rd.z1) * dz) / l2)); return Math.hypot(x - rd.x1 - dx * u, z - rd.z1 - dz * u); };
+    const allTrees = props.filter(p => TREES.has(p.type));
+    const trees = allTrees.filter(tr => woods.length ? woods.some(w => Math.hypot(tr.x - w.x, tr.z - w.z) < w.r - 3)
+      : !D.streets && allTrees.filter(o => Math.abs(o.x - tr.x) < 14 && Math.abs(o.z - tr.z) < 14).length >= 4
+        && !built.some(b => Math.hypot(b.x - tr.x, b.z - tr.z) < 18 + b.r) && !roads.some(rd => segDist(tr.x, tr.z, rd) < 12 + rd.w / 2));
     if (trees.length && !under && !D.cronen && !/dino/.test(dimId)) {
       const kinds = earth ? ['deer', 'rabbit', 'rabbit', 'squirrel', 'squirrel', 'fox'] : ['critter'];
       const n = Math.round(14 * k);
@@ -175,6 +200,14 @@
       update(dt, cam) {
         if (!cam) return;
         t += dt;
+        // The Heart beats (lub-dub, about seventy a minute) and the blood cells drift.
+        if (life.heart) { const b = (t * 1.17) % 1, p = Math.exp(-((b - 0.05) ** 2) / 0.002) * 0.12 + Math.exp(-((b - 0.22) ** 2) / 0.002) * 0.08; life.heart.scale.setScalar(1 + p); }
+        if (life.cells) for (const c of life.cells) {
+          c.x += c.vx * dt; c.z += c.vz * dt;
+          if (Math.abs(c.x - cam.x) > 130 || Math.abs(c.z - cam.z) > 130) { c.x = cam.x + rnd(-100, 100); c.z = cam.z + rnd(-100, 100); }
+          c.m.position.set(c.x, H(c.x, c.z) + c.y + Math.sin(t * c.sp + c.x) * 2, c.z);
+          c.m.rotation.set(t * c.sp * 0.5, 0, t * c.sp * 0.3);
+        }
         // Birds
         for (const F of life.birds) {
           F.x += F.vx * dt; F.z += F.vz * dt;
@@ -185,7 +218,7 @@
             b.a += dt * b.sp * 0.9;
             const x = F.x + Math.cos(b.a) * b.r, z = F.z + Math.sin(b.a) * b.r, y = gy + F.y + b.dy + Math.sin(t * 0.7 + b.ph) * 1.5;
             b.m.position.set(x, y, z);
-            b.m.rotation.y = -b.a + Math.PI * (b.sp > 0 ? 1 : 0);
+            b.m.rotation.y = -b.a + (b.sp < 0 ? Math.PI : 0);   // models face +z; moving round the circle at angle a heads along (-sin a, cos a)
             b.m.rotation.z = 0.25;
             const flap = Math.sin(t * 9 + b.ph) * 0.6;
             b.wl.rotation.z = flap; b.wr.rotation.z = -flap;
@@ -209,7 +242,7 @@
             const floor = H(x, z), top = under ? floor + 7 : MM.SEA_LEVEL - 0.8;
             const y = Math.min(top, Math.max(floor + 0.6, (under ? floor + 2.5 : MM.SEA_LEVEL - 2.2) + f.dy + Math.sin(t + f.a) * 0.4));
             f.m.position.set(x, y, z);
-            f.m.rotation.y = -f.a + (f.sp > 0 ? Math.PI : 0);
+            f.m.rotation.y = -f.a + (f.sp < 0 ? Math.PI : 0);
           }
         }
         // Animals: wander near a tree, bolt when you come close, settle down again.
@@ -219,7 +252,7 @@
             const near = life.trees.filter(p => { const d = Math.hypot(p.x - cam.x, p.z - cam.z); return d > 25 && d < 100; });
             if (!near.length) { A.m.visible = false; continue; }
             const tr = near[Math.floor(Math.random() * near.length)];
-            A.home = { x: tr.x + rnd(-5, 5), z: tr.z + rnd(-5, 5) }; A.x = A.tx = A.home.x; A.z = A.tz = A.home.z; A.m.visible = true;
+            A.home = { x: tr.x + rnd(-3, 3), z: tr.z + rnd(-3, 3) }; A.x = A.tx = A.home.x; A.z = A.tz = A.home.z; A.m.visible = true;
           }
           const dc = Math.hypot(A.x - cam.x, A.z - cam.z);
           let sp = A.speed;

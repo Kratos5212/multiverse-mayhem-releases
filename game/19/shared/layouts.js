@@ -184,7 +184,7 @@
       L.road(-150, -80, 150, -80, 9, 'asphalt');
       L.path([[14, -10], [70, -40], [78, -40]], 8, 'asphalt');
       L.road(-60, -150, -60, 150, 9, 'asphalt');
-      L.road(60, 60, 60, 150, 9, 'asphalt');
+      L.road(60, 30, 60, 150, 9, 'asphalt');
       L.street(0, 16, 0, 90, { setback: 9, spacing: 9, types: 'cherrytree', jitter: 1 });
       L.street(0, 16, 0, 90, { setback: 26, spacing: 24, gap: 0.1, types: [['officeblock', 3], ['flagpole', 1]] });
       L.street(-150, 30, 150, 30, { setback: 12, spacing: 20, gap: 0.3, start: 40, types: [['officeblock', 2], ['apartment', 1]], lamps: { type: 'streetlamp', every: 22, offset: 6 } });
@@ -201,6 +201,7 @@
       L.road(-140, 60, 140, 60, 14, 'asphalt');
       L.road(0, 14, 0, 60, 8, 'asphalt');
       L.road(0, -14, 0, -26, 8, 'asphalt');
+      L.road(0, 60, 0, 142, 8, 'asphalt');   // the main gate, out to the road from the suburb
       L.street(-130, 60, -10, 60, { setback: 20, spacing: 24, sides: [1], types: 'hangar' });
       L.street(-130, 60, 130, 60, { setback: 11, spacing: 30, sides: [-1], gap: 0.3, types: [['jeep', 2], ['crate', 1]] });
       L.rows(60, -50, 40, 0, 20, 1, 'radar', 0);
@@ -362,13 +363,13 @@
     // Anatomy Park: the promenade to Pirates of the Pancreas runs under arching arteries;
     // bone pillars ring the entrance and blood cells drift about the park.
     anatomy(L) {
-      L.radial({ plaza: 17, plazaStyle: 'flesh', spokes: [90 * DEG, 210 * DEG, 330 * DEG], spokeTo: 110, ring: 60, w: 7, style: 'vein' });
-      // Arches span the road: a model's arch opens along its own z, so it faces along the road.
-      for (const a of [210 * DEG, 330 * DEG]) for (let d = 26; d < 108; d += 20) L.place('artery', Math.cos(a) * d, Math.sin(a) * d, Math.atan2(Math.cos(a), Math.sin(a)), 1, { onRoad: true });
-      L.place('artery', 0, 24, 0, 1, { onRoad: true });
-      L.ring(0, 0, 21, 10, 'bonepillar', { roadside: true, a0: 0.3 });
-      L.ringStreet(60, { setback: 7, spacing: 14, gap: 0.3, types: [['bonepillar', 1], ['bloodcell', 2]] }, 24);
-      L.scatter([['bloodcell', 4], ['bonepillar', 1]], 45, { minR: 30 });
+      // The Heart in the middle of a fleshy plaza; paths out to each part of the park (the
+      // pancreas north, Spleen Mountain east, Bladder Falls south, the Bone Zone west, the
+      // food and the bandstand north-west, the gates south-west) and a vein ring around.
+      L.radial({ plaza: 18, plazaStyle: 'flesh', spokes: [0, 45, 90, 135, 180, 225, 270, 315].map(d => d * DEG), spokeTo: 82, ring: 60, w: 7, style: 'vein' });
+      for (const a of [135 * DEG, 225 * DEG, 315 * DEG]) for (let d = 28; d < 80; d += 22) L.place('artery', Math.cos(a) * d, Math.sin(a) * d, Math.atan2(Math.cos(a), Math.sin(a)), 1, { onRoad: true });
+      L.ring(0, 0, 22, 12, 'bonepillar', { roadside: true, a0: 0.2 });
+      L.scatter([['bloodcell', 3], ['bonepillar', 1]], 40, { minR: 30 });
     },
 
     // The Pizza-Phone-Chair dimension looks like ordinary Earth streets, except the things

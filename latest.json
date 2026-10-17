@@ -1,8 +1,8 @@
 {
- "build": 18,
- "date": "2026-10-17T23:05:14.612Z",
+ "build": 19,
+ "date": "2026-10-17T23:17:00.461Z",
  "game": {
-  "base": "game/18/",
+  "base": "game/19/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -186,8 +186,8 @@
    },
    {
     "p": "js/dims.js",
-    "h": "b81783e2c88efd098ae74453d3757968859aa016dc2c40387e69b49b09f3b34d",
-    "s": 292518
+    "h": "e22cf0bbe3f87f5a9f6ee80499587bd5d6f53666fcb37205612bb2a100a8c822",
+    "s": 292631
    },
    {
     "p": "js/fx.js",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "ca1b97d116d2c4ef20ef2cbaa771493fee7b893a6e2f67efc591022b189e0c8b",
-    "s": 158525
+    "h": "b55b745deb2f59d57ed30b14328264b1a5ffcbc4cee596a053ba2cb74d344ef5",
+    "s": 158659
    },
    {
     "p": "js/life.js",
@@ -256,8 +256,8 @@
    },
    {
     "p": "shared/house.js",
-    "h": "5c58adb53153962f1ce5815fad01ac86d0032b02bbd605f46b1ae5aa7fb2416b",
-    "s": 4451
+    "h": "b68845b0837d90421f5d8a5f693c32e8cb8c01e2d03bdfabf89d35faf0116e51",
+    "s": 4479
    },
    {
     "p": "shared/interiors.js",
@@ -286,13 +286,13 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "489afcad5b7f0c52730fe45ae065b593b2cfe0691a91fa70b579f2a53793053f",
-    "s": 90281
+    "h": "7050f32a7dcd0a5519aa099b12216f755bb1e6d6dbf6235de44dfd37bdeabfa0",
+    "s": 90744
    },
    {
     "p": "shared/world.js",
-    "h": "8d5406ba3827323b502862b59a12d0695bb9f77b20d86068a5c9c76601d6333d",
-    "s": 201137
+    "h": "e8d40ab69f7ffef5b499e6698568316559b6332366bae0d2f442371023d7fdc3",
+    "s": 201264
    },
    {
     "p": "sim/bot.js",
@@ -301,8 +301,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "0d0000564011a69df205a050fb36e8e69a6e8303c3676c17468b1b4b40d2105c",
-    "s": 131022
+    "h": "3c6c08260ec81abf5b2fc74eccacae799aee0d702a6dfd758c23eead6602c86e",
+    "s": 131080
    },
    {
     "p": "vendor/three.LICENSE",
@@ -316,7 +316,7 @@
    },
    {
     "p": "version.json",
-    "h": "176fd2393202576bbb6a78f21bb3b1cf741c7b0871297cbabe20d147597b1a9d",
+    "h": "2fa0728454b5fa5fcf75be9e6ee452e3bdeba68bac1aabf14ed7ef2f1dc6ec46",
     "s": 13
    }
   ]
