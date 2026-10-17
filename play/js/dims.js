@@ -922,6 +922,25 @@
       s.add(P.cylLo, '#cfd2d6', [7.5, 6, D / 2 + 3.5], null, [0.08, 12, 0.08]);
       s.add(P.box, '#3c6fb5', [8.4, 11.2, D / 2 + 3.5], null, [1.8, 1.1, 0.05]);
       s.add(P.box, '#e2483d', [8.4, 10.85, D / 2 + 3.53], null, [1.8, 0.2, 0.02]);
+      // What makes it a school: the clock over the door, a bike rack, a basketball hoop.
+      s.add(P.cyl, '#f6f2ea', [0, 6.4, D / 2 + 0.06], [Math.PI / 2, 0, 0], [0.6, 0.08, 0.6]);
+      s.add(P.cyl, '#2a2a2a', [0, 6.4, D / 2 + 0.11], [Math.PI / 2, 0, 0], [0.5, 0.02, 0.5]);
+      s.add(P.box, '#f6f2ea', [0, 6.55, D / 2 + 0.14], null, [0.05, 0.32, 0.02]); s.add(P.box, '#f6f2ea', [0.1, 6.4, D / 2 + 0.14], null, [0.22, 0.05, 0.02]);
+      for (let i = 0; i < 6; i++) s.add(P.torus, '#9aa0a6', [-7.2 + i * 0.5, 0.45, D / 2 + 2.2], [0, Math.PI / 2, 0], [0.32, 0.32, 0.3]);
+      s.add(P.cylLo, '#e8ecef', [-W / 2 - 3, 1.8, D / 2 - 2], null, [0.08, 3.6, 0.08]);
+      s.add(P.box, '#f6f6f6', [-W / 2 - 3, 3.5, D / 2 - 1.6], null, [1.2, 0.8, 0.06]);
+      s.add(P.torus, '#e2483d', [-W / 2 - 3, 3.05, D / 2 - 1.2], [Math.PI / 2, 0, 0], [0.24, 0.24, 0.24]);
+    },
+    // A yellow school bus, parked out front of the school.
+    schoolbus(s) {
+      s.add(P.box, '#f2b81e', [0, 1.35, 0], null, [2.4, 1.9, 8.6]);
+      s.add(P.box, '#f2b81e', [0, 1.0, 4.9], null, [2.3, 1.2, 1.4]);
+      s.add(P.box, '#1a1a1a', [0, 0.65, 0], null, [2.45, 0.12, 8.7]);
+      for (let z = -3.4; z <= 3.4; z += 1.1) for (const sx of [-1, 1]) s.add(P.box, '#3e4d5c', [sx * 1.21, 1.75, z], null, [0.03, 0.6, 0.85]);
+      s.add(P.box, '#3e4d5c', [0, 1.75, 4.32], null, [2.1, 0.7, 0.03]);
+      for (const z of [-2.8, 3.6]) for (const sx of [-1, 1]) s.add(P.cyl, '#1a1a1a', [sx * 1.15, 0.45, z], [0, 0, Math.PI / 2], [0.45, 0.3, 0.45]);
+      s.add(P.box, '#1a1a1a', [0, 2.0, -4.32], null, [2.0, 0.22, 0.03]);
+      s.add(P.box, '#e2483d', [1.25, 1.6, 3.2], null, [0.04, 0.5, 0.5]);   // the stop sign
     },
     // The horse hospital: a white clinic with a green trim band, big windows and a horse statue.
     lm_hospital(s) {
@@ -934,9 +953,28 @@
       s.add(P.box, '#bfdcec', [0, 1.6, D / 2 + 0.05], null, [2.6, 2.6, 0.06]);
       s.add(P.box, '#f3f1ea', [0, 1.6, D / 2 + 0.09], null, [0.08, 2.6, 0.04]);
       s.add(P.box, '#4a9a6a', [0, 3.3, D / 2 + 0.9], [-0.15, 0, 0], [4, 0.15, 2]);
+      // What makes it a hospital: the red cross, EMERGENCY over the side door, a helipad.
+      s.add(P.box, '#f3f1ea', [0, H + 1.4, D / 2 - 0.3], null, [2.2, 2.2, 0.3]);
+      s.add(P.box, '#e2483d', [0, H + 1.4, D / 2 - 0.12], null, [1.8, 0.55, 0.05]);
+      s.add(P.box, '#e2483d', [0, H + 1.4, D / 2 - 0.12], null, [0.55, 1.8, 0.05]);
+      s.add(P.box, '#e2483d', [-W / 2 + 1.8, 3.2, D / 2 + 0.12], null, [2.8, 0.55, 0.08]);
+      s.add(P.box, '#ffffff', [-W / 2 + 1.8, 3.2, D / 2 + 0.17], null, [2.4, 0.12, 0.02], true);
+      s.add(P.cyl, '#5a5e64', [2, 0.4 + H + 0.02, -1.5], null, [2.6, 0.06, 2.6]);
+      s.add(P.box, '#ffd84d', [2 - 0.7, 0.4 + H + 0.06, -1.5], null, [0.2, 0.02, 1.8]); s.add(P.box, '#ffd84d', [2 + 0.7, 0.4 + H + 0.06, -1.5], null, [0.2, 0.02, 1.8]); s.add(P.box, '#ffd84d', [2, 0.4 + H + 0.06, -1.5], null, [1.4, 0.02, 0.2]);
       // A bronze horse out front, in honour of the patients.
       s.add(P.box, '#9aa0a6', [5, 0.4, D / 2 + 2.5], null, [3.4, 0.8, 1.4]);
       horse(s, 4.7, 0.8, D / 2 + 2.5, 1.25, '#a0703f');
+    },
+    // A horse ambulance: a white van with a horse trailer, red stripe and light bar.
+    ambulance(s) {
+      s.add(P.box, '#f6f6f2', [0, 1.3, 1.6], null, [2.2, 1.9, 3.2]);
+      s.add(P.box, '#f6f6f2', [0, 1.0, 3.7], null, [2.1, 1.2, 1.1]);
+      s.add(P.box, '#3e4d5c', [0, 1.5, 4.2], null, [1.9, 0.6, 0.04]);
+      s.add(P.box, '#e2483d', [0, 1.15, 1.6], null, [2.24, 0.25, 3.22]);
+      s.add(P.box, '#e2483d', [-0.4, 2.3, 2.6], null, [0.5, 0.15, 0.3], true); s.add(P.box, '#3a8aff', [0.4, 2.3, 2.6], null, [0.5, 0.15, 0.3], true);
+      s.add(P.box, '#f6f6f2', [0, 1.5, -2.3], null, [2.2, 2.2, 3.4]);                 // the horse trailer
+      s.add(P.box, '#e2483d', [1.11, 1.6, -2.3], null, [0.03, 0.5, 0.5]); s.add(P.box, '#e2483d', [1.11, 1.6, -2.3], null, [0.03, 0.16, 1.4]);
+      for (const z of [3.4, 0.4, -2.3]) for (const sx of [-1, 1]) s.add(P.cyl, '#1a1a1a', [sx * 1.05, 0.4, z], [0, 0, Math.PI / 2], [0.4, 0.3, 0.4]);
     },
     // The unemployment office: a grey municipal block with a queue of chairs outside.
     lm_office(s) {
@@ -2532,6 +2570,12 @@
         if (k > 0) tmp.lerp(paint(rp[0], rp[1], rp[2], P.t2), k);
       }
     }
+    if (dim.regions && z > MM.BEACH_Z - 40) {
+      // The beach: sand down to the water, darker sand under it.
+      const k = Math.min(1, Math.max(0, (z - (MM.BEACH_Z - 40)) / 40));
+      tmp.lerp(P.sand || (P.sand = new T.Color('#e8d9a6')), k);
+      if (y < MM.SEA_LEVEL) tmp.lerp(P.seabed || (P.seabed = new T.Color('#9a8e6a')), Math.min(1, (MM.SEA_LEVEL - y) / 4));
+    }
     if ((dim.shapeOf || dim.id) === 'meatlands') {
       const v = Math.abs(Math.sin(x * 0.11 + Math.sin(z * 0.07) * 3) * Math.cos(z * 0.09 + Math.sin(x * 0.05) * 2));
       if (v < 0.05) tmp.set('#7c1e34');
@@ -2855,6 +2899,20 @@
     s.add(P.box, '#6e4a2a', [S.x0 + 0.06, 0.55, S.z0 - dir * 0.05], null, [0.14, 1.1, 0.14]);
     const g = C.meshOf(s.build(), 0.03);
     g.traverse(o => { if (o.material && o.material.side === T.BackSide) o.visible = false; });
+    return g;
+  }
+
+  // An Earth's sea, off its southern beach: the surface and a line of surf.
+  function makeSea(dim) {
+    const g = new T.Group(), W = dim.bound * 2 + 200, D = dim.bound + 120 - MM.SEA_Z;
+    const mat = new T.MeshLambertMaterial({ color: (dim.shapeOf || dim.id) === 'meatlands' ? '#a8304a' : '#2f86c0', transparent: true, opacity: 0.78 });
+    const sea = new T.Mesh(new T.PlaneGeometry(W, D, 1, 1), mat);
+    sea.rotation.x = -Math.PI / 2; sea.position.set(0, MM.SEA_LEVEL, MM.SEA_Z + D / 2 - 6);
+    g.add(sea);
+    const surf = new T.Mesh(new T.PlaneGeometry(W, 3), new T.MeshBasicMaterial({ color: '#f2fbff', transparent: true, opacity: 0.6 }));
+    surf.rotation.x = -Math.PI / 2; surf.position.set(0, MM.SEA_LEVEL + 0.03, MM.SEA_Z + 4);
+    g.add(surf);
+    g.name = 'sea';
     return g;
   }
 
@@ -3319,7 +3377,10 @@
     if (dim.interior) group.add(makeRoom(dim));
     let terrain = null;
     if (dim.planets) group.add(makeSpace(dim, group));
-    else if (!dim.interior) { skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain); }
+    else if (!dim.interior) {
+      skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain);
+      if (dim.regions) group.add(makeSea(dim));
+    }
     if (dim.streets) group.add(makeStreets(dim, MM.genProps(dimId)));
     const layout = MM.layoutOf(dimId);
     if (layout.roads.length || layout.plazas.length) group.add(makePaths(dim, layout));

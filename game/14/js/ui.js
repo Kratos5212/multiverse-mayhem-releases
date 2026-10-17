@@ -23,6 +23,7 @@
     meeseeks: '<rect x="4" y="10" width="16" height="10" rx="2"/><path d="M8 10V8a4 4 0 0 1 8 0v2"/><circle cx="12" cy="15" r="1.6"/>',
     timecrystal: '<path d="M7 3h10M7 21h10M8 3c0 5 8 6 8 9s-8 4-8 9M16 3c0 5-8 6-8 9s8 4 8 9"/>',
     freeze: '<path d="M12 2v20M3.3 7l17.4 10M3.3 17L20.7 7M9 4l3 2 3-2M9 20l3-2 3 2"/>',
+    chalk: '<path d="M5 21V8a7 7 0 0 1 14 0v13"/><path d="M3 21h18"/><path d="M15 14h.5"/>',
     items: '<path d="M4 8h16v12H4zM4 8l2-4h12l2 4M10 12h4"/>',
     craft: '<path d="M15 4a4 4 0 0 0-4 5L4 16a2 2 0 0 0 3 3l7-7a4 4 0 0 0 5-4l-3 1-2-2 1-3z"/>',
     journal: '<path d="M6 3h11a2 2 0 0 1 2 2v16H8a2 2 0 0 1-2-2zM6 17a2 2 0 0 1 2-2h11M10 7h5"/>',
@@ -34,6 +35,7 @@
     jump: '<path d="M6 13l6-6 6 6M6 19l6-6 6 6"/>',
     pair: '<ellipse cx="7" cy="12" rx="3.5" ry="7"/><ellipse cx="17" cy="12" rx="3.5" ry="7"/><path d="M10.5 12h3"/>',
     down: '<path d="M6 5l6 6 6-6M6 11l6 6 6-6"/>',
+    light: '<path d="M3 12h7M5 7l6 3M5 17l6-3M14 12h7M13 9l3-3M13 15l3 3"/><circle cx="12" cy="12" r="1.6"/>',
     talk: '<path d="M4 5h16v11H9l-5 4z"/>',
     gadget: '<circle cx="11" cy="14" r="6"/><path d="M11 8V5h4M15 5l3-2"/>',
   };
@@ -52,9 +54,9 @@
   };
   UI.save = function (key, v) { try { localStorage.setItem('mm.' + key, JSON.stringify(v)); } catch (_) {} };
 
-  const ARCH_COLORS = { genius: '#a9cbd6', sidekick: '#f6d34b', teen: '#ff7fb0', surgeon: '#e06a7a', joe: '#7fc76a', birdfolk: '#d98a4a', beanling: '#ffd447', mutant: '#ff7a8a', trooper: '#e4e8ee', hive: '#c49bff', meeseeks: '#7ec8f0', squanchy: '#c98a4a', evilmorty: '#ff5a3a', picklerick: '#7cbf3a' };
+  const ARCH_COLORS = { genius: '#a9cbd6', sidekick: '#f6d34b', teen: '#ff7fb0', surgeon: '#e06a7a', joe: '#7fc76a', birdfolk: '#d98a4a', beanling: '#ffd447', mutant: '#ff7a8a', trooper: '#e4e8ee', hive: '#c49bff', meeseeks: '#7ec8f0', squanchy: '#c98a4a', evilmorty: '#ff5a3a', picklerick: '#7cbf3a', tommy: '#ffb46a' };
   UI.ARCH_COLORS = ARCH_COLORS;
-  const ARCH_ICONS = { genius: 'R', sidekick: 'M', teen: 'S', surgeon: 'B', joe: 'J', birdfolk: 'BP', beanling: 'P', mutant: 'C', trooper: 'F', hive: 'U', meeseeks: 'Me', squanchy: 'Sq', evilmorty: 'EM', picklerick: 'PR' };
+  const ARCH_ICONS = { genius: 'R', sidekick: 'M', teen: 'S', surgeon: 'B', joe: 'J', birdfolk: 'BP', beanling: 'P', mutant: 'C', trooper: 'F', hive: 'U', meeseeks: 'Me', squanchy: 'Sq', evilmorty: 'EM', picklerick: 'PR', tommy: 'T' };
 
   const SKINS = ['#ffe0c8', '#f2d2b6', '#e0b08c', '#c68a62', '#a8724f', '#6b4630', '#9ad66b', '#7ec8e3', '#c49bff', '#ffd447', '#e07a85', '#b4b4c0'];
   const COLORS = ['#ffffff', '#f4f6f8', '#b9d4e0', '#9a9a9a', '#2a2a2a', '#7fb2d6', '#3c6fb5', '#2a3f8f', '#ffd447', '#f5a623', '#e2483d', '#a0303b', '#5fb848', '#2e7d32', '#b48aff', '#ff6fd0', '#6b4f2c', '#c9a77a'];
@@ -167,6 +169,7 @@
     $('modal').hidden = true;
     const f = onModalClose; onModalClose = null;
     if (f) f();
+    if (UI.afterClose) UI.afterClose();   // the game takes the mouse back
   };
   UI.modalOpen = () => !$('modal').hidden;
   $('modal').addEventListener('pointerdown', e => { if (e.target.id === 'modal') UI.closeModal(); });
@@ -178,7 +181,8 @@
       add('W A S D', 'Move'); add('Mouse', 'Look (click the game to capture the mouse)'); add('Click', 'Fire / attack'); add('Space', 'Jump (hold to fly as a Birdfolk)');
       add('Q', 'Archetype ability'); add('E', 'Portal gun: open a portal to another dimension'); add('F', 'Use the Portal Kiosk (when standing at it)');
       add('F', 'Talk to locals, do daily tasks, go through doors (Rick\'s garage!), use the kiosk'); add('J', 'Journal: your life, your path, errands');
-      add('B', 'Board or leave your ship (Space up, Shift down)');
+      add('B', 'Board or leave your ship (Space up, Ctrl down, Shift boost; keep climbing for space)');
+      add('L', 'Lightspeed, from space: to another world, dimension or timeline');
       add('1 2 3 4', 'Grenade / turret / shrink ray / Meeseeks Box'); add('C', 'Workbench: build gadgets and upgrades'); add('Enter', 'Chat with the whole multiverse');
       add('Tab', 'Players, leaderboard and mute'); add('V', 'First or third person (or scroll the mouse wheel)'); add('G', 'Emote (wave)'); add('Esc', 'Menu and settings');
       box.append(el('p', { text: 'Live your character\'s life, or break out of it. Do daily tasks at buildings, talk to locals (they do strange things), and follow your path in the journal (J). Every world has its own material, and the big upgrades (your body, a portal gun, a ship) are built at stations in different worlds. Every dimension holds up to 64 players.' }), keys,

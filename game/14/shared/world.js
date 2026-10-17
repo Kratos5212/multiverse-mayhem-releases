@@ -45,15 +45,17 @@
       ground: ['#5fae3e', '#78c24b', '#4c9636'], accent: '#ffffff',
       props: [['tree', 40], ['hedge', 20]], streets: { grid: 44, extent: 150 }, spawn: { x: 2, z: -3, spread: 5 },
       // Rick's things in his open garage (the interactive ones are landmarks).
-      fixed: [['spacecruiser', -13.0, 14.5, Math.PI / 2, 0.8], ['shelf', -17.2, 8.6, 0], ['washer', -13.4, 8.6, 0], ['curioshelf', -11.6, 16.5, Math.PI]],
-      npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 11]], pickups: { s: 18, c: 2 }, mat: 's',
+      fixed: [['schoolbus', 40.5, 31, Math.PI], ['ambulance', 40.5, -31, Math.PI], ['spacecruiser', -13.0, 33.0, Math.PI / 2, 0.8], ['shelf', -17.2, 27.1, 0], ['washer', -13.4, 27.1, 0], ['curioshelf', -11.6, 35.0, Math.PI]],
+      npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 29.5]], pickups: { s: 18, c: 2 }, mat: 's',
     },
     {
-      id: 'meatlands', flat: 140, name: 'Cronenberged Earth', code: 'PRIME', seed: 4242, gravity: 24, amp: 9, scale: 0.02, quirk: 'regen',
-      blurb: 'The Prime Dimension: Rick\'s love potion turned everyone into Cronenbergs, so he and Morty moved to a replacement Earth. Everything is meat now. It is warm. It is watching.',
+      // The same Earth as C-137, all of it (the suburb, Downtown, D.C., Area 51), after the love
+      // potion: every person a Cronenberg. Only Summer, Beth and Jerry are left of the Smiths.
+      id: 'meatlands', variantOf: 'suburbia', cronen: true, name: 'Cronenberged Earth', code: 'PRIME', quirk: 'regen',
+      blurb: 'The Prime Dimension: Rick\'s love potion turned everyone into Cronenbergs, so he and Morty moved to a replacement Earth. Summer, Beth and Jerry stayed, and went barbarian. Everything is meat now. It is warm. It is watching.',
       sky: ['#3d0a1c', '#c4485f'], fog: '#7a2236', fogFar: 170, sun: '#ffc2b0', ambient: '#b05068',
       ground: ['#c9576b', '#e07a85', '#9c3a4e'], accent: '#fff2c8',
-      props: [['fleshpillar', 40], ['eyestalk', 45], ['bonearch', 12], ['pustule', 40]],
+      extra: [['fleshpillar', 30], ['eyestalk', 40], ['bonearch', 10], ['pustule', 40]],
       npc: [['meatblob', 11], ['fleshmonk', 4]], pickups: { s: 8, g: 14 }, mat: 'g',
     },
     {
@@ -212,8 +214,8 @@
       blurb: "Mr. Nimbus's sunken city. Columns, coral, kelp, and a sea king who very much controls the police.",
       sky: ['#0a3a6a', '#2a8ac8'], fog: '#1a5a8a', fogFar: 150, sun: '#c8f0ff', ambient: '#5aa0d0',
       ground: ['#c8b88a', '#b8a878', '#8aa890'], accent: '#5ff8e0',
-      props: [['coral', 40], ['kelp', 50], ['column', 22], ['shell', 16]],
-      npc: [['merfolk', 12], ['seamonster', 4]], pickups: { c: 10, s: 4 }, mat: 'c',
+      props: [['coral', 40], ['kelp', 50], ['column', 22], ['shell', 16]], earthOf: 'suburbia',
+      npc: [['merfolk', 12], ['seamonster', 4], ['nimbus', 1, 0, -30]], pickups: { c: 10, s: 4 }, mat: 'c',
     },
     {
       id: 'dreamworld', name: 'The Dream World', code: 'ZZZ', seed: 6116, gravity: 16, amp: 9, scale: 0.012, quirk: 'dreamy',
@@ -355,20 +357,20 @@
       ground: ['#6ac84a', '#7ad85a', '#5ab83e'], accent: '#ffb0d0',
       extra: [['flowerbed', 30]], npc: [['neighbor', 12]], pickups: { s: 18, k: 3 }, mat: 'k',
     },
-    // ----- Inside the Smith house (built with Mojulo, see assets/interiors) -----
+    // ----- Inside the Smith house: two floors, each a Mojulo floor plan (see shared/interiors.js
+    // for the plans and walls, assets/interiors/smith*.recipe.json for the recipes) -----
     {
-      id: 'smithhouse', name: 'Smith House', code: 'C-137', seed: 139, gravity: 24, interior: true, hidden: true, bound: 7.0, boundZ: 5.3,
-      blurb: 'The living room, the dining room where nobody talks, and the kitchen. The TV gets every channel in the multiverse.',
+      id: 'smithhouse', name: 'Smith House', code: 'C-137', seed: 139, gravity: 24, interior: true, hidden: true, bound: 9.05, boundZ: 6.5,
+      blurb: 'Downstairs: the living room, the dining room where nobody talks, the kitchen and Rick\'s room. Upstairs: Morty\'s room, Summer\'s room, Beth and Jerry\'s room and the bathroom.',
       sky: ['#2a2a30', '#2a2a30'], fog: '#2a2a30', fogFar: 400, sun: '#fff4e0', ambient: '#c0b8a8',
-      ground: ['#b88a5a', '#a87a4a', '#c89a6a'], accent: '#ffd84d', spawn: { x: -4.5, z: -3.6 },
-      // The rooms come from a Mojulo floor plan (34 x 26 ft, 1 ft = 0.427 m here). walls: the
-      // inside walls for collision, as [x1, z1, x2, z2] segments with gaps where the doors are.
-      room: { w: 14.5, d: 11.1, h: 4.27, mesh: 'assets/interiors/smith.mmg' },
-      walls: [
-        [0.43, 5.55, 0.43, 3.69], [0.43, 2.29, 0.43, -2.71], [0.43, -4.11, 0.43, -5.55],   // living | dining, hall | kitchen
-        [-7.25, -1.28, -2.83, -1.28], [-1.43, -1.28, 0.43, -1.28],                           // hall | living room
-        [0.43, 0.43, 3.14, 0.43], [4.54, 0.43, 7.25, 0.43],                                 // kitchen | dining
-      ],
+      ground: ['#b88a5a', '#a87a4a', '#c89a6a'], accent: '#ffd84d', spawn: { x: -0.85, z: -5.6 },
+      // 44 x 32 ft at 1 ft = 0.427 m. The upstairs mesh sits on the downstairs ceiling.
+      room: { w: 18.78, d: 13.65, h: 4.27, mesh: 'assets/interiors/smith.mmg', upper: 'assets/interiors/smith2.mmg' },
+      // The stairs run up the foyer by the dining room wall, from the front door to the
+      // upstairs hall; the stairwell has no floor upstairs.
+      floors: { y: 4.3, hole: [0.85, -6.83, 2.56, 0.21], stair: { x0: 0.64, x1: 2.56, z0: -5.55, z1: 0.21 } },
+      // Bathroom fixtures upstairs (Mojulo has no bathroom): [type, x, z, rot, scale, floor y].
+      fixed: [['bathtub', 8.75, 3.7, 0, 1, 4.3], ['toilet', 5.0, 6.35, Math.PI, 1, 4.3], ['bathsink', 6.7, 6.45, Math.PI, 1, 4.3], ['bathmirror', 6.7, 6.78, Math.PI, 1, 4.3]],
       props: [], npc: [], pickups: {}, mat: 's',
     },
     // ----- Rick's garage and what's under it: small indoor dimensions -----
@@ -452,7 +454,11 @@
   // Who lives in a world, and what lies around: a composite world adds each part's own.
   MM.npcListOf = function (dimId) {
     const D = MM.DIM_BY_ID[dimId], out = D.npc.slice();
-    for (const R of D.regions || []) for (const [t, n, x, z] of MM.DIM_BY_ID[R.dim].npc) out.push(x !== undefined ? [t, n, x + R.ox, z + R.oz] : [t, n, R.ox, R.oz, 150]);
+    for (const R of D.regions || []) for (const [t0, n, x, z] of MM.DIM_BY_ID[R.dim].npc) {
+      // On Cronenberged Earth the people of the towns are Cronenbergs too.
+      const t = D.cronen && MM.NPCS[t0] && MM.NPCS[t0].human ? (out.length % 3 ? 'fleshmonk' : 'meatblob') : t0;
+      out.push(x !== undefined ? [t, n, x + R.ox, z + R.oz] : [t, n, R.ox, R.oz, 150]);
+    }
     return out;
   };
   MM.pickupsOf = function (dimId) {
@@ -460,8 +466,95 @@
     for (const R of D.regions || []) { const P = MM.DIM_BY_ID[R.dim].pickups; for (const k in P) out[k] = (out[k] || 0) + P[k]; }
     return out;
   };
+  // ---------- Worlds, dimensions and timelines ----------
+  // A world is a place: a planet, a space station, a strange realm. Each world exists in
+  // parallel dimensions (Earth C-137, Cronenberged Earth, Shrimp Earth...), and a dimension can
+  // have other timelines (C-137's split timeline, or 65 million years ago). Getting around:
+  // between the worlds of one universe, fly your ship up into space and over to the planet;
+  // to another dimension, a portal, or lightspeed from space with the Dimension Drive; to
+  // another timeline, a portal, or lightspeed with the Quantum Drive.
+  MM.WORLDS = [
+    { id: 'earth', name: 'Earth', icon: '🌎', prime: 'suburbia', dims: ['fascistearth', 'shrimpearth', 'teddyearth', 'c500a', 'doofusearth', 'meatlands', 'wasteland', 'dogworld', 'pizzaworld', 'zigerion'], blurb: 'The Smiths\' planet. Every dimension has one, and most of them are a mess.' },
+    { id: 'moon', name: 'The Moon', icon: '🌕', prime: 'moon', blurb: 'Earth\'s moon. A short hop by ship.' },
+    { id: 'birdworld', name: 'Bird World', icon: '🪶', prime: 'featherhold', blurb: 'Birdperson\'s home planet: cliffs, nests and very serious birds.' },
+    { id: 'gazorp', name: 'Gazorpazorp', icon: '👽', prime: 'gazorp', blurb: 'The Gazorpians\' planet.' },
+    { id: 'squanch', name: 'Planet Squanch', icon: '🐱', prime: 'squanch', blurb: 'Squanchy\'s planet. Everyone squanches here.' },
+    { id: 'purge', name: 'Purge Planet', icon: '🔪', prime: 'purge', blurb: 'One night a year, anything goes.' },
+    { id: 'gear', name: 'Planet Gear', icon: '⚙️', prime: 'gearworld', blurb: 'Home of the Gearpeople. Everything turns.' },
+    { id: 'unity', name: 'Unity\'s Planet', icon: '🫧', prime: 'unityworld', blurb: 'A planet that is one mind.' },
+    { id: 'federation', name: 'Galactic Federation', icon: '🏛️', prime: 'federation', blurb: 'The Federation\'s capital planet.' },
+    { id: 'bazaar', name: 'Alien Bazaar', icon: '🛍️', prime: 'bazaar', blurb: 'A market planet.' },
+    { id: 'blips', name: 'Blips and Chitz', icon: '🕹️', prime: 'blips', blurb: 'The arcade, somewhere in the galaxy.' },
+    { id: 'citadel', name: 'The Citadel', icon: '🏙️', prime: 'citadel', blurb: 'The city of Ricks and Mortys, hidden between dimensions.' },
+    { id: 'snake', name: 'Snake Planet', icon: '🐍', prime: 'snakeplanet', blurb: 'Snakes, snake jazz and snake time travel.' },
+    { id: 'megaseed', name: 'Mega Seed World', icon: '🌱', prime: 'megaseed', blurb: 'Where the Mega Seeds grow.' },
+    { id: 'plumbus', name: 'Plumbubo Prime 51b', icon: '🔧', prime: 'plumbus', blurb: 'Where plumbuses come from.' },
+    { id: 'giant', name: 'Giant World', icon: '🫘', prime: 'giantland', blurb: 'Up the beanstalk.' },
+    { id: 'atlantis', name: 'Atlantis', icon: '🔱', prime: 'atlantis', blurb: 'Mr. Nimbus\'s sunken city.' },
+    { id: 'dream', name: 'The Dream World', icon: '💤', prime: 'dreamworld', realm: true, blurb: 'Inside a dream. Not a planet at all.' },
+    { id: 'storytrain', name: 'The Story Train', icon: '🚂', prime: 'storytrain', realm: true, blurb: 'An endless train of stories.' },
+    { id: 'toxic', name: 'The Toxic Dimension', icon: '☣️', prime: 'toxicworld', realm: true, blurb: 'Where everything toxic ends up.' },
+    { id: 'cable', name: 'Interdimensional Cable', icon: '📺', prime: 'cableworld', realm: true, blurb: 'The dimension of the commercials.' },
+    { id: 'hamster', name: 'Hamster-in-Butt World', icon: '🐹', prime: 'hamsterworld', blurb: 'It is exactly what it sounds like.' },
+    { id: 'beyond', name: 'Beyond the Curve', icon: 'Ω', prime: 'beyond', realm: true, blurb: 'Outside the Central Finite Curve.' },
+  ];
+  // Other timelines, as [id, of (the dimension), name, code, blurb, look].
+  const TIMELINES = [
+    ['fedearth', 'suburbia', 'Earth C-137, under the Federation', 'C-137 ⧗', 'From "The Rickshank Rickdemption": the Galactic Federation took over Earth. Bug-headed troopers on every corner, and Federation towers over the suburb.',
+      { sky: ['#8aa4c8', '#e4ecf4'], ground: ['#6aa04e', '#7ab05a', '#5a9044'], npc: [['fedguard', 6], ['neighbor', 6], ['fedclerk', 2]], extra: [['fedtower', 6]] }],
+    ['evilcitadel', 'citadel', 'The Citadel, under President Morty', 'CIT-1 ⧗', 'From "The Ricklantis Mixup": Evil Morty won the election. Same city, new management, and the Ricks are nervous.',
+      { sky: ['#1a1a2e', '#7a6a9a'], accent: '#ffd84d', npc: [['citmorty', 10], ['citrick', 3], ['citguard', 4]] }],
+    ['birdwedding', 'featherhold', 'Bird World, after the wedding', 'BW-1 ⧗', 'From "The Wedding Squanchers": the Federation crashed the wedding, and Bird World has been occupied since.',
+      { sky: ['#7a5a6a', '#e8c8b8'], npc: [['fedguard', 5], ['birdcitizen', 6]] }],
+  ];
+  // Every world has at least one parallel dimension. These are the ones the show never got to.
+  const PARALLEL = [
+    { k: 'CR', label: 'Cronenberg dimension', blurb: n => n + ', from a dimension where Rick\'s love potion got loose. Everything has too many teeth.', hue: -30, sat: 1.2, light: 0.9, extra: [['pustule', 12], ['eyestalk', 8]], npc: [['meatblob', 5]] },
+    { k: 'MR', label: 'mirror dimension', blurb: n => n + ', the other way round, colours and all. The locals swear it is you who is backwards.', hue: 180, sat: 1, light: 1 },
+    { k: 'IC', label: 'ice age dimension', blurb: n => n + ', in a dimension where its sun is a little further away. Everything is frozen.', hue: 0, sat: 0.25, light: 1.35, extra: [['crystal', 14]] },
+    { k: 'DK', label: 'dark dimension', blurb: n => n + ' where the sun went out a long time ago. Everyone just got used to it.', hue: 0, sat: 0.8, light: 0.45, extra: [['lamp', 16]] },
+    { k: 'JG', label: 'jungle dimension', blurb: n => n + ', where the jungle got everything back.', hue: 40, sat: 1.25, light: 0.95, extra: [['seedtree', 12], ['fungus', 10]] },
+    { k: 'CT', label: 'cat dimension', blurb: n => n + ', where everyone is a cat. Nobody remembers it ever being different.', hue: 15, sat: 1, light: 1.05, npc: [['catfolk', 8]] },
+  ];
+  const tint = (hex, h, sat, light) => {
+    const c = parseInt(hex.slice(1), 16); let r = (c >> 16) / 255, g = (c >> 8 & 255) / 255, b = (c & 255) / 255;
+    const mx = Math.max(r, g, b), mn = Math.min(r, g, b), l = (mx + mn) / 2, d = mx - mn;
+    let H = 0, S = d === 0 ? 0 : d / (1 - Math.abs(2 * l - 1));
+    if (d) H = mx === r ? ((g - b) / d) % 6 : mx === g ? (b - r) / d + 2 : (r - g) / d + 4;
+    H = ((H * 60 + h) % 360 + 360) % 360; S = Math.min(1, S * sat); const L = Math.min(0.97, l * light);
+    const C2 = (1 - Math.abs(2 * L - 1)) * S, X2 = C2 * (1 - Math.abs((H / 60) % 2 - 1)), m = L - C2 / 2;
+    [r, g, b] = H < 60 ? [C2, X2, 0] : H < 120 ? [X2, C2, 0] : H < 180 ? [0, C2, X2] : H < 240 ? [0, X2, C2] : H < 300 ? [X2, 0, C2] : [C2, 0, X2];
+    return '#' + [r, g, b].map(v => Math.round((v + m) * 255).toString(16).padStart(2, '0')).join('');
+  };
+  // A dimension built on another: the same ground, the same buildings, its own look and people.
+  const derive = (B, id, extra) => {
+    const d = Object.assign({ variantOf: B.id, shapeOf: B.shapeOf || B.id, gravity: B.gravity, quirk: B.quirk, outsideCurve: B.outsideCurve, fogFar: B.fogFar, sun: B.sun, ambient: B.ambient, accent: B.accent, mat: B.mat, pickups: B.pickups }, extra, { id });
+    for (const k of ['sky', 'fog', 'ground']) if (!d[k]) d[k] = B[k];
+    d.npc = (extra.npc || []).concat(extra.keepNpc === false ? [] : B.npc.filter(n => n.length < 3).slice(0, 3));
+    MM.DIMS.push(d); MM.DIM_BY_ID[id] = d;
+    return d;
+  };
+  for (const [id, of, name, code, blurb, look] of TIMELINES) derive(MM.DIM_BY_ID[of], id, Object.assign({ name, code, blurb, timeline: true, timelineOf: of }, look));
+  MM.DIM_BY_ID.splitearth.timelineOf = 'suburbia'; MM.DIM_BY_ID.dinoearth.timelineOf = 'suburbia';
+  MM.WORLDS.forEach((W, i) => {
+    const B = MM.DIM_BY_ID[W.prime];
+    W.dims = [W.prime].concat(W.dims || []);
+    if (W.dims.length === 1 && !B.interior) {
+      const T = PARALLEL[i % PARALLEL.length], t = c => tint(c, T.hue, T.sat, T.light);
+      const d = derive(B, W.prime + '_' + T.k.toLowerCase(), { name: W.name + ' (' + T.label + ')', code: B.code + '/' + T.k, twist: T.k, blurb: T.blurb(W.name),
+        sky: B.sky.map(t), fog: t(B.fog), ground: B.ground.map(t), ambient: t(B.ambient), extra: T.extra || [], npc: T.npc || [] });
+      W.dims.push(d.id);
+    }
+  });
   for (const d of MM.DIMS) if (d.variantOf) fillVariant(d);
   MM.fillVariant = fillVariant;
+  // Which world a dimension belongs to (alternate and home Earths are Earth), and which
+  // dimension a timeline is of.
+  MM.WORLD_BY_ID = {};
+  for (const W of MM.WORLDS) { MM.WORLD_BY_ID[W.id] = W; for (const id of W.dims) MM.DIM_BY_ID[id].world = W.id; W.timelines = {}; }
+  MM.worldOf = dimId => { const D = MM.DIM_BY_ID[dimId]; if (!D) return null; if (D.timelineOf) return MM.worldOf(D.timelineOf); return D.world || (D.variantOf ? MM.worldOf(D.variantOf) : null); };
+  MM.timelinesOf = dimId => MM.DIMS.filter(d => d.timelineOf === dimId).map(d => d.id);
+  MM.dimensionOf = dimId => { const D = MM.DIM_BY_ID[dimId]; return D && D.timelineOf ? D.timelineOf : dimId; };
   MM.DIM_IDS = MM.DIMS.map(d => d.id);
   // Dimensions you can portal or kiosk to (the garage and its rooms are reached through doors).
   MM.WORLD_IDS = MM.DIMS.filter(d => !d.hidden).map(d => d.id);
@@ -492,6 +585,13 @@
     if (B.pocket) return 'Only through its entrance: ' + (to === 'microverse' ? "the car battery in Rick's garage." : to === 'anatomy' ? 'Anatomy Park, inside Ruben, on Earth.' : 'the chalk door on Earth.');
     if (B.outsideCurve && !(method === 'portal' && o.gold)) return 'Outside the Central Finite Curve. Only a gold portal goes there.';
     if (method === 'portal' || method === 'station') return '';
+    // Lightspeed: from space, in your ship. Planets you can see you can just fly into.
+    if (method === 'light') {
+      if (!A.planets) return 'Lightspeed only works out in space: fly straight up first.';
+      if (A.planets.some(P => P.dim === to)) return o.engine ? '' : 'It is right there: fly into it. (Lightspeed to a planet you can see needs the Turbo Engine.)';
+      if (B.timeline || A.planets[0] && MM.DIM_BY_ID[A.planets[0].dim].timeline) return o.quantum ? '' : 'Another timeline: lightspeed through time needs the Quantum Drive.';
+      return o.drive || o.quantum ? '' : 'Another dimension: lightspeed needs the Dimension Drive.';
+    }
     if (method === 'ship') {
       if (A.space && A.space === B.space) {
         if (A.near && B.near) return o.hull ? '' : 'You need a ship.';
@@ -651,6 +751,12 @@
     plumbuspile: { r: 1.2, h: 1.6, hp: 40, drop: { g: 1, p: 1 } },
     housedoor:   { r: 0.6, h: 2.4, hp: 1e9, drop: {}, fixed: true },
     washer:      { r: 0.75, h: 1.1, hp: 1e9, drop: {}, fixed: true },
+    schoolbus:   { r: 1.4, h: 2.4, hp: 1e9, drop: {}, fixed: true },
+    ambulance:   { r: 1.3, h: 2.4, hp: 1e9, drop: {}, fixed: true },
+    bathtub:     { r: 0.9, h: 0.62, hp: 1e9, drop: {}, fixed: true },
+    toilet:      { r: 0.4, h: 0.8, hp: 1e9, drop: {}, fixed: true },
+    bathsink:    { r: 0.35, h: 0.95, hp: 1e9, drop: {}, fixed: true },
+    bathmirror:  { r: 0.05, h: 0.1, hp: 1e9, drop: {}, fixed: true, arch: true },
     clonetank:   { r: 1.0, h: 3.6, hp: 1e9, drop: {}, fixed: true },
     bigcomputer: { r: 2.2, h: 4.0, hp: 1e9, drop: {}, fixed: true },
     labmachine:  { r: 1.8, h: 3.0, hp: 1e9, drop: {}, fixed: true },
@@ -660,11 +766,15 @@
 
   // Landmarks are solid, can't be destroyed, and each has its own model.
   for (const l of MM.LANDMARKS) MM.PROPS[l.model] = { r: l.r, h: l.h, hp: 1e9, drop: {}, fixed: true };
+  // Rings on the floor that mark a spot: you walk over them.
+  MM.PROPS.lm_marker = { r: 0.6, h: 0.1, hp: 1e9, drop: {}, fixed: true, arch: true };
 
   // NPCs. hostile ones chase and bite; the rest are locals you can talk to (F).
   //   human: built like a player, from these look options.  fly: hover height.
   //   talk: lines they say. moods: how likely each crazy reaction is (see sim/host.js).
   MM.NPCS = {
+    // Somebody from the cast of this dimension (shared/cast.js): drawn as their character.
+    cast:     { name: 'Someone', hp: 120, speed: 3.0, hostile: false, dmg: 0, drop: {}, r: 0.5, h: 1.9, talk: ['...'], cast: true },
     neighbor: { name: 'Neighbor', hp: 30, speed: 2.5, hostile: false, dmg: 0, drop: { s: 2 }, r: 0.6, h: 1.8,
       human: { species: ['human'], top: ['polo', 'sweater', 'tshirt', 'vest'], acc: ['none', 'none', 'cap'] },
       names: ['Gary', 'Brenda', 'Doug', 'Pam', 'Kevin', 'Linda', 'Todd', 'Marcy', 'Steve', 'Dale'],
@@ -844,6 +954,11 @@
       talk: ['FEE FI FO... no, that is a stereotype. Hello.', 'Watch the stairs. My husband fell down them once and the court case took ages.', 'You are SO tiny. Like a little salt shaker with legs.',
         'Have you seen my fork? It is the size of a house.', 'Morty? Is that you? You owe us for the funeral.'],
       moods: { line: 55, gift: 12, trade: 8, errand: 12, buff: 6, angry: 7 } },
+    nimbus: { name: 'Mr. Nimbus', hp: 260, speed: 3.0, hostile: false, guard: true, dmg: 16, drop: { c: 8, k: 4 }, r: 0.7, h: 2.2, fly: 0.6,
+      human: { species: ['human'], top: ['none'], acc: ['crown'], look: { hair: 'afro', brow: 'angry', mouth: 'grin', face: 'wide', height: 1.3, width: 1.2, head: 1.0,
+        skin: '#f0d2b8', hairColor: '#f6f6f6', topColor: '#f0d2b8', shirtColor: '#f0d2b8', pantsColor: '#2a6a8a', shoeColor: '#2a6a8a', accColor: '#ffd84d' } },
+      names: ['Mr. Nimbus'],
+      talk: ['I control the sea. And the police.', 'Kneel. Or float respectfully. Either is fine.', 'Has Rick sent you? Tell him I want my hand back. Or not. Let him wonder.', 'The ocean is mine. In every dimension. Well, a version of me owns it in each.'] },
     merfolk: { name: 'Atlantean', hp: 40, speed: 3.4, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8, fly: 0.6,
       names: ['Coraline', 'Finnley', 'Barnacle Bob', 'Pearl', 'Ripple'],
       talk: ['Mr. Nimbus controls the sea. And the police. Mostly the police.', 'Bubbles mean "hello" here. Or "help". Context.', 'Do not trust the surface. Do not trust Rick. Especially do not trust Rick.', 'Ever seen a sunken city? You are standing in one.'],
@@ -1070,8 +1185,19 @@
       const d = segD(x, z, s);
       if (d < 16) h *= smooth(6, 16, d);
     }
-    return h + smooth(dim.bound - 30, dim.bound + 10, Math.max(Math.abs(x), Math.abs(z))) * 28;
+    // South (+z): the beach, then the sea. No mountains on that side.
+    if (z > MM.BEACH_Z - 40) {
+      const k = smooth(MM.BEACH_Z - 40, MM.BEACH_Z, z);
+      h += (0.4 - h) * k;
+      if (z > MM.SEA_Z) h = 0.4 - Math.min(16, (z - MM.SEA_Z) * 0.16) + Math.sin(x * 0.05) * 0.3 * smooth(MM.SEA_Z, MM.SEA_Z + 40, z);
+    }
+    return h + smooth(dim.bound - 30, dim.bound + 10, Math.max(Math.abs(x), -z)) * 28;
   }
+  // Every Earth's coast: sand from BEACH_Z, the water's edge at SEA_Z, the surface at SEA_LEVEL.
+  // Dive deep enough out there and you are in that Earth's Atlantis.
+  MM.BEACH_Z = 300; MM.SEA_Z = 345; MM.SEA_LEVEL = -0.8; MM.DIVE_DEPTH = -3;
+  MM.inSea = (dimId, x, z) => { const D = MM.DIM_BY_ID[dimId]; return !!(D && D.regions && z > MM.SEA_Z + 4); };
+  MM.atlantisOf = earth => earth === 'suburbia' ? 'atlantis' : 'atl_' + earth;
   function segD(x, z, s) {
     const dx = s[2] - s[0], dz = s[3] - s[1], l2 = dx * dx + dz * dz || 1;
     const t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / l2));
@@ -1080,7 +1206,7 @@
   // The roads joining the suburb to the other towns.
   MM.EARTH_LINKS = [[140, 0, 262, 0], [-140, 0, -262, 0], [0, -140, 0, -262]];
   function cellHeight(dim, x, z) {
-    const dimId = dim.id;
+    const dimId = dim.shapeOf || dim.id;   // a parallel dimension has the same lie of the land
     const r = Math.sqrt(x * x + z * z);
     let h = (MM.fbm(x * dim.scale, z * dim.scale, dim.seed, 4) - 0.5) * 2 * dim.amp;
     h *= smooth(14, 40, r);
@@ -1120,7 +1246,7 @@
     const dim = MM.DIM_BY_ID[dimId];
     const r = MM.rng(dim.seed);
     const out = [];
-    const layout = MM.LAYOUTS && MM.LAYOUTS[dimId];
+    const layout = MM.LAYOUTS && (MM.LAYOUTS[dimId] || MM.LAYOUTS[dim.shapeOf]);
     const free = (x, z, rad, tight) => {
       if (!dim.interior) {
         if (Math.hypot(x, z) < (layout ? 15 : 22) + rad) return false;   // a town keeps its square clear by itself
@@ -1132,18 +1258,20 @@
       for (const p of out) if (Math.hypot(p.x - x, p.z - z) < p.r + rad + (tight ? 0.2 : 1.5)) return false;
       return true;
     };
-    const add = (type, x, z, rot, scale) => {
+    const add = (type, x, z, rot, scale, fy) => {
       const t = MM.PROPS[type];
-      out.push({ id: out.length, type, x, z, rot, s: scale, r: t.r * scale, h: t.h * scale, hp: Math.round(t.hp * scale) });
+      const p = { id: out.length, type, x, z, rot, s: scale, r: t.r * scale, h: t.h * scale, hp: Math.round(t.hp * scale) };
+      if (fy !== undefined) p.fy = fy;   // upstairs (see dim.floors)
+      out.push(p);
     };
     for (const l of MM.LANDMARKS) {
       // A town that is part of a bigger world plans around its own landmarks, in its own
       // coordinates; the bigger world gets them through that town's props.
       if (l.origin === dimId) { add(l.model, l.lx, l.lz, l.rot, 1); continue; }
       if (l.dim !== dimId || (dim.regions && l.origin)) continue;
-      add(l.model, l.x, l.z, l.rot !== undefined ? l.rot : dim.interior ? (l.z < -3 ? 0 : l.z > 3 ? Math.PI : l.x < 0 ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(-l.x, -l.z), 1);
+      add(l.model, l.x, l.z, l.rot !== undefined ? l.rot : dim.interior ? (l.z < -3 ? 0 : l.z > 3 ? Math.PI : l.x < 0 ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(-l.x, -l.z), 1, l.fy);
     }
-    for (const [type, x, z, rot, sc] of dim.fixed || []) add(type, x, z, rot, sc || 1);
+    for (const [type, x, z, rot, sc, fy] of dim.fixed || []) add(type, x, z, rot, sc || 1, fy);
     const onRoad = v => { const m = ((v % 44) + 44) % 44; return Math.min(m, 44 - m) < 7.5; };
     if (dim.streets) {
       // Blocks between streets every 44 m. Each block has two rows of houses back to back,
@@ -1191,6 +1319,7 @@
         if (comp) {
           const at = MM.regionAt(dimId, x, z);
           if (at.R) continue;
+          if (z > MM.BEACH_Z - 20) continue;   // the beach and the sea stay clear
           if (MM.EARTH_LINKS.some(q => segD(x, z, q) < 8 + t.r * s)) continue;
           if (Math.max(Math.abs(x), Math.abs(z)) < 150 && dim.streets && (onRoad(x) || onRoad(z))) continue;
         } else if (dim.streets && (onRoad(x) || onRoad(z))) continue;
@@ -1211,7 +1340,7 @@
       for (const [x1, z1, x2, z2] of MM.EARTH_LINKS) roads.push({ x1, z1, x2, z2, w: 9, style: 'asphalt' });
       layoutCache[dimId] = { roads, plazas };
     }
-    for (const p of out) p.y = MM.heightAt(dimId, p.x, p.z);
+    for (const p of out) p.y = p.fy !== undefined ? p.fy : MM.heightAt(dimId, p.x, p.z);
     return (propCache[dimId] = out);
   };
 
@@ -1261,14 +1390,14 @@
     barn: [-4.5, 8.55, -6.3, 6.3], cityblock: [-3.7, 3.7, -3.7, 3.7], fedtower: [-4.5, 4.5, -4.5, 4.5], prisonblock: [-5.2, 5.2, -3.2, 3.2],
     gearhouse: [-3.22, 3.22, -3.09, 3.3], storefront: [-4.7, 4.7, -3.7, 3.9], skyscraper: [-5.7, 5.7, -5.7, 5.7], apartment: [-5.2, 5.2, -5.2, 5.6],
     officeblock: [-7.8, 7.8, -5.8, 6.4], hangar: [-7.6, 7.6, -9, 9.1], humanhouse: [-2.32, 2.32, -2.9, 2.9], factory: [-6, 6, -5, 5.11],
-    lm_home: [-6.7, 6.7, -5.3, 6.4], lm_garage: [-4.95, 4.95, -5.05, 5.2], lm_school: [-9.3, 9.3, -4.8, 5.2], lm_hospital: [-7.15, 7.15, -5.15, 5.4],
+    lm_home: [-7.1, 7.1, -5.1, 5.1], lm_garage: [-4.95, 4.95, -5.05, 5.2], lm_school: [-9.3, 9.3, -4.8, 5.2], lm_hospital: [-7.15, 7.15, -5.15, 5.4],
     lm_office: [-5.7, 5.7, -4.2, 4.6], lm_forge: [-6.1, 6.1, -5.5, 5.5], lm_shipyard: [-8, 8, -8, 8], lm_market: [-5.85, 5.85, -5.41, 6],
     lm_refinery: [-7, 7, -7, 7], lm_council: [-9, 9, -9, 9], lm_daycare: [-5.8, 7.04, -4.8, 6.5], lm_palace: [-9.34, 9.34, -5, 7.02],
     lm_gooble: [-7.2, 7.2, -5.2, 7.65], lm_fakedoors: [-4.7, 4.7, -3.7, 3.9], lm_antsjohnson: [-4.7, 4.7, -3.7, 3.9], lm_plumbusline: [-6, 6, -5, 5.11],
     lm_mall: [-11.5, 11.5, -7.25, 10.6], lm_shoneys: [-5.9, 5.9, -4.4, 4.6], lm_needful: [-4.25, 4.25, -4.25, 4.7], lm_wong: [-5.7, 5.7, -4.7, 5.2],
     lm_tvstore: [-5.2, 5.2, -4.2, 4.35], lm_whitehouse: [-12.3, 12.3, -5.8, 9.6], lm_capitol: [-15.5, 15.5, -7.5, 9.5], lm_sonicstage: [-9, 9, -5, 5],
     lm_hangar: [-7.6, 7.6, -9, 9.2], traincar: [-1.6, 1.6, -8.4, 8.4], lm_raidergarage: [-7, 7, -5, 5], lm_formsoffice: [-7.5, 7.5, -5.5, 5.5], lm_pizzacounter: [-5, 5, -3, 3], snakehut: [-2.8, 2.8, -2.8, 2.8], lm_snakeclub: [-7.5, 7.5, -5, 5], lm_dinocouncil: [-9, 9, -9, 9],
-    lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5],
+    lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5], schoolbus: [-1.25, 1.25, -4.4, 5.6], ambulance: [-1.15, 1.15, -4.0, 4.3],
   };
   for (const k in BOX) if (MM.PROPS[k]) MM.PROPS[k].box = BOX[k];
   // Rick's garage is open: three walls and the front either side of the big door (and the
@@ -1276,6 +1405,13 @@
   MM.PROPS.lm_garage.walls = [[-4.5, -4.5, 4.5, -4.5], [-4.5, -4.5, -4.5, 4.5], [4.5, -4.5, 4.5, 4.5], [-4.5, 4.5, -3.4, 4.5], [2.2, 4.5, 3.05, 4.5], [4.15, 4.5, 4.5, 4.5]];
   delete MM.PROPS.lm_garage.box;
   MM.PROPS.lm_garage.boxR = 6.4;
+  // The Smiths' back yard: a brick wall round three sides (the house and the garage close the
+  // fourth), the shed in the corner and the big tree over the graves. Front = toward the house.
+  MM.PROPS.lm_backyard.walls = [[-13.5, -8.5, 13.5, -8.5], [-13.5, -8.5, -13.5, 8.0], [13.5, -8.5, 13.5, 8.9],
+    [-10, -6.8, -7, -6.8], [-10, -6.8, -10, -4.2], [-7, -6.8, -7, -4.2], [-10, -4.2, -7, -4.2],   // the shed
+    [9.3, -6.2, 9.7, -6.2], [9.3, -5.8, 9.7, -5.8], [9.3, -6.2, 9.3, -5.8], [9.7, -6.2, 9.7, -5.8]];   // the tree
+  MM.PROPS.lm_backyard.boxR = 16.3;
+  MM.PROPS.lm_backyard.noTop = true;   // the walls stop you, but there is nothing to stand on
 
   // How far from its centre a prop can block (its circle, or its box's far corner).
   MM.propReach = p => { const T = MM.PROPS[p.type]; if (T.walls) return T.boxR * (p.s || 1); if (!T.box) return p.r; if (!T.boxR) { const [x0, x1, z0, z1] = T.box; T.boxR = Math.hypot(Math.max(-x0, x1), Math.max(-z0, z1)); } return T.boxR * (p.s || 1); };
@@ -1309,10 +1445,14 @@
     return [x, z];
   };
   // Inside walls of a room (segments [x1, z1, x2, z2]): push a circle of radius rad out of them.
-  MM.collideWalls = function (dimId, x, z, rad) {
+  // Walls can belong to one floor of a house: [x1, z1, x2, z2, yFrom, yTo] only stops you
+  // while your feet are between yFrom and yTo (y left out: every wall counts).
+  MM.collideWalls = function (dimId, x, z, rad, y) {
     const W = MM.DIM_BY_ID[dimId].walls;
     if (!W) return [x, z];
-    for (const [x1, z1, x2, z2] of W) {
+    for (const w of W) {
+      if (w.length > 4 && y !== undefined && (y < w[4] || y >= w[5])) continue;
+      const [x1, z1, x2, z2] = w;
       const dx = x2 - x1, dz = z2 - z1, l2 = dx * dx + dz * dz || 1;
       const t = Math.max(0, Math.min(1, ((x - x1) * dx + (z - z1) * dz) / l2));
       const px = x1 + dx * t, pz = z1 + dz * t, ex = x - px, ez = z - pz, d2 = ex * ex + ez * ez, m = rad + 0.12;
@@ -1324,6 +1464,27 @@
     }
     return [x, z];
   };
+  // Houses with an upstairs (dim.floors: { y, hole: [x0, z0, x1, z1], stair: { x0, x1, z0, z1 } }):
+  // the floor you stand on at (x, z) for feet at y. The stair climbs from z0 (bottom) to z1
+  // (top, at the upper floor); the upper floor covers the house except the stairwell.
+  MM.floorAt = function (dimId, x, z, y) {
+    const D = MM.DIM_BY_ID[dimId], Fl = D && D.floors;
+    let g = MM.heightAt(dimId, x, z);
+    if (!Fl) return g;
+    const S = Fl.stair;
+    if (x > S.x0 && x < S.x1 && z > Math.min(S.z0, S.z1) - 0.05 && z < Math.max(S.z0, S.z1) + 0.05) {
+      const h = Math.max(0, Math.min(1, (z - S.z0) / (S.z1 - S.z0))) * Fl.y;
+      if (y >= h - 0.6) g = Math.max(g, h);
+    }
+    const H = Fl.hole;
+    if (y >= Fl.y - 0.6 && !(x > H[0] && x < H[2] && z > H[1] && z < H[3])) g = Math.max(g, Fl.y);
+    return g;
+  };
+  // Which floor you are on (0 downstairs, 1 upstairs).
+  MM.levelAt = (dimId, y) => { const Fl = MM.DIM_BY_ID[dimId].floors; return Fl && y > Fl.y * 0.55 ? 1 : 0; };
+  // A landmark upstairs (l.fy) only counts when you are up there too.
+  MM.sameFloor = (l, y) => l.fy === undefined || y === undefined || Math.abs(y - l.fy) < 2.6;
+
   // Props by 24 m grid cell, so collisions only look at what is near (Earth has well over a
   // thousand props). A prop sits in every cell its reach touches.
   const gridCache = {}, GRID = 24;
@@ -1463,12 +1624,27 @@
     MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
     return d;
   }
+  // Every Earth has its own Atlantis (with its own Mr. Nimbus) under its sea: atl_<earth>.
+  function ensureAtlantis(id) {
+    const earth = id.slice(4), E = byId[earth] || (MM.HOME_RE.test(earth) ? MM.ensureHomeDim(earth) : null), B = byId.atlantis;
+    if (!E || MM.worldOf(earth) !== 'earth' || !E.regions) return undefined;
+    const d = {
+      id, variantOf: 'atlantis', shapeOf: 'atlantis', earthOf: earth, name: 'Atlantis (' + E.name + ')', code: 'AT/' + E.code, quirk: 'swim', gravity: B.gravity,
+      blurb: 'The Atlantis under the sea of ' + E.name + ', with its own Mr. Nimbus.',
+      sky: B.sky, fog: B.fog, fogFar: B.fogFar, sun: B.sun, ambient: B.ambient, ground: B.ground, accent: B.accent,
+      extra: [], npc: [['merfolk', 10], ['seamonster', 3], ['nimbus', 1, 0, -30]], pickups: B.pickups, mat: 'c',
+    };
+    MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
+    fillVariant(d);
+    return d;
+  }
   // Looking up a home dimension (or a space) by id makes it (deterministically) the first time.
   const byId = MM.DIM_BY_ID;
   const make = k => {
     if (typeof k !== 'string' || k in byId) return;
     if (MM.HOME_RE.test(k)) MM.ensureHomeDim(k);
     else if (k.startsWith('sp_')) ensureSpaceDim(k);
+    else if (k.startsWith('atl_')) ensureAtlantis(k);
   };
   MM.DIM_BY_ID = new Proxy(byId, {
     get(t, k) { make(k); return t[k]; },

@@ -45,15 +45,17 @@
       ground: ['#5fae3e', '#78c24b', '#4c9636'], accent: '#ffffff',
       props: [['tree', 40], ['hedge', 20]], streets: { grid: 44, extent: 150 }, spawn: { x: 2, z: -3, spread: 5 },
       // Rick's things in his open garage (the interactive ones are landmarks).
-      fixed: [['spacecruiser', -13.0, 33.0, Math.PI / 2, 0.8], ['shelf', -17.2, 27.1, 0], ['washer', -13.4, 27.1, 0], ['curioshelf', -11.6, 35.0, Math.PI]],
+      fixed: [['schoolbus', 40.5, 31, Math.PI], ['ambulance', 40.5, -31, Math.PI], ['spacecruiser', -13.0, 33.0, Math.PI / 2, 0.8], ['shelf', -17.2, 27.1, 0], ['washer', -13.4, 27.1, 0], ['curioshelf', -11.6, 35.0, Math.PI]],
       npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 29.5]], pickups: { s: 18, c: 2 }, mat: 's',
     },
     {
-      id: 'meatlands', flat: 140, name: 'Cronenberged Earth', code: 'PRIME', seed: 4242, gravity: 24, amp: 9, scale: 0.02, quirk: 'regen',
-      blurb: 'The Prime Dimension: Rick\'s love potion turned everyone into Cronenbergs, so he and Morty moved to a replacement Earth. Everything is meat now. It is warm. It is watching.',
+      // The same Earth as C-137, all of it (the suburb, Downtown, D.C., Area 51), after the love
+      // potion: every person a Cronenberg. Only Summer, Beth and Jerry are left of the Smiths.
+      id: 'meatlands', variantOf: 'suburbia', cronen: true, name: 'Cronenberged Earth', code: 'PRIME', quirk: 'regen',
+      blurb: 'The Prime Dimension: Rick\'s love potion turned everyone into Cronenbergs, so he and Morty moved to a replacement Earth. Summer, Beth and Jerry stayed, and went barbarian. Everything is meat now. It is warm. It is watching.',
       sky: ['#3d0a1c', '#c4485f'], fog: '#7a2236', fogFar: 170, sun: '#ffc2b0', ambient: '#b05068',
       ground: ['#c9576b', '#e07a85', '#9c3a4e'], accent: '#fff2c8',
-      props: [['fleshpillar', 40], ['eyestalk', 45], ['bonearch', 12], ['pustule', 40]],
+      extra: [['fleshpillar', 30], ['eyestalk', 40], ['bonearch', 10], ['pustule', 40]],
       npc: [['meatblob', 11], ['fleshmonk', 4]], pickups: { s: 8, g: 14 }, mat: 'g',
     },
     {
@@ -212,8 +214,8 @@
       blurb: "Mr. Nimbus's sunken city. Columns, coral, kelp, and a sea king who very much controls the police.",
       sky: ['#0a3a6a', '#2a8ac8'], fog: '#1a5a8a', fogFar: 150, sun: '#c8f0ff', ambient: '#5aa0d0',
       ground: ['#c8b88a', '#b8a878', '#8aa890'], accent: '#5ff8e0',
-      props: [['coral', 40], ['kelp', 50], ['column', 22], ['shell', 16]],
-      npc: [['merfolk', 12], ['seamonster', 4]], pickups: { c: 10, s: 4 }, mat: 'c',
+      props: [['coral', 40], ['kelp', 50], ['column', 22], ['shell', 16]], earthOf: 'suburbia',
+      npc: [['merfolk', 12], ['seamonster', 4], ['nimbus', 1, 0, -30]], pickups: { c: 10, s: 4 }, mat: 'c',
     },
     {
       id: 'dreamworld', name: 'The Dream World', code: 'ZZZ', seed: 6116, gravity: 16, amp: 9, scale: 0.012, quirk: 'dreamy',
@@ -452,7 +454,11 @@
   // Who lives in a world, and what lies around: a composite world adds each part's own.
   MM.npcListOf = function (dimId) {
     const D = MM.DIM_BY_ID[dimId], out = D.npc.slice();
-    for (const R of D.regions || []) for (const [t, n, x, z] of MM.DIM_BY_ID[R.dim].npc) out.push(x !== undefined ? [t, n, x + R.ox, z + R.oz] : [t, n, R.ox, R.oz, 150]);
+    for (const R of D.regions || []) for (const [t0, n, x, z] of MM.DIM_BY_ID[R.dim].npc) {
+      // On Cronenberged Earth the people of the towns are Cronenbergs too.
+      const t = D.cronen && MM.NPCS[t0] && MM.NPCS[t0].human ? (out.length % 3 ? 'fleshmonk' : 'meatblob') : t0;
+      out.push(x !== undefined ? [t, n, x + R.ox, z + R.oz] : [t, n, R.ox, R.oz, 150]);
+    }
     return out;
   };
   MM.pickupsOf = function (dimId) {
@@ -535,7 +541,7 @@
     W.dims = [W.prime].concat(W.dims || []);
     if (W.dims.length === 1 && !B.interior) {
       const T = PARALLEL[i % PARALLEL.length], t = c => tint(c, T.hue, T.sat, T.light);
-      const d = derive(B, W.prime + '_' + T.k.toLowerCase(), { name: W.name + ' (' + T.label + ')', code: B.code + '/' + T.k, blurb: T.blurb(W.name),
+      const d = derive(B, W.prime + '_' + T.k.toLowerCase(), { name: W.name + ' (' + T.label + ')', code: B.code + '/' + T.k, twist: T.k, blurb: T.blurb(W.name),
         sky: B.sky.map(t), fog: t(B.fog), ground: B.ground.map(t), ambient: t(B.ambient), extra: T.extra || [], npc: T.npc || [] });
       W.dims.push(d.id);
     }
@@ -745,6 +751,8 @@
     plumbuspile: { r: 1.2, h: 1.6, hp: 40, drop: { g: 1, p: 1 } },
     housedoor:   { r: 0.6, h: 2.4, hp: 1e9, drop: {}, fixed: true },
     washer:      { r: 0.75, h: 1.1, hp: 1e9, drop: {}, fixed: true },
+    schoolbus:   { r: 1.4, h: 2.4, hp: 1e9, drop: {}, fixed: true },
+    ambulance:   { r: 1.3, h: 2.4, hp: 1e9, drop: {}, fixed: true },
     bathtub:     { r: 0.9, h: 0.62, hp: 1e9, drop: {}, fixed: true },
     toilet:      { r: 0.4, h: 0.8, hp: 1e9, drop: {}, fixed: true },
     bathsink:    { r: 0.35, h: 0.95, hp: 1e9, drop: {}, fixed: true },
@@ -765,6 +773,8 @@
   //   human: built like a player, from these look options.  fly: hover height.
   //   talk: lines they say. moods: how likely each crazy reaction is (see sim/host.js).
   MM.NPCS = {
+    // Somebody from the cast of this dimension (shared/cast.js): drawn as their character.
+    cast:     { name: 'Someone', hp: 120, speed: 3.0, hostile: false, dmg: 0, drop: {}, r: 0.5, h: 1.9, talk: ['...'], cast: true },
     neighbor: { name: 'Neighbor', hp: 30, speed: 2.5, hostile: false, dmg: 0, drop: { s: 2 }, r: 0.6, h: 1.8,
       human: { species: ['human'], top: ['polo', 'sweater', 'tshirt', 'vest'], acc: ['none', 'none', 'cap'] },
       names: ['Gary', 'Brenda', 'Doug', 'Pam', 'Kevin', 'Linda', 'Todd', 'Marcy', 'Steve', 'Dale'],
@@ -944,6 +954,11 @@
       talk: ['FEE FI FO... no, that is a stereotype. Hello.', 'Watch the stairs. My husband fell down them once and the court case took ages.', 'You are SO tiny. Like a little salt shaker with legs.',
         'Have you seen my fork? It is the size of a house.', 'Morty? Is that you? You owe us for the funeral.'],
       moods: { line: 55, gift: 12, trade: 8, errand: 12, buff: 6, angry: 7 } },
+    nimbus: { name: 'Mr. Nimbus', hp: 260, speed: 3.0, hostile: false, guard: true, dmg: 16, drop: { c: 8, k: 4 }, r: 0.7, h: 2.2, fly: 0.6,
+      human: { species: ['human'], top: ['none'], acc: ['crown'], look: { hair: 'afro', brow: 'angry', mouth: 'grin', face: 'wide', height: 1.3, width: 1.2, head: 1.0,
+        skin: '#f0d2b8', hairColor: '#f6f6f6', topColor: '#f0d2b8', shirtColor: '#f0d2b8', pantsColor: '#2a6a8a', shoeColor: '#2a6a8a', accColor: '#ffd84d' } },
+      names: ['Mr. Nimbus'],
+      talk: ['I control the sea. And the police.', 'Kneel. Or float respectfully. Either is fine.', 'Has Rick sent you? Tell him I want my hand back. Or not. Let him wonder.', 'The ocean is mine. In every dimension. Well, a version of me owns it in each.'] },
     merfolk: { name: 'Atlantean', hp: 40, speed: 3.4, hostile: false, dmg: 0, drop: { c: 2 }, r: 0.6, h: 1.8, fly: 0.6,
       names: ['Coraline', 'Finnley', 'Barnacle Bob', 'Pearl', 'Ripple'],
       talk: ['Mr. Nimbus controls the sea. And the police. Mostly the police.', 'Bubbles mean "hello" here. Or "help". Context.', 'Do not trust the surface. Do not trust Rick. Especially do not trust Rick.', 'Ever seen a sunken city? You are standing in one.'],
@@ -1170,8 +1185,19 @@
       const d = segD(x, z, s);
       if (d < 16) h *= smooth(6, 16, d);
     }
-    return h + smooth(dim.bound - 30, dim.bound + 10, Math.max(Math.abs(x), Math.abs(z))) * 28;
+    // South (+z): the beach, then the sea. No mountains on that side.
+    if (z > MM.BEACH_Z - 40) {
+      const k = smooth(MM.BEACH_Z - 40, MM.BEACH_Z, z);
+      h += (0.4 - h) * k;
+      if (z > MM.SEA_Z) h = 0.4 - Math.min(16, (z - MM.SEA_Z) * 0.16) + Math.sin(x * 0.05) * 0.3 * smooth(MM.SEA_Z, MM.SEA_Z + 40, z);
+    }
+    return h + smooth(dim.bound - 30, dim.bound + 10, Math.max(Math.abs(x), -z)) * 28;
   }
+  // Every Earth's coast: sand from BEACH_Z, the water's edge at SEA_Z, the surface at SEA_LEVEL.
+  // Dive deep enough out there and you are in that Earth's Atlantis.
+  MM.BEACH_Z = 300; MM.SEA_Z = 345; MM.SEA_LEVEL = -0.8; MM.DIVE_DEPTH = -3;
+  MM.inSea = (dimId, x, z) => { const D = MM.DIM_BY_ID[dimId]; return !!(D && D.regions && z > MM.SEA_Z + 4); };
+  MM.atlantisOf = earth => earth === 'suburbia' ? 'atlantis' : 'atl_' + earth;
   function segD(x, z, s) {
     const dx = s[2] - s[0], dz = s[3] - s[1], l2 = dx * dx + dz * dz || 1;
     const t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / l2));
@@ -1293,6 +1319,7 @@
         if (comp) {
           const at = MM.regionAt(dimId, x, z);
           if (at.R) continue;
+          if (z > MM.BEACH_Z - 20) continue;   // the beach and the sea stay clear
           if (MM.EARTH_LINKS.some(q => segD(x, z, q) < 8 + t.r * s)) continue;
           if (Math.max(Math.abs(x), Math.abs(z)) < 150 && dim.streets && (onRoad(x) || onRoad(z))) continue;
         } else if (dim.streets && (onRoad(x) || onRoad(z))) continue;
@@ -1370,7 +1397,7 @@
     lm_mall: [-11.5, 11.5, -7.25, 10.6], lm_shoneys: [-5.9, 5.9, -4.4, 4.6], lm_needful: [-4.25, 4.25, -4.25, 4.7], lm_wong: [-5.7, 5.7, -4.7, 5.2],
     lm_tvstore: [-5.2, 5.2, -4.2, 4.35], lm_whitehouse: [-12.3, 12.3, -5.8, 9.6], lm_capitol: [-15.5, 15.5, -7.5, 9.5], lm_sonicstage: [-9, 9, -5, 5],
     lm_hangar: [-7.6, 7.6, -9, 9.2], traincar: [-1.6, 1.6, -8.4, 8.4], lm_raidergarage: [-7, 7, -5, 5], lm_formsoffice: [-7.5, 7.5, -5.5, 5.5], lm_pizzacounter: [-5, 5, -3, 3], snakehut: [-2.8, 2.8, -2.8, 2.8], lm_snakeclub: [-7.5, 7.5, -5, 5], lm_dinocouncil: [-9, 9, -9, 9],
-    lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5],
+    lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5], schoolbus: [-1.25, 1.25, -4.4, 5.6], ambulance: [-1.15, 1.15, -4.0, 4.3],
   };
   for (const k in BOX) if (MM.PROPS[k]) MM.PROPS[k].box = BOX[k];
   // Rick's garage is open: three walls and the front either side of the big door (and the
@@ -1597,12 +1624,27 @@
     MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
     return d;
   }
+  // Every Earth has its own Atlantis (with its own Mr. Nimbus) under its sea: atl_<earth>.
+  function ensureAtlantis(id) {
+    const earth = id.slice(4), E = byId[earth] || (MM.HOME_RE.test(earth) ? MM.ensureHomeDim(earth) : null), B = byId.atlantis;
+    if (!E || MM.worldOf(earth) !== 'earth' || !E.regions) return undefined;
+    const d = {
+      id, variantOf: 'atlantis', shapeOf: 'atlantis', earthOf: earth, name: 'Atlantis (' + E.name + ')', code: 'AT/' + E.code, quirk: 'swim', gravity: B.gravity,
+      blurb: 'The Atlantis under the sea of ' + E.name + ', with its own Mr. Nimbus.',
+      sky: B.sky, fog: B.fog, fogFar: B.fogFar, sun: B.sun, ambient: B.ambient, ground: B.ground, accent: B.accent,
+      extra: [], npc: [['merfolk', 10], ['seamonster', 3], ['nimbus', 1, 0, -30]], pickups: B.pickups, mat: 'c',
+    };
+    MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
+    fillVariant(d);
+    return d;
+  }
   // Looking up a home dimension (or a space) by id makes it (deterministically) the first time.
   const byId = MM.DIM_BY_ID;
   const make = k => {
     if (typeof k !== 'string' || k in byId) return;
     if (MM.HOME_RE.test(k)) MM.ensureHomeDim(k);
     else if (k.startsWith('sp_')) ensureSpaceDim(k);
+    else if (k.startsWith('atl_')) ensureAtlantis(k);
   };
   MM.DIM_BY_ID = new Proxy(byId, {
     get(t, k) { make(k); return t[k]; },
