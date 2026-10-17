@@ -104,6 +104,7 @@
         if (at && spread) [at.x, at.z] = MM.collideProps(this.dimId, at.x, at.z, 0.8, null);
         this.spawnNpc(type, false, at ? { at } : null);
       }
+      if (idx === 0) host.castHere(this);   // this dimension's own people (shared/cast.js)
       this.pickupSet = MM.pickupsOf(this.dimId);
       for (const k in this.pickupSet) for (let i = 0; i < this.pickupSet[k]; i++) this.spawnPickup(k, false);
       for (let i = MM.curioCount(this.dimId); i > 0; i--) this.spawnPickup('q:' + MM.pickCurio(this.dimId), false);
@@ -124,7 +125,28 @@
       if (announce) this.ev({ k: 'npc+', n: this.npcRow(n) });
       return n;
     }
-    npcRow(n) { return [n.id, n.type, r2(n.x), r2(n.y), r2(n.z), r2(n.r), Math.round(n.hp / n.T.hp * 100), n.seed, n.name]; }
+    npcRow(n) { const r = [n.id, n.type, r2(n.x), r2(n.y), r2(n.z), r2(n.r), Math.round(n.hp / n.T.hp * 100), n.seed, n.name]; if (n.cast) r.push(n.cast.arch, n.cast.origin, n.ship ? 1 : 0); return r; }
+    // One of the cast, here as a local (until a player takes them over).
+    spawnCastNpc(rec, at, announce) {
+      if (!at) {
+        // The Smiths are at home (Rick in his garage); everyone else somewhere around.
+        const l = MM.LANDMARKS.find(q => q.dim === this.dimId && MM.isAt(q, rec.arch === 'genius' ? 'garage' : 'home'));
+        if (l && MM.EARTH_ARCHS.includes(rec.arch)) {
+          // In front of it (its front faces rot), out of its walls.
+          const r = l.rot !== undefined ? l.rot : 0, d = (l.r || 5) + 2 + Math.random() * 3, side = (Math.random() - 0.5) * 6;
+          at = { x: l.x + Math.sin(r) * d + Math.cos(r) * side, z: l.z + Math.cos(r) * d - Math.sin(r) * side };
+          if (rec.arch === 'genius') at = { x: l.x + Math.sin(r) * 2 + Math.cos(r) * side * 0.4, z: l.z + Math.cos(r) * 2 - Math.sin(r) * side * 0.4 };   // in his garage
+          [at.x, at.z] = MM.collideProps(this.dimId, at.x, at.z, 0.8, null);
+        }
+      }
+      const n = this.spawnNpc('cast', false, at ? { at } : null);
+      n.cast = rec; n.name = MM.castLabel(rec.arch, rec.origin);
+      if (at && at.y !== undefined) n.y = at.y;
+      if (at) n.home = { x: n.x, z: n.z, y: n.y };
+      rec.npc = { inst: this, id: n.id };
+      if (announce) this.ev({ k: 'npc+', n: this.npcRow(n) });
+      return n;
+    }
 
     spawnPickup(kind, announce, at, count) {
       const s = at || MM.randomSpot(this.dimId, Math.random, 12, 165);
@@ -144,9 +166,10 @@
         pickups: [...this.pickups.values()].map(pk => [pk.id, pk.c, r2(pk.x), r2(pk.y), r2(pk.z), pk.n]),
         npcs: [...this.npcs.values()].map(n => this.npcRow(n)),
         portals: [...this.portals.values()].map(po => this.portalRow(po)),
-        turrets: [...this.turrets.values()].map(t => [t.id, t.owner, r2(t.x), r2(t.y), r2(t.z)]),
+        turrets: [...this.turrets.values()].map(t => [t.id, t.owner, r2(t.x), r2(t.y), r2(t.z), t.big ? 1 : 0]),
         pairs: [...this.players.values()].flatMap(p => (p.pp || []).map((P, c) => P ? Object.assign({ o: p.id, c }, P) : null).filter(Boolean)),
         event: this.event ? { name: this.event.E.name, text: this.event.E.text, left: r2(this.event.until - this.host.time) } : null,
+        house: this.host.houseRow(this),
       };
     }
     portalRow(po) { return { id: po.id, x: r2(po.x), y: r2(po.y), z: r2(po.z), r: r2(po.r), d: po.destDim, col: po.col, st: po.st || 'swirl', ttl: r2(po.until - this.host.time) }; }
@@ -157,6 +180,7 @@
       this.tickProjectiles(dt, now);
       this.tickNpcs(dt, now);
       this.tickTurrets(dt, now);
+      if (this.house) this.host.tickHouse(this, now);
       this.tickPortals(now);
       if (this.players.size) this.tickEvents(now);
       // Props grow back a minute after they are destroyed.
@@ -234,6 +258,10 @@
         pr.life -= dt;
         let hit = null;
         const shooter = pr.owner ? this.host.players.get(pr.owner) : null;
+        if (this.house && this.house.shield > now && !MM.inHouse(ox, oz) && MM.inHouse(pr.x, pr.z) && !(shooter && this.host.houseAllows(this, shooter))) {
+          this.ev({ k: 'hit', id: pr.id, x: r2(pr.x), y: r2(pr.y), z: r2(pr.z) });
+          continue;
+        }
         for (const p of this.players.values()) {
           if (p.dead || p.id === pr.owner || (shooter && !this.host.canHurt(shooter, p))) continue;   // shots pass through people not fighting
           const s = this.host.scaleOf(p);
@@ -352,7 +380,8 @@
       let i = 0;
       for (const k in n.T.drop) this.spawnPickup(k, true, { x: n.x + (i++ - 0.5) * 1.4, z: n.z }, n.T.drop[k]);
       if (owner) { owner.prog.chaos += 2; this.host.progress(owner, 'kill', n.type); }
-      if (!n.temp) {
+      if (n.cast) { n.cast.npc = null; n.cast.downUntil = this.host.time + 90; n.cast.at = n.cast.origin; }
+      else if (!n.temp) {
         const type = n.type;
         this.host.later(25, () => { if (this.host.instances.get(this.key) === this) this.spawnNpc(type, true); });
       }
@@ -370,39 +399,84 @@
       return !p.dead && p.arch !== 'joe' && now >= p.fx.sob && now >= p.fx.prot && now >= p.fx.cloak;
     }
 
+    // A traveller of the cast on their way out (walking into their portal, or taking off) or
+    // coming in to land. True when that is all they do this tick.
+    castStep(n, dt, now) {
+      const L = n.leave;
+      if (L && L.kind === 'portal') {
+        const dx = L.x - n.x, dz = L.z - n.z, l = Math.hypot(dx, dz);
+        if (l < 1.2 || now > L.until) { this.castLeave(n); return true; }
+        const step = Math.min(l, n.T.speed * 1.3 * dt);
+        n.x += dx / l * step; n.z += dz / l * step; n.r = Math.atan2(dx, dz);
+        n.y = MM.heightAt(this.dimId, n.x, n.z);
+        return true;
+      }
+      if (L) { n.y += 10 * dt; if (now > L.until) this.castLeave(n); return true; }
+      if (n.land) {
+        const g = MM.heightAt(this.dimId, n.x, n.z);
+        n.y = Math.max(g, n.y - 9 * dt);
+        if (n.y <= g + 0.01) { n.land = false; if (n.ship) { n.ship = false; this.ev({ k: 'nship', n: n.id, on: 0 }); } }
+        return true;
+      }
+      return false;
+    }
+    castLeave(n) {
+      if (!this.npcs.has(n.id)) return;
+      this.npcs.delete(n.id);
+      this.ev({ k: 'npc-', id: n.id });
+      const L = n.leave, P = L.pair;
+      const at = P ? { x: P.b.x + Math.sin(P.b.r) * 2 + (Math.random() - 0.5), z: P.b.z + Math.cos(P.b.r) * 2 + (Math.random() - 0.5), inst: P.dest } : null;
+      this.host.castMove(n.cast, L.dest, L.kind, at);
+    }
+
     tickNpcs(dt, now) {
       for (const n of this.npcs.values()) {
         const T = n.T;
+        if ((n.leave || n.land) && this.castStep(n, dt, now)) continue;
         let goal = null, speed = T.speed;
         const owner = n.owner && now < n.ownerUntil ? this.host.players.get(n.owner) : null;
         if (n.owner && !owner) { n.owner = 0; this.ev({ k: 'nfree', n: n.id }); }
         if (now < n.stun || now < n.dance) { n.y = MM.heightAt(this.dimId, n.x, n.z) + (T.fly || 0); continue; }
-        if (owner && owner.inst === this) {
-          // A follower: fight whatever is near its friend, otherwise tag along.
+        if (owner && (owner.inst === this || n.guardAt)) {
+          // A follower: fight whatever is near its friend, otherwise tag along. A guard (the
+          // house's kill bots, drones and plants) keeps to its post and goes for intruders.
+          const post = n.guardAt;
           let best = null, bd = 12 * 12, isNpc = true;
+          if (post && T.speed > 0) for (const p of this.players.values()) {
+            if (p === owner || p.dead || !this.visible(p, now) || this.host.houseAllows(this, p) || !this.host.canHurt(owner, p)) continue;
+            if (!MM.inHouse(p.x, p.z) && dist2(p.x, p.z, post.x, post.z) > 14 * 14) continue;
+            const d = dist2(p.x, p.z, n.x, n.z);
+            if (d < bd * 4) { bd = d; best = p; isNpc = false; }
+          }
+          if (T.voice && now > (n.sayT || 0)) { n.sayT = now + 6 + Math.random() * 4; this.ev({ k: 'say', n: n.id, by: owner.id, text: pick(MM.NPCS.boomdrone.talk).replace('$', n.voice || 'Rick') }); }
           for (const m of this.npcs.values()) {
             if (m === n || !m.T.hostile || (m.owner && now < m.ownerUntil)) continue;
             const d = dist2(m.x, m.z, n.x, n.z);
             if (d < bd) { bd = d; best = m; }
           }
-          for (const p of this.players.values()) {
+          if (!best || isNpc) for (const p of this.players.values()) {
             if (p === owner || !this.visible(p, now) || !this.host.canHurt(owner, p)) continue;
             const d = dist2(p.x, p.z, n.x, n.z);
             if (d < Math.min(bd, 7 * 7)) { bd = d; best = p; isNpc = false; }
           }
+          if (T.decoy) best = null;
           if (best) {
             goal = best; speed *= 1.5;
             if (bd < (T.r + 1.3) ** 2 && now >= n.cd) {
               n.cd = now + 1.0;
               this.ev({ k: 'bite', n: n.id });
-              if (isNpc) this.hurtNpc(best, 8, owner); else this.host.hurtPlayer(this, best, 6, owner, 'follower');
+              if (isNpc) this.hurtNpc(best, T.dmg || 8, owner); else this.host.hurtPlayer(this, best, T.dmg || 6, owner, n.type === 'meeseeks' ? 'follower' : n.type);
             }
-          } else if (dist2(owner.x, owner.z, n.x, n.z) > 9) { goal = { x: owner.x - Math.sin(owner.r) * 2, z: owner.z - Math.cos(owner.r) * 2 }; speed = Math.max(speed, owner.st.speed); }
+          } else if (post) { if (dist2(post.x, post.z, n.x, n.z) > 4) goal = post; }
+          else if (dist2(owner.x, owner.z, n.x, n.z) > 9) { goal = { x: owner.x - Math.sin(owner.r) * 2, z: owner.z - Math.cos(owner.r) * 2 }; speed = Math.max(speed, owner.st.speed); }
         } else if (T.hostile || (n.angry && now < n.angryUntil)) {
           // Monsters mind their own business: they go for you only if you come close
           // (or hit them), and give up once you are well away from their patch.
-          let best = null, bd = MM.AGGRO_RANGE * MM.AGGRO_RANGE;
-          if (n.angry && now < n.angryUntil) { const p = this.host.players.get(n.angry); if (p && p.inst === this && !p.dead) best = p, bd = dist2(p.x, p.z, n.x, n.z); }
+          let best = null, bd = MM.AGGRO_RANGE * MM.AGGRO_RANGE, decoy = null;
+          // A hologram draws them off.
+          for (const m of this.npcs.values()) if (m.T.decoy && now < m.ownerUntil && dist2(m.x, m.z, n.x, n.z) < bd) { decoy = m; break; }
+          if (decoy) { goal = decoy; if (dist2(decoy.x, decoy.z, n.x, n.z) < (T.r + 1.1) ** 2 && now >= n.cd) { n.cd = now + 1.2; this.ev({ k: 'bite', n: n.id }); } }
+          else if (n.angry && now < n.angryUntil) { const p = this.host.players.get(n.angry); if (p && p.inst === this && !p.dead) best = p, bd = dist2(p.x, p.z, n.x, n.z); }
           else if (dist2(n.x, n.z, n.home.x, n.home.z) < MM.LEASH * MM.LEASH) for (const p of this.players.values()) {
             if (!this.visible(p, now)) continue;
             const d = dist2(p.x, p.z, n.x, n.z);
@@ -421,29 +495,55 @@
           const p = this.host.players.get(n.target);
           if (p && p.inst === this) { const dx = n.x - p.x, dz = n.z - p.z, l = Math.hypot(dx, dz) || 1; goal = { x: n.x + dx / l * 5, z: n.z + dz / l * 5 }; speed *= 2; }
         }
+        let wandering = false;
         if (!goal) {
-          if (now >= n.wait && dist2(n.x, n.z, n.tx, n.tz) < 1) {
-            n.wait = now + 1 + Math.random() * 4;
-            const a = Math.random() * 6.28, d = 4 + Math.random() * 14;
-            n.tx = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, n.home.x + Math.cos(a) * d));
-            n.tz = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, n.home.z + Math.sin(a) * d));
+          if (now >= n.wait && (dist2(n.x, n.z, n.tx, n.tz) < 1 || n.stuck > 1)) {
+            // Somewhere to walk to that you can actually get to (a few tries at a clear line),
+            // then stand a while looking about: at someone close by, or just around.
+            n.wait = now + 1.5 + Math.random() * 5; n.stuck = 0;
+            const lim = this.dim.interior ? MM.boundOf(this.dimId) - 1 : MM.boundOf(this.dimId) - 25, limZ = this.dim.interior ? MM.boundZOf(this.dimId) - 1 : MM.boundZOf(this.dimId) - 25;
+            const reach = this.dim.interior ? 6 : n.cast ? 12 : 16;
+            for (let t = 0; t < 6; t++) {
+              const a = Math.random() * 6.28, d = 3 + Math.random() * reach;
+              const tx = Math.max(-lim, Math.min(lim, n.home.x + Math.cos(a) * d)), tz = Math.max(-limZ, Math.min(limZ, n.home.z + Math.sin(a) * d));
+              if (this.clearPath(n.x, n.z, tx, tz, T.r) || t === 5) { n.tx = tx; n.tz = tz; break; }
+            }
+            let look = null, ld = 8 * 8;
+            for (const p of this.players.values()) { const d = dist2(p.x, p.z, n.x, n.z); if (d < ld) { ld = d; look = p; } }
+            n.r = look ? Math.atan2(look.x - n.x, look.z - n.z) : n.r + (Math.random() - 0.5) * 2.5;
           }
-          if (now >= n.wait) goal = { x: n.tx, z: n.tz };
+          if (now >= n.wait) { goal = { x: n.tx, z: n.tz }; wandering = true; }
         }
         if (goal) {
           const dx = goal.x - n.x, dz = goal.z - n.z, l = Math.hypot(dx, dz);
           if (l > 0.3) {
-            const step = Math.min(l, speed * dt);
+            const step = Math.min(l, speed * dt), ox = n.x, oz = n.z;
             let nx = n.x + dx / l * step, nz = n.z + dz / l * step;
             [nx, nz] = MM.collideProps(this.dimId, nx, nz, T.r, null);
             [nx, nz] = MM.collideWalls(this.dimId, nx, nz, T.r);
             const lim = MM.boundOf(this.dimId) - (this.dim.interior ? 0.8 : 15), limZ = MM.boundZOf(this.dimId) - (this.dim.interior ? 0.8 : 15);
             n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-limZ, Math.min(limZ, nz));
-            n.r = Math.atan2(dx, dz);
+            // Walking into a wall: after a moment, give up and go somewhere else.
+            const moved = Math.hypot(n.x - ox, n.z - oz);
+            if (wandering && moved < step * 0.3) n.stuck = (n.stuck || 0) + dt; else n.stuck = 0;
+            if (moved > 1e-3) n.r = Math.atan2(n.x - ox, n.z - oz);
           }
         }
         n.y = MM.heightAt(this.dimId, n.x, n.z) + (T.fly ? T.fly + Math.sin(now * 1.3 + n.id) * 0.8 : 0);
       }
+    }
+
+    // Can something of radius r walk straight from (x1, z1) to (x2, z2)?
+    clearPath(x1, z1, x2, z2, r) {
+      const l = Math.hypot(x2 - x1, z2 - z1), steps = Math.max(2, Math.ceil(l / 1.5));
+      for (let i = 1; i <= steps; i++) {
+        const x = x1 + (x2 - x1) * i / steps, z = z1 + (z2 - z1) * i / steps;
+        const [px, pz] = MM.collideProps(this.dimId, x, z, r, null);
+        if (Math.abs(px - x) + Math.abs(pz - z) > 0.05) return false;
+        const [wx, wz] = MM.collideWalls(this.dimId, x, z, r);
+        if (Math.abs(wx - x) + Math.abs(wz - z) > 0.05) return false;
+      }
+      return true;
     }
 
     // ----- Turrets -----
@@ -458,18 +558,20 @@
           const d = dist2(p.x, p.z, t.x, t.z);
           if (d < bd) { bd = d; best = p; isNpc = false; }
         }
+        const reach = t.big ? 45 : 26;
+        if (bd === 26 * 26) bd = reach * reach;
         for (const n of this.npcs.values()) {
-          if (!n.T.hostile) continue;
+          if (!n.T.hostile || (n.owner && now < n.ownerUntil)) continue;
           const d = dist2(n.x, n.z, t.x, t.z);
           if (d < bd) { bd = d; best = n; isNpc = true; }
         }
         if (!best) continue;
-        t.cd = now + 0.45;
+        t.cd = now + (t.big ? 1.2 : 0.45);
         const ty = isNpc ? best.y + best.T.h / 2 : best.y + 1;
         const ox = t.x, oy = t.y + 1.3, oz = t.z;
         const dx = best.x - ox, dy = ty - oy, dz = best.z - oz, l = Math.hypot(dx, dy, dz) || 1;
         t.aim = Math.atan2(dx, dz);
-        this.host.fireProjectile(this, { owner: t.owner, kind: 'turret', x: ox + dx / l, y: oy + dy / l, z: oz + dz / l, dx: dx / l, dy: dy / l, dz: dz / l, speed: 55, range: 30, dmg: 6 });
+        this.host.fireProjectile(this, { owner: t.owner, kind: 'turret', x: ox + dx / l, y: oy + dy / l, z: oz + dz / l, dx: dx / l, dy: dy / l, dz: dz / l, speed: t.big ? 70 : 55, range: t.big ? 50 : 30, dmg: t.big ? 18 : 6 });
       }
     }
 
@@ -479,6 +581,7 @@
         if (now >= po.until) { this.portals.delete(po.id); this.ev({ k: 'po-', id: po.id }); continue; }
         for (const p of [...this.players.values()]) {
           if (p.dead || now < p.portalCool) continue;
+          if (p.arch === 'tommy' && !po.chalk) continue;   // only a chalk door lets Tommy through
           if (dist2(p.x, p.z, po.x, po.z) < (MM.PORTAL_RADIUS + (p.ship ? 1.2 : 0)) ** 2 && p.y < po.y + 3.5 && p.y > po.y - 1.5) {
             const dest = this.host.instances.get(po.destKey);
             const exit = dest && dest.portals.get(po.link);
@@ -524,6 +627,7 @@
       this.nextId = 1;
       this.nextEnt = 1;
       this.timers = [];
+      this.cast = new Map();          // castKey -> { arch, origin, at, npc, player, next, downUntil }
       for (const d of MM.DIMS) this.instance(d.id, 0);
     }
 
@@ -546,6 +650,84 @@
       }
     }
 
+    // ----- The cast (shared/cast.js) -----
+    castRec(arch, origin) {
+      const key = MM.castKey(arch, origin);
+      let rec = this.cast.get(key);
+      if (!rec) { rec = { key, arch, origin, at: origin, npc: null, player: 0, next: this.time + 40 + Math.random() * 140, downUntil: 0 }; this.cast.set(key, rec); }
+      return rec;
+    }
+    castNpc(rec) {
+      if (!rec.npc) return null;
+      const inst = rec.npc.inst, n = this.instances.get(inst.key) === inst && inst.npcs.get(rec.npc.id);
+      if (!n) rec.npc = null;
+      return n || null;
+    }
+    // A dimension's first copy opens: its own people, and anyone visiting.
+    castHere(inst) {
+      for (const arch of MM.castOf(inst.dimId)) this.castRec(arch, inst.dimId);
+      for (const rec of this.cast.values()) if (rec.at === inst.dimId && !rec.player && !this.castNpc(rec) && this.time >= rec.downUntil) inst.spawnCastNpc(rec, null, false);
+    }
+    castUnspawn(rec) {
+      const n = this.castNpc(rec);
+      if (n) { rec.npc.inst.npcs.delete(n.id); rec.npc.inst.ev({ k: 'npc-', id: n.id }); }
+      rec.npc = null;
+    }
+    // Somewhere else now: there as a local if that place is open (arriving the way they left).
+    castMove(rec, dest, via, at) {
+      rec.at = dest; rec.npc = null;
+      rec.next = this.time + (dest === rec.origin ? 90 + Math.random() * 150 : 50 + Math.random() * 100);
+      const inst = at && at.inst || this.instances.get(dest + '#0');
+      if (!inst || rec.player) return;
+      const spot = at || MM.spawnPoint(dest);
+      const n = inst.spawnCastNpc(rec, { x: spot.x, z: spot.z }, false);
+      if (via === 'ship' || via === 'fly') { n.y += 45; n.land = true; n.ship = via === 'ship'; }
+      inst.ev({ k: 'npc+', n: inst.npcRow(n) });
+    }
+    // Where a traveller goes next: home if away; otherwise somewhere they can get to.
+    castDest(rec) {
+      if (rec.at !== rec.origin) return rec.origin;
+      const kind = MM.CAST_TRAVEL[rec.arch], here = MM.DIM_BY_ID[rec.at];
+      const ok = id => { const D = MM.DIM_BY_ID[id]; return id !== rec.at && D && !D.hidden && !D.pocket && !D.interior && !D.planets && (!D.outsideCurve || rec.arch === 'evilmorty'); };
+      let list = kind === 'portal' ? MM.WORLD_IDS.filter(ok) : MM.WORLD_IDS.filter(id => ok(id) && here.space && MM.DIM_BY_ID[id].space === here.space);
+      return list.length ? pick(list) : null;
+    }
+    // Every few seconds: the travellers go places. Where someone can see them, they open a
+    // portal and walk through it (Morty goes along with his Rick), or take off; where nobody is
+    // looking, they just go.
+    castTick() {
+      const now = this.time;
+      for (const rec of this.cast.values()) {
+        if (rec.player) continue;
+        const n = this.castNpc(rec);
+        if (!n) {
+          // Back on their feet a while after being knocked out, wherever they were.
+          if (!rec.npc && now >= rec.downUntil && rec.downUntil) { rec.downUntil = 0; const inst = this.instances.get(rec.at + '#0'); if (inst) { const m = inst.spawnCastNpc(rec, null, false); inst.ev({ k: 'npc+', n: inst.npcRow(m) }); } }
+          continue;
+        }
+        const kind = MM.CAST_TRAVEL[rec.arch];
+        if (!kind || kind === 'tag' || now < rec.next || n.leave) continue;
+        const dest = this.castDest(rec);
+        if (!dest) { rec.next = now + 120; continue; }
+        const inst = rec.npc.inst, seen = inst.players.size > 0;
+        if (kind === 'portal') {
+          const col = MM.castLook(rec.arch, rec.origin).portalColor;
+          const r = n.r, x = n.x + Math.sin(r) * 3, z = n.z + Math.cos(r) * 3;
+          const pair = seen ? this.openPortalPair(inst, x, z, r + Math.PI, dest, col, 0) : null;
+          const go = m => { m.leave = { kind, x, z, until: now + 6, dest, pair }; };
+          go(n);
+          // Morty goes with his Rick, if he is nearby.
+          if (rec.arch === 'genius') for (const m of inst.npcs.values()) if (m.cast && m.cast.arch === 'sidekick' && m.cast.origin === rec.origin && !m.cast.player && dist2(m.x, m.z, n.x, n.z) < 20 * 20) go(m);
+          if (!seen) for (const m of [...inst.npcs.values()]) if (m.leave && m.leave.dest === dest) inst.castLeave(m);
+        } else {
+          n.leave = { kind, until: now + (seen ? 4.5 : 0), dest };
+          n.ship = kind === 'ship';
+          if (seen) inst.ev({ k: 'nship', n: n.id, on: n.ship ? 1 : 0 });
+          else inst.castLeave(n);
+        }
+      }
+    }
+
     // ----- Connections -----
     connect(conn, meta) {
       const buckets = {};
@@ -562,6 +744,13 @@
       if (!p) return;
       this.save(p);
       if (p.token && this.tokens.get(p.token) === p) this.tokens.delete(p.token);
+      if (p.cast && p.cast.player === p.id) {
+        // The character carries on without you, where you left them.
+        const rec = p.cast, D = p.inst && p.inst.dim;
+        rec.player = 0;
+        if (D && !D.interior && !D.hidden && !D.planets && !p.dead) { rec.at = p.inst.dimId; rec.npc = null; const n = p.inst.spawnCastNpc(rec, { x: p.x, z: p.z }, false); p.inst.ev({ k: 'npc+', n: p.inst.npcRow(n) }); }
+        else { rec.at = rec.origin; const inst = this.instances.get(rec.origin + '#0'); if (inst) { const n = inst.spawnCastNpc(rec, null, false); inst.ev({ k: 'npc+', n: inst.npcRow(n) }); } }
+      }
       if (p.inst) { p.inst.players.delete(p.id); p.inst.ev({ k: 'leave', id: p.id }); p.inst.emptySince = this.time; }
       this.leaveTeam(p);
       this.players.delete(p.id);
@@ -607,6 +796,8 @@
         case 'rs': this.onRespawn(p); break;
         case 'pi': this.send(p, { t: 'pong', c: m.c }); break;
         case 'use': this.onUse(p, m.l, m.task); break;
+        case 'hd': this.onDefense(p, m.o, m.d); break;
+        case 'lk': if (p.wardrobeUntil > this.time) { p.look = MM.sanitizeLook(m.look); p.inst.ev({ k: 'look', id: p.id, look: p.look }); } break;
         case 'talk': this.onTalk(p, m.n); break;
         case 'ans': this.onAnswer(p, m.a); break;
         case 'ship': this.onShip(p, m.on); break;
@@ -639,16 +830,20 @@
       const prog = cleanProgress(m.arch, saved);
       if (prog.inv.grenade === undefined || (!saved && !prog.inv.grenade)) prog.inv.grenade = 1;
       for (const g of MM.GADGET_IDS) if (!prog.inv[g]) prog.inv[g] = prog.inv[g] || 0;
-      // One of each variant: only one Rick C-137 (or Morty Y-231...) at a time. A taken code
-      // gets you a fresh one from the same letter.
+      // One of each character: you take over your dimension's Rick C-137 (or Beth SH-1, or
+      // Birdperson). Taken already? Play one of his clones (weaker, out of the lab under the
+      // garage), or, if you asked for that, the same character from another dimension.
       const asked = MM.sanitizeHome(m.home);
-      let home = asked;
-      const taken = h => [...this.players.values()].some(o => o.arch === m.arch && o.home === h);
-      if (taken(home)) { const L = home.replace(/[^A-Z]/g, '') || 'X'; do home = L + '-' + (1 + Math.floor(Math.random() * 999)); while (taken(home)); }
+      let home = asked, clone = false;
+      const playing = h => { const r = this.cast.get(MM.castKey(m.arch, MM.castHome(m.arch, h))); return !!(r && r.player && this.players.has(r.player)); };
+      if (playing(home)) {
+        if (m.taken === 'other' || c.bot) { const L = home.replace(/[^A-Z]/g, '') || 'X'; let n = 0; do home = L + '-' + (1 + Math.floor(Math.random() * 999)); while (playing(home) && ++n < 200); }
+        else clone = true;
+      }
       const p = {
         id: this.nextId++, conn: c.conn, bot: c.bot, token,
-        name: MM.sanitizeName(m.name), home, look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
-        prog, inv: prog.inv, st: null,
+        name: MM.sanitizeName(m.name), home, clone, look: MM.sanitizeLook(m.look), arch: m.arch, A, pvp: m.pvp !== false,
+        prog, inv: prog.inv, st: null, hacked: {},
         inst: null, ep: 0, x: 0, y: 0, z: 0, r: 0, a: 0, lastSt: this.time, strikes: 0,
         hp: A.hp, maxHp: A.hp, dead: false, respawnAt: 0, ship: false,
         charges: 0, chargeAt: 0,
@@ -664,16 +859,34 @@
       if (token) this.tokens.set(token, p);
       this.send(p, { t: 'hi', id: p.id, name: this.name, cap: this.cap, dims: MM.DIM_IDS, tok: token, you: { name: p.name, home: p.home, arch: p.arch } });
       this.log(`join ${p.name} (${p.id}) as ${p.arch}${p.bot ? ' [bot]' : ''}${saved ? ' (saved progress)' : ''}`);
-      // You start in your own world: the one your character lives in.
-      const starts = MM.startWorlds(m.arch, p.home);
+      // You start in your own world: the one your character lives in. As that dimension's
+      // character, you take over from them where they are.
+      const starts = MM.startWorlds(m.arch, p.home), origin = MM.castHome(m.arch, p.home);
       if (p.home !== asked && !p.bot) this.toast(p, A.name + ' ' + asked + ' is already here, so you are ' + A.name + ' ' + p.home + '.');
+      if (clone) {
+        this.toast(p, MM.castLabel(m.arch, origin) + ' is already being played, so you are one of the clones (a little weaker).');
+        const lab = MM.LANDMARKS.find(l => l.dim === origin && MM.isAt(l, 'trapdoor'));
+        this.travel(p, origin, lab ? { x: lab.x + 1.6, z: lab.z + 0.8 } : null, null, true);
+        return;
+      }
+      const rec = MM.castOf(origin).includes(m.arch) ? this.castRec(m.arch, origin) : null;
+      if (rec) {
+        const n = this.castNpc(rec), D = MM.DIM_BY_ID[rec.at];
+        const asked = m.dim && starts.includes(m.dim) ? m.dim : null;
+        const where = asked || (D && !D.interior && !D.hidden && !D.planets ? rec.at : origin);
+        const at = n && where === rec.at ? { x: n.x, z: n.z } : null, inst = at ? rec.npc.inst : null;
+        this.castUnspawn(rec);
+        rec.player = p.id; p.cast = rec; rec.at = where;
+        this.travel(p, where, at, inst, true);
+        return;
+      }
       this.travel(p, m.dim && starts.includes(m.dim) ? m.dim : starts[0], null, null, true);
     }
 
     restat(p) {
       const old = p.maxHp;
       p.st = MM.statsOf(p.arch, p.prog.up);
-      p.maxHp = p.st.maxHp;
+      p.maxHp = p.clone ? Math.round(p.st.maxHp * MM.CLONE_HP) : p.st.maxHp;
       if (old && p.maxHp > old && !p.dead) p.hp += p.maxHp - old;
       p.hp = Math.min(p.hp, p.maxHp);
       const max = p.st.gun ? p.st.gun.charges : 0;
@@ -683,7 +896,7 @@
 
     info(p) {
       const up = p.prog.up;
-      return { id: p.id, name: p.name, home: p.home, look: p.look, arch: p.arch, bot: p.bot, title: p.prog.title || '',
+      return { id: p.id, name: p.name, home: p.home, clone: p.clone ? 1 : 0, look: p.look, arch: p.arch, bot: p.bot, title: p.prog.title || '',
         gear: { ratsuit: !!up.ratsuit, wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs } };
     }
 
@@ -792,7 +1005,7 @@
     speedOf(p) {
       const now = this.time;
       if (now < p.fx.cuff) return 1;
-      const base = p.ship ? p.st.ship.speed : p.st.speed * (p.st.fly ? 1.35 : 1) * (p.st.sprint || 1);   // the most you can go: sprinting
+      const base = p.ship ? p.st.ship.speed * MM.SHIP_BOOST : p.st.speed * (p.st.fly ? 1.35 : 1) * (p.st.sprint || 1);   // the most you can go: sprinting
       return base * (now < p.fx.sprint ? 1.8 : 1) * (now < p.fx.shrink ? 0.75 : 1) * (now < p.fx.guilt ? 0.6 : 1) * (now < p.fx.daze ? 0.5 : 1);
     }
 
@@ -826,6 +1039,12 @@
       p.x = x; p.y = y; p.z = z; p.r = m.r; p.a = m.a === MM.ANIM.dead ? 0 : m.a;
       p.lastSt = now;
       if (p.race || MM.racesIn(p.inst.dimId).length) this.raceStep(p);
+      // Diving deep off an Earth's beach: down to that Earth's Atlantis.
+      if (!p.ship && !p.dead && p.inst.dim.regions && p.z > MM.SEA_Z + 20 && p.y < MM.SEA_LEVEL + MM.DIVE_DEPTH) {
+        this.travel(p, MM.atlantisOf(p.inst.dimId), { x: (Math.random() - 0.5) * 6, z: 34 });
+        this.toast(p, 'You dived deep, and deeper, and found ' + p.inst.dim.name + '. Mr. Nimbus lives here.');
+        return;
+      }
       // Pick up anything in reach.
       for (const pk of p.inst.pickups.values()) {
         if (dist2(pk.x, pk.z, p.x, p.z) < MM.PICKUP_RADIUS * MM.PICKUP_RADIUS && Math.abs(pk.y - p.y) < 3) {
@@ -942,7 +1161,9 @@
       if (!p.dead || this.time < p.respawnAt) return;
       p.dead = false; p.hp = p.maxHp;
       p.fx = { shield: 0, sprint: 0, sob: 0, shrink: 0, guilt: 0, prot: this.time + MM.SPAWN_PROTECT, daze: 0, cuff: 0, cloak: 0 };
-      const s = MM.spawnPoint(p.inst.dimId);
+      let s = MM.spawnPoint(p.inst.dimId);
+      // A backup body from the cloning vat: you wake up in the garage.
+      if (p.backup && p.backup === p.inst.dimId) { s = { x: -15.6, y: MM.heightAt(p.inst.dimId, -15.6, 27.5), z: 27.5 }; p.backup = null; this.toast(p, 'You wake up in a backup body, in the garage.'); }
       this.teleport(p, s.x, s.y + 0.1, s.z);
       p.inst.ev({ k: 'resp', id: p.id });
       this.dirty(p);
@@ -1069,6 +1290,13 @@
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2 || !MM.sameFloor(l, p.y)) return;
       p.cdUse = this.time + 1;
       if (p.ship && MM.DIM_BY_ID[l.door.dim].interior) { this.toast(p, 'Park your ship first (B).'); return; }
+      // Rick's things answer to their own Rick only (any other Rick has to hack them first).
+      if (this.labClosed(p, l)) return;
+      if (l.rick && !this.rickMay(p, this.earthOfHere(p))) { this.rickRefuse(p, l); return; }
+      // Blast doors: the house's doors only open for whoever put them down (and their team).
+      const Hs = p.inst.house;
+      if (Hs && Hs.doors > this.time && ['home', 'backdoor', 'sidedoor', 'trapdoor'].some(a => MM.isAt(l, a)) && !this.houseAllows(p.inst, p)) { this.toast(p, 'Blast doors. Every door and window of the house is sealed.'); return; }
+      if (p.arch === 'tommy' && l.dim === 'froopy') { this.toast(p, 'The way out will not open for you. Only a magic chalk door, drawn by a Rick (or Evil Morty), can take Tommy out of Froopyland.'); return; }
       const from = p.inst, ox = p.x, oz = p.z;
       // Every Earth shares the insides (the Smith house, Rick's lab...). Remember which Earth you
       // came in from, and the way out takes you back there instead of to C-137.
@@ -1076,8 +1304,9 @@
       let dest = l.door.dim;
       if (to.interior || to.pocket) { if (!(here.interior || here.pocket)) p.doorBack = here.variantOf ? from.dimId : null; }
       else if (p.doorBack && MM.DIM_BY_ID[p.doorBack].variantOf === dest) { dest = p.doorBack; p.doorBack = null; }
+      if (here.earthOf && dest === 'suburbia') dest = here.earthOf;   // up from an Atlantis: its own Earth's beach
       p.inst.ev({ k: 'kiosk', id: p.id });
-      this.travel(p, dest, { x: l.door.x, z: l.door.z });
+      this.travel(p, dest, l.door.y !== undefined ? { x: l.door.x, z: l.door.z, y: l.door.y } : { x: l.door.x, z: l.door.z });
       this.bringTeam(p, from, ox, oz);
     }
 
@@ -1111,6 +1340,7 @@
       inst.portals.set(a.id, a); dest.portals.set(b.id, b);
       inst.ev({ k: 'po+', po: inst.portalRow(a) });
       dest.ev({ k: 'po+', po: dest.portalRow(b) });
+      return { a, b, dest };
     }
 
     // Portal stations: the Citadel's public portals and Federation customs. Pay the fee
@@ -1163,6 +1393,9 @@
       if (p.dead || !p.ship || D.interior || D.planets || now < (p.cdOrbit || 0)) return;
       if (p.y - MM.heightAt(p.inst.dimId, p.x, p.z) < MM.ORBIT_ALT - 40) return;
       p.cdOrbit = now + 3;
+      // Realms (a dream, the Story Train, beyond the Curve...) are not planets: no space above them.
+      const W = MM.WORLD_BY_ID[MM.worldOf(p.inst.dimId)];
+      if (W && W.realm) { this.toast(p, D.name + ' is not a planet: there is no space above it. Use a portal.'); return; }
       const S = MM.spaceDimOf(p.inst.dimId), P = S.planets.find(q => q.dim === p.inst.dimId) || S.planets[0];
       const from = p.inst, ox = p.x, oz = p.z;
       p.inst.ev({ k: 'warp', id: p.id });
@@ -1178,8 +1411,11 @@
       if (p.dead || !p.ship || !S.planets || now < (p.cdOrbit || 0)) return;
       const P = S.planets.find(q => q.dim === d);
       if (!P || Math.hypot(p.x - P.x, p.y - P.y, p.z - P.z) > P.r + 70) return;
-      const home = S.planets[0].dim, sh = p.st.ship, H = MM.DIM_BY_ID[home];
-      const why = d === home ? '' : MM.travelWhy('ship', H.variantOf === 'suburbia' ? 'suburbia' : home, d, { hull: true, engine: sh.engine, drive: sh.drive });
+      // Any planet you can see from here is in your universe: the near ones (the Moon, the
+      // solar system) need only the ship, the far ones across the galaxy the Turbo Engine.
+      const home = S.planets[0].dim, sh = p.st.ship, H = MM.DIM_BY_ID[home], B = MM.DIM_BY_ID[d];
+      const near = (H.near || H.variantOf === 'suburbia' || H.solar) && (B.near || B.shapeOf === 'moon');
+      const why = d === home || near || sh.engine ? '' : 'Your ship needs a Turbo Engine to cross the galaxy.';
       if (why) { p.cdOrbit = now + 2; this.toast(p, why); return; }
       p.cdOrbit = now + 3;
       const sp = MM.spawnPoint(d), from = p.inst, ox = p.x, oz = p.z;
@@ -1208,8 +1444,8 @@
       this.toast(p, 'Lightspeed! ' + MM.DIM_BY_ID[d].name + ' is dead ahead. Fly into it to land.');
     }
 
-    // Ring races (shared/races.js): through the first ring starts the clock, each ring in
-    // order, the last one before time runs out pays (once every MM.RACE_CD seconds).
+    // Ring races (shared/races.js): started at the start pad (raceLobby), then each ring in
+    // order; the last one before time runs out pays (once every MM.RACE_CD seconds).
     raceStep(p) {
       const now = this.time, list = MM.racesIn(p.inst.dimId);
       const near = (R, i) => { const q = MM.ringAt(R, i, p.inst.dimId); return (p.x - q.x) ** 2 + (p.y + 1 - q.y) ** 2 + (p.z - q.z) ** 2 < R.r * R.r; };
@@ -1217,23 +1453,42 @@
       if (p.race) {
         const R = MM.RACE_BY_ID[p.race.id];
         if (!list.includes(R) || !fits(R)) { p.race = null; this.priv(p, { k: 'race', id: null }); this.toast(p, R.name + ': you left the race.'); return; }
-        if (now > p.race.t0 + R.time) { p.race = null; this.priv(p, { k: 'race', id: null }); this.toast(p, R.name + ': out of time. The first ring starts it again.'); return; }
+        if (now > p.race.t0 + R.time) { p.race = null; this.priv(p, { k: 'race', id: null }); this.toast(p, R.name + ': out of time. Meet at the start pad to race again.'); return; }
         if (!near(R, p.race.next)) return;
         p.race.next++;
         if (p.race.next < R.rings.length) { this.priv(p, { k: 'race', id: R.id, next: p.race.next, left: r2(p.race.t0 + R.time - now) }); return; }
         const t = Math.round((now - p.race.t0) * 10) / 10, best = (p.prog.best || (p.prog.best = {}))[R.id], wall = this.wall();
+        const session = p.race.session;
         p.race = null;
         if (!best || t < best) p.prog.best[R.id] = t;
-        const paid = (p.prog.tasks['race_' + R.id] || 0) <= wall;
-        if (paid) { p.prog.tasks['race_' + R.id] = wall + MM.RACE_CD * 1000; for (const k in R.give) p.inv[k] = (p.inv[k] || 0) + R.give[k]; }
-        this.priv(p, { k: 'race', id: null, done: R.id, t, best: p.prog.best[R.id], record: !best || t < best, give: paid ? R.give : null });
+        const place = ++session.place, paid = (p.prog.tasks['race_' + R.id] || 0) <= wall;
+        const give = {};
+        for (const k in R.give) give[k] = R.give[k] * (place === 1 ? 2 : 1);   // the winner takes double
+        if (paid) { p.prog.tasks['race_' + R.id] = wall + MM.RACE_CD * 1000; for (const k in give) p.inv[k] = (p.inv[k] || 0) + give[k]; }
+        this.priv(p, { k: 'race', id: null, done: R.id, t, place, of: session.n, best: p.prog.best[R.id], record: !best || t < best, give: paid ? give : null });
         this.dirty(p);
         return;
       }
-      for (const R of list) if (fits(R) && near(R, 0)) {
-        p.race = { id: R.id, t0: now, next: 1 };
-        this.priv(p, { k: 'race', id: R.id, next: 1, left: R.time });
-        return;
+    }
+    // Races need rivals: two or more people (not bots) standing at a race's start pad together
+    // for three seconds start it for all of them. Nobody racing: no rings.
+    raceLobby() {
+      const now = this.time;
+      for (const inst of this.instances.values()) {
+        const humans = [...inst.players.values()].filter(p => !p.bot && !p.dead && !p.race);
+        inst.lobby = inst.lobby || {};
+        if (humans.length < 2) { inst.lobby = {}; continue; }
+        for (const R of MM.racesIn(inst.dimId)) {
+          const q = MM.ringAt(R, 0, inst.dimId);
+          const here = humans.filter(p => (R.ship ? p.ship : !p.ship) && (p.x - q.x) ** 2 + (p.z - q.z) ** 2 < (R.r + 3) ** 2 && Math.abs(p.y + 1 - q.y) < R.r + 3);
+          if (here.length < 2) { delete inst.lobby[R.id]; continue; }
+          const L = inst.lobby[R.id];
+          if (!L) { inst.lobby[R.id] = { since: now }; for (const p of here) this.toast(p, R.name + ': ' + here.length + ' racers. Starting in 3...'); continue; }
+          if (now - L.since < 3) continue;
+          delete inst.lobby[R.id];
+          const session = { id: R.id, n: here.length, place: 0 };
+          for (const p of here) { p.race = { id: R.id, t0: now, next: 1, session }; this.priv(p, { k: 'race', id: R.id, next: 1, left: R.time, rivals: here.length }); }
+        }
       }
     }
 
@@ -1341,6 +1596,16 @@
         this.fireProjectile(inst, { owner: p.id, kind: 'shrink', x: p.x + m.dx * 0.7, y: p.y + 1.35 + m.dy * 0.7, z: p.z + m.dz * 0.7, dx: m.dx, dy: m.dy, dz: m.dz, speed: 65, range: 70, dmg: 5, rad: 0.35 });
       } else if (g === 'freeze') {
         this.fireProjectile(inst, { owner: p.id, kind: 'freeze', x: p.x + m.dx * 0.7, y: p.y + 1.35 + m.dy * 0.7, z: p.z + m.dz * 0.7, dx: m.dx, dy: m.dy, dz: m.dz, speed: 55, range: 60, dmg: 4, rad: 0.4 });
+      } else if (g === 'chalk') {
+        // A door drawn in magic chalk: into Froopyland, or (there) back to where you came from.
+        if (inst.dim.interior || inst.dim.planets || inst.dim.hidden) { this.toast(p, 'Nowhere to draw a door here. Go outside.'); return; }
+        const out = inst.dimId === 'froopy', dest = out ? (p.chalkFrom && MM.DIM_BY_ID[p.chalkFrom] ? p.chalkFrom : 'suburbia') : 'froopy';
+        if (!out) p.chalkFrom = inst.dimId;
+        let x = p.x + Math.sin(p.r) * 3, z = p.z + Math.cos(p.r) * 3;
+        [x, z] = MM.collideProps(inst.dimId, x, z, 1.2, null);
+        const pair = this.openPortalPair(inst, x, z, p.r + Math.PI, dest, '#f4f4f0', p.id);
+        pair.a.chalk = pair.b.chalk = true; pair.a.st = pair.b.st = 'ring';
+        this.toast(p, out ? 'A chalk door out of Froopyland. Anyone can go through it, even Tommy.' : 'A chalk door into Froopyland. Anyone can follow you.');
       } else if (g === 'meeseeks') {
         this.summonMeeseeks(p, 1, 30);
       } else if (g === 'timecrystal') {
@@ -1373,6 +1638,159 @@
       this.dirty(p);
     }
 
+    // ----- Rick's house: whose it is, hacking it, and its defences (shared/house.js) -----
+    // Which Earth's house you are at: this Earth, or (inside the house, the garage, the lab,
+    // the sublevels) the Earth you came in from.
+    earthOfHere(p) {
+      const D = p.inst.dim;
+      if (D.interior || D.pocket) return p.doorBack || 'suburbia';
+      return MM.worldOf(p.inst.dimId) === 'earth' && !D.timeline ? p.inst.dimId : null;
+    }
+    // Each Earth's house is its own Rick's (C-137's is Rick C-137's; clones count, they are him).
+    rickOwns(p, earth) { return p.arch === 'genius' && !!earth && MM.castHome('genius', p.home) === earth; }
+    rickMay(p, earth) { return this.rickOwns(p, earth) || (p.arch === 'genius' && !!earth && (p.hacked && p.hacked[earth] || 0) > this.time); }
+    // Not yours: anyone but a Rick is told no; another Rick starts hacking (stay close).
+    rickRefuse(p, l) {
+      const earth = this.earthOfHere(p);
+      if (p.arch !== 'genius') { this.toast(p, 'That is Rick\'s. Only a Rick can use it.'); return; }
+      if (p.hack && p.hack.earth === earth) { this.toast(p, 'Still hacking... stay close.'); return; }
+      p.hack = { earth, inst: p.inst, x: p.x, z: p.z, until: this.time + MM.HACK_TIME };
+      this.priv(p, { k: 'hack', t: MM.HACK_TIME });
+      this.toast(p, 'This is another Rick\'s ' + (l ? l.name : 'stuff') + '. Hacking it... stay close for ' + MM.HACK_TIME + ' seconds.');
+      const R = this.cast.get(MM.castKey('genius', earth)), o = R && R.player && this.players.get(R.player);
+      if (o && o !== p) this.toast(o, p.name + ' is hacking your garage!');
+    }
+    tickHack(p) {
+      const H = p.hack;
+      if (!H || this.time < H.until) return;
+      p.hack = null;
+      if (p.dead || p.inst !== H.inst || dist2(p.x, p.z, H.x, H.z) > 4 * 4) { this.toast(p, 'Hack interrupted: you moved away.'); return; }
+      (p.hacked || (p.hacked = {}))[H.earth] = this.time + MM.HACK_FOR;
+      this.toast(p, 'Hacked! Another Rick\'s house is yours to use for ' + Math.round(MM.HACK_FOR / 60) + ' minutes.');
+      this.priv(p, { k: 'hacked' });
+    }
+    // Who the house lets in while its defences are up: whoever put them up, their team, and
+    // anyone (a Rick) with the right to use the house.
+    houseAllows(inst, p) {
+      const H = inst.house;
+      if (!H) return true;
+      if (p.id === H.by) return true;
+      const by = this.players.get(H.by);
+      if (by && by.team && by.team === p.team) return true;
+      return this.rickMay(p, inst.dimId);
+    }
+    // The retracted lab: the garage's things fold into the walls for everyone but the house's people.
+    labClosed(p, l) {
+      const H = p.inst.house;
+      if (!H || !(H.lab > this.time) || !['garage', 'workbench', 'plumbus', 'mbox', 'battery', 'trapdoor', 'housecon'].some(a => MM.isAt(l, a)) || this.houseAllows(p.inst, p)) return false;
+      this.toast(p, 'The lab has folded itself into the walls. Nothing here but a normal garage.');
+      return true;
+    }
+    houseRow(inst) {
+      const H = inst.house, now = this.time, t = v => Math.max(0, r2((v || 0) - now));
+      return H ? { s: t(H.shield), d: t(H.doors), g: t(H.grid), l: t(H.lab), by: H.by } : null;
+    }
+    // "House, forcefield!" At the console, or anywhere near the house if it is your own.
+    onDefense(p, id, d) {
+      const D = MM.DEFENSES[id], now = this.time;
+      if (!D || p.dead || now < (p.cdDef || 0)) return;
+      p.cdDef = now + 0.5;
+      const earth = this.earthOfHere(p);
+      if (!earth) { this.toast(p, 'There is no house of yours here.'); return; }
+      const con = MM.LANDMARKS.find(l => l.dim === p.inst.dimId && MM.isAt(l, 'housecon'));
+      const atCon = con && dist2(con.x, con.z, p.x, p.z) < (con.r + MM.USE_RADIUS + 2) ** 2;
+      const own = this.rickOwns(p, earth);
+      if (!this.rickMay(p, earth)) { if (atCon) this.rickRefuse(p, con); else this.toast(p, 'That is another Rick\'s house.'); return; }
+      const outside = !p.inst.dim.interior && !p.inst.dim.pocket;
+      if (!atCon && !(own && (!outside || MM.inHouse(p.x, p.z) || dist2(p.x, p.z, MM.HOUSE.x, MM.HOUSE.z) < MM.VOICE_RANGE ** 2))) { this.toast(p, 'Go to the console in the garage' + (own ? ', or get closer to the house.' : '.')); return; }
+      // Things that happen to the house need you out at the house; the rest work anywhere.
+      if (D.dur && !outside) { this.toast(p, 'Say it outside, by the house: you are indoors.'); return; }
+      const inst = p.inst;
+      const H = outside ? (inst.house || (inst.house = { by: p.id, cd: {} })) : { cd: p.houseCd || (p.houseCd = {}) };
+      if ((H.cd[id] || 0) > now) { this.toast(p, D.name + ': ready again in ' + Math.ceil(H.cd[id] - now) + ' s.'); return; }
+      H.cd[id] = now + D.cd;
+      if (outside) H.by = p.id;
+      const until = now + D.dur, at = (x, z) => { const [cx, cz] = MM.collideProps(inst.dimId, x, z, 0.8, null); return { x: cx, z: cz }; };
+      const guard = (type, x, z, opts) => {
+        const n = inst.spawnNpc(type, true, { at: at(x, z), until: until + 1 });
+        n.owner = p.id; n.ownerUntil = until; n.guardAt = { x: n.x, z: n.z };
+        Object.assign(n, opts || {});
+        return n;
+      };
+      switch (id) {
+        case 'shield': H.shield = until; break;
+        case 'doors': H.doors = until; break;
+        case 'grid': H.grid = until; break;
+        case 'lab': H.lab = until; break;
+        case 'turrets':
+        case 'cannon': {
+          const g = MM.heightAt(inst.dimId, -13.5, 16.5);
+          const spots = id === 'cannon' ? [[-14.5, 28.55, 6.8]] : [[-18.5, 13, 7.6], [-8.5, 13, 7.6], [-18.5, 20, 7.6], [-8.5, 20, 7.6], [-6.9, 17.1, 3.2]];
+          for (const [x, z, y] of spots) {
+            const t = { id: this.ent(), owner: p.id, x, y: g + y, z, hp: id === 'cannon' ? 200 : 80, until, cd: now + 1, aim: 0, big: id === 'cannon' };
+            inst.turrets.set(t.id, t);
+            inst.ev({ k: 'tu+', t: [t.id, t.owner, r2(t.x), r2(t.y), r2(t.z), t.big ? 1 : 0] });
+          }
+          break;
+        }
+        case 'bots': for (const [x, z] of [[-6, 14], [-6, 22], [-24, 30]]) guard('killbot', x, z); break;
+        case 'drones': for (const [x, z] of [[-10, 10], [-26, 18], [-8, 30]]) guard('boomdrone', x, z, { voice: p.name }); break;
+        case 'plants': for (const [x, z] of [[-26, 16], [-30, 24], [-24, 26], [-34, 18]]) guard('yardplant', x, z); break;
+        case 'holo': guard('hologram', p.x + Math.sin(p.r) * 3, p.z + Math.cos(p.r) * 3, { name: 'Hologram ' + p.name }); break;
+        case 'fungus': {
+          // A fungus clone that copies your voice. Destroy it in time, or it starts eating.
+          const n = inst.spawnNpc('fungusclone', true, { at: at(p.x + Math.sin(p.r) * 3, p.z + Math.cos(p.r) * 3), until: now + 600 });
+          n.name = 'Fungus ' + p.name;
+          inst.ev({ k: 'say', n: n.id, by: p.id, text: 'Hey, it\'s me, ' + p.name + '. The real one. Totally not a fungus.' });
+          this.later(D.dur, () => {
+            if (!inst.npcs.has(n.id)) return;
+            inst.npcs.delete(n.id); inst.ev({ k: 'npc-', id: n.id });
+            const e = inst.spawnNpc('funguseater', true, { at: { x: n.x, z: n.z }, until: this.time + 240 });
+            inst.ev({ k: 'say', n: e.id, by: p.id, text: 'I WILL EAT YOUR WORLD!' });
+            for (const o of inst.players.values()) this.toast(o, 'A fungus clone was not destroyed in time. It is eating the world. Kill it!');
+          });
+          break;
+        }
+        case 'vat': p.hp = p.maxHp; p.backup = earth; this.dirty(p); break;
+        case 'stash': p.inv.grenade = (p.inv.grenade || 0) + 1; p.inv.turret = (p.inv.turret || 0) + 1; this.dirty(p); break;
+        case 'shipbay': {
+          if (!p.st.ship) { this.toast(p, 'There is no ship of yours down there yet (build a ship hull first).'); H.cd[id] = 0; return; }
+          if (!outside) { this.toast(p, 'The ship bay is under the garage floor: go out to the garage.'); H.cd[id] = 0; return; }
+          this.teleport(p, -14.5, MM.heightAt(inst.dimId, -14.5, 28.55) + 14, 28.55);
+          this.onShip(p, true);
+          p.kbUntil = now + 1;
+          break;
+        }
+        case 'tele': {
+          const S = MM.TELE_SPOTS[d !== undefined && MM.TELE_SPOTS[d] ? d : Math.floor(Math.random() * MM.TELE_SPOTS.length)];
+          if (!outside) { this.toast(p, 'The teleporter is in the garage: go out to it.'); H.cd[id] = 0; return; }
+          const ox = p.x, oz = p.z;
+          inst.ev({ k: 'kiosk', id: p.id });
+          this.teleport(p, S.x, MM.heightAt(inst.dimId, S.x, S.z) + 0.2, S.z);
+          for (const o of inst.players.values()) if (o !== p && o.team && o.team === p.team && dist2(o.x, o.z, ox, oz) < 8 * 8) this.teleport(o, S.x + 2, MM.heightAt(inst.dimId, S.x + 2, S.z) + 0.2, S.z);
+          this.toast(p, 'Teleported to ' + S.name + '.');
+          break;
+        }
+        case 'wardrobe': p.wardrobeUntil = now + 120; this.priv(p, { k: 'wardrobe' }); break;
+      }
+      inst.ev({ k: 'house', h: outside ? this.houseRow(inst) : null, say: D.say, by: p.id, id });
+      this.progress(p, 'use', 'house_' + id);
+    }
+    // What the house's defences do, every tick: the dome keeps people out, the grid cuts.
+    tickHouse(inst, now) {
+      const H = inst.house;
+      if (!H) return;
+      for (const p of inst.players.values()) {
+        if (p.dead || this.houseAllows(inst, p)) continue;
+        if (H.shield > now && MM.inHouse(p.x, p.z)) {
+          const dx = p.x - MM.HOUSE.x, dz = p.z - MM.HOUSE.z, l = Math.hypot(dx, dz) || 1, R = MM.HOUSE.r + 1.5;
+          this.teleport(p, MM.HOUSE.x + dx / l * R, Math.max(p.y, MM.heightAt(inst.dimId, MM.HOUSE.x + dx / l * R, MM.HOUSE.z + dz / l * R) + 0.2), MM.HOUSE.z + dz / l * R);
+          if (now > (p.cdShieldMsg || 0)) { p.cdShieldMsg = now + 4; this.toast(p, 'A forcefield. Somebody does not want you in that house.'); }
+        }
+        if (H.grid > now && MM.inGarage(p.x, p.z) && p.y < MM.heightAt(inst.dimId, p.x, p.z) + 5 && this.tickN % 10 === 0) this.hurtPlayer(inst, p, 5, this.players.get(H.by) || null, 'lasergrid');
+      }
+    }
+
     // ----- Daily life at landmarks -----
     onUse(p, lid, taskId) {
       if (MM.helpless(p.arch, p.prog.up)) { const l = MM.LANDMARK_BY_ID[lid]; if (l && l.door) this.onDoor(p, lid); else this.toast(p, MM.HELPLESS_TEXT); return; }
@@ -1380,6 +1798,9 @@
       if (p.dead || !l || l.dim !== p.inst.dimId || this.time < p.cdUse) return;
       if (dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2 || !MM.sameFloor(l, p.y)) return;
       p.cdUse = this.time + 1;
+      if (this.labClosed(p, l)) return;
+      if (l.rick && !this.rickMay(p, this.earthOfHere(p))) { this.rickRefuse(p, l); return; }
+      if (MM.isAt(l, 'housecon')) { this.priv(p, { k: 'hmenu', own: this.rickOwns(p, this.earthOfHere(p)) }); return; }
       const mine = Object.keys(MM.TASKS).filter(t => MM.isAt(l, MM.TASKS[t].at) && MM.taskFor(t, p.arch));
       const id = taskId && mine.includes(taskId) ? taskId : mine[0];
       if (!id) { if (l.door) this.onDoor(p, lid); else this.toast(p, 'Nothing for you to do at the ' + l.name + '. You could still build things here (C).'); return; }
@@ -1390,8 +1811,9 @@
       for (const k in T.give) p.inv[k] = (p.inv[k] || 0) + T.give[k] * mult;
       if (T.heal) p.hp = p.maxHp;
       if (T.summon) this.summonMeeseeks(p, 1, 45);
-      if (T.effect === 'borrowgun') { p.borrow = 2; this.dirty(p); }   // Rick's gun: two charges, no recharging
-      let text = T.text;
+      if (T.effect === 'borrowgun') { p.borrow = 2; this.dirty(p); }
+      if (T.effect === 'acid') { p.fx.cloak = this.time + 25; this.dirty(p); p.inst.ev({ k: 'boom', x: r2(p.x), y: r2(p.y + 0.5), z: r2(p.z), r: 1.2 }); }   // they think you're dead   // Rick's gun: two charges, no recharging
+      let text = T.texts ? pick(T.texts) : T.text;
       // Earth TVs are normal until a Rick "fixes" them with Xanthenite (for this copy of the world).
       if (T.effect === 'fixtv') p.inst.cable = this.time + 600;
       if (id === 'watchtv' && p.inst.cable > this.time) text = pick(['Interdimensional cable! Ball Fondlers, then Real Fake Doors, then a man who is also a pizza.', 'Two Brothers. The plot is a lot. You cannot look away.', 'Ants in my Eyes Johnson! He cannot see a thing. Prices so low.']);
@@ -1437,7 +1859,7 @@
       for (const k in w) total += w[k];
       let r = Math.random() * total, mood = 'line';
       for (const k in w) { r -= w[k]; if (r <= 0) { mood = k; break; } }
-      const line = T.talk ? pick(T.talk) : '...';
+      const line = n.cast ? pick(MM.CAST_TALK[n.cast.arch] || ['...']) : T.talk ? pick(T.talk) : '...';
       const mat = inst.dim.mat;
       switch (mood) {
         case 'gift': {
@@ -1552,11 +1974,12 @@
           p.chargeAt = p.charges < p.st.gun.charges ? now + p.st.gun.recharge : 0;
           this.dirty(p);
         }
+        if (p.hack) this.tickHack(p);
         if (p.arch === 'mutant' && !p.dead && p.hp < p.maxHp && this.tickN % 10 === 0) { p.hp = Math.min(p.maxHp, p.hp + 1); this.dirty(p); }
         // World rules: the living flesh heals you; the toxic air hurts (never below a tenth).
         const q = p.inst && p.inst.dim.quirk;
         if (q === 'regen' && !p.dead && p.hp < p.maxHp && this.tickN % 60 === 0) { p.hp = Math.min(p.maxHp, p.hp + 2); this.dirty(p); }
-        if (q === 'toxic' && !p.dead && now >= p.fx.shield && now >= p.fx.prot && !p.ship && p.hp > p.maxHp * 0.1 && this.tickN % 75 === 0) { p.hp -= 1; p.inst.ev({ k: 'dmg', p: p.id, d: 1, by: 0 }); this.dirty(p); }
+        if ((q === 'toxic' || q === 'hot') && !p.dead && now >= p.fx.shield && now >= p.fx.prot && !p.ship && p.hp > p.maxHp * 0.1 && this.tickN % 75 === 0) { p.hp -= 1; p.inst.ev({ k: 'dmg', p: p.id, d: 1, by: 0 }); this.dirty(p); }
       }
       for (const inst of this.instances.values()) {
         if (inst.players.size === 0 && inst.idx > 0 && inst.portals.size === 0 && now - inst.emptySince > 60) { this.instances.delete(inst.key); continue; }
@@ -1582,6 +2005,8 @@
         if (p.progDirty || this.tickN % 150 === 0) { p.progDirty = false; this.send(p, this.progState(p)); }
       }
       if (this.tickN % 150 === 0) this.broadcastPop();
+      if (this.tickN % 60 === 0) this.castTick();
+      if (this.tickN % 15 === 0) this.raceLobby();
       if (this.tickN % 300 === 0) for (const p of this.players.values()) if (p.saveDirty) this.save(p);
     }
 
