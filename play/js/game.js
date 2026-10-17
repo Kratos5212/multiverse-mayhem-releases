@@ -407,6 +407,7 @@
       if (G.world) { scene.remove(G.world.group); G.world.dispose(); }
       G.world = C.buildDimension(w.dim, settings.quality);
       scene.add(G.world.group);
+      buildRaceRings(w.dim);
       const dim = MM.DIM_BY_ID[w.dim];
       scene.fog = new T.Fog(dim.fog, 40, dim.fogFar);
       const skyU = G.world.group.children[0].material.uniforms;
@@ -438,6 +439,12 @@
     const dim = MM.DIM_BY_ID[w.dim];
     $('dimName').textContent = dim.name;
     updateDimInfo();
+    // Out in space, face the nearest planet (after lightspeed it is dead ahead).
+    if (changed && dim.planets) {
+      let P = dim.planets[0], bd = Infinity;
+      for (const q of dim.planets) { const d = Math.hypot(q.x - me.x, q.z - me.z); if (d < bd) { bd = d; P = q; } }
+      if (bd > 1) { G.camYaw = Math.atan2(P.x - me.x, P.z - me.z); G.camPitch = 0.05; }
+    }
     if (G.entered) { UI.toast('Welcome to ' + dim.name); C.sfx('warp'); fx.burst(me.x, me.y + 1, me.z, profile.look.portalColor, 40, 8, 0.8, 0.7, 2); }
     else {
       G.entered = true;
@@ -829,8 +836,62 @@
     n.w = new T.Vector3(x + (Math.random() - 0.5) * 0.6, y, z);
   }
 
+  // ----- Ring races (shared/races.js) -----
+  // Every race in this world: its rings glowing in its colour, the start ring with a sign.
+  // While you race, the next ring is bright and the rest fade; the clock runs at the top.
+  function buildRaceRings(dimId) {
+    G.raceRings = [];
+    for (const R of MM.racesIn(dimId)) {
+      const geo = new T.TorusGeometry(R.r, Math.max(0.18, R.r * 0.07), 8, 32);
+      R.rings.forEach((_, i) => {
+        const q = MM.ringAt(R, i, dimId), n = MM.ringAt(R, (i + 1) % R.rings.length, dimId);
+        const m = new T.Mesh(geo, new T.MeshBasicMaterial({ color: R.color, transparent: true, opacity: i ? 0.35 : 0.9, fog: false }));
+        m.position.set(q.x, q.y, q.z);
+        m.lookAt(n.x, n.y, n.z);
+        if (!i) {
+          const tag = C.makeTag(R.name, '', (R.ship ? 'By ship' : 'On foot') + ' · through here to start', R.color);
+          tag.draw(-1);
+          tag.sprite.position.set(q.x, q.y + R.r + 1.2, q.z); tag.sprite.scale.multiplyScalar(R.ship ? 4 : 1.6);
+          G.world.group.add(tag.sprite);
+        }
+        G.world.group.add(m);
+        G.raceRings.push({ R, i, m });
+      });
+    }
+  }
+  function updateRace() {
+    const r = G.race, hud = $('raceHud');
+    for (const g of G.raceRings || []) {
+      const on = r && r.id === g.R.id, next = on && g.i === r.next;
+      g.m.material.opacity = on ? (next ? 1 : g.i < r.next ? 0.08 : 0.3) : g.i ? 0.25 : 0.9;
+      const s = next || (!r && !g.i) ? 1 + Math.sin(now() * 5) * 0.06 : 1;
+      g.m.scale.set(s, s, s);
+    }
+    if (!r) { hud.hidden = true; return; }
+    const R = MM.RACE_BY_ID[r.id], left = Math.max(0, r.end - now());
+    hud.hidden = false;
+    hud.textContent = R.name + ' · ring ' + (r.next + 1) + '/' + R.rings.length + ' · ' + left.toFixed(1) + ' s';
+    hud.classList.toggle('hurry', left < 10);
+  }
+  function onRace(e) {
+    if (e.id) {
+      const first = !G.race || G.race.id !== e.id;
+      G.race = { id: e.id, next: e.next, end: now() + e.left };
+      C.sfx(first ? 'warp' : 'pickup', 0.6);
+      if (first) UI.toast(MM.RACE_BY_ID[e.id].name + ': go! ' + MM.RACE_BY_ID[e.id].blurb, 2500);
+      return;
+    }
+    G.race = null;
+    if (e.done) {
+      const R = MM.RACE_BY_ID[e.done], got = e.give ? Object.keys(e.give).map(k => '+' + e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ') : '';
+      UI.banner(R.name + (e.record ? ': new record!' : ': finished!'), e.t + ' s (best ' + e.best + ' s). ' + (got || 'No prize again so soon, but the time counts.'));
+      C.sfx('craft');
+    }
+  }
+
   function onPrivate(e) {
     const me = G.me;
+    if (e.k === 'race') { onRace(e); return; }
     if (e.k === 'tp') { me.x = e.x; me.y = e.y; me.z = e.z; me.vx = me.vy = me.vz = 0; G.ep = e.ep; }
     else if (e.k === 'kb') { me.vx += e.vx; me.vz += e.vz; me.vy = Math.max(me.vy, e.vy); me.grounded = false; me.kbT = 0.7; C.ragdoll(G.meAv, e.vx, e.vz, Math.min(1, Math.hypot(e.vx, e.vz) / 14 + 0.2)); }
     else if (e.k === 'toast') UI.toast(e.text, 3500);
@@ -1016,6 +1077,7 @@
     slots.ship.querySelector('.l').textContent = y.ship ? 'Land' : 'Ship';
     $('tShip').hidden = !(st && st.ship);
     $('tDown').hidden = !y.ship;
+    $('tLight').hidden = !(y.ship && MM.DIM_BY_ID[G.dimId].planets);   // out in space: lightspeed
     tLabel('tShip', y.ship ? 'LAND' : 'SHIP');
   }
 
@@ -1088,13 +1150,13 @@
   function travelModes() {
     const y = G.you, st = G.st, m = [];
     if (nearKiosk()) m.push('station');
-    if (y.ship && st && st.ship) m.push('ship');
+    if (y.ship && st && st.ship) m.push(MM.DIM_BY_ID[G.dimId].planets ? 'light' : 'ship');   // in space: lightspeed
     if ((y.chMax && y.ch > 0) || y.bor > 0) m.push('gun');
     return m;
   }
   function travelOpts(mode) {
     const st = G.st || {};
-    return mode === 'ship' ? { hull: true, engine: !!(st.ship && st.ship.engine), drive: !!(st.ship && st.ship.drive), quantum: !!(st.ship && st.ship.quantum) }
+    return mode === 'ship' || mode === 'light' ? { hull: true, engine: !!(st.ship && st.ship.engine), drive: !!(st.ship && st.ship.drive), quantum: !!(st.ship && st.ship.quantum) }
       : mode === 'gun' ? { gold: !!(G.you.chMax && G.you.ch > 0 && st.gun && st.gun.gold) } : {};
   }
   function portalAction() {
@@ -1104,6 +1166,11 @@
     if (G.you.chMax && G.you.ch <= 0) { UI.toast('Portal gun is recharging'); return; }
     UI.toast(MM.DIM_BY_ID[G.dimId].station ? 'Walk up to the ' + MM.kioskOf(G.dimId).name + ' to travel.'
       : 'No portal gun. Step through someone else\'s portal, fly a ship, find a portal station (the Citadel), borrow Rick\'s gun from his workbench, or build your own (J).', 5000);
+  }
+  function lightspeedKey() {
+    if (!canAct() || pickled()) return;
+    if (!G.you.ship || !MM.DIM_BY_ID[G.dimId].planets) { UI.toast('Lightspeed works from space: get in your ship (B) and fly straight up.', 3500); return; }
+    openDims('light');
   }
   function toggleShip() {
     if (!canAct() || pickled()) return;
@@ -1121,9 +1188,15 @@
     }
     return best;
   }
+  // The landmark you are closest to (by its edge), on your floor of the house.
   function nearLandmark() {
-    for (const l of MM.LANDMARKS) if (l.dim === G.dimId && Math.hypot(l.x - G.me.x, l.z - G.me.z) < l.r + MM.USE_RADIUS) return l;
-    return null;
+    let best = null, bd = Infinity;
+    for (const l of MM.LANDMARKS) {
+      if (l.dim !== G.dimId || !MM.sameFloor(l, G.me.y)) continue;
+      const d = Math.hypot(l.x - G.me.x, l.z - G.me.z) - l.r;
+      if (d < MM.USE_RADIUS && d < bd) { bd = d; best = l; }
+    }
+    return best;
   }
   function interact() {
     if (!canAct()) return;
@@ -1232,77 +1305,134 @@
     recentDims.unshift(id); recentDims.length = Math.min(recentDims.length, 8);
     UI.save('recentDims', recentDims);
   }
-  function openDims(mode, tabWas, queryWas) {
+  // Where to go, the way the multiverse is laid out: pick a world (Earth, Bird World, the
+  // Citadel...), then which dimension of it (Earth C-137, Shrimp Earth, your home Earth...),
+  // then which timeline (the present, the split timeline, 65 million years ago...). Search
+  // finds any of them by name or code; Recent and the Map are a tab away.
+  function openDims(mode, worldWas, queryWas, tabWas) {
     G.modalMode = mode;
-    const why = id => MM.travelWhy(mode === 'gun' ? 'portal' : mode, G.dimId, id, travelOpts(mode));
+    const opts = travelOpts(mode);
+    const here = MM.DIM_BY_ID[G.dimId], hereWorld = MM.worldOf(here.planets ? here.planets[0].dim : G.dimId);
+    // In a ship on the ground the way is up: space, then fly over or go to lightspeed.
+    const why = id => {
+      if (mode !== 'ship') return MM.travelWhy(mode === 'gun' ? 'portal' : mode, G.dimId, id, opts);
+      const B = MM.DIM_BY_ID[id];
+      if (B.pocket || B.hidden) return MM.travelWhy('portal', G.dimId, id, {});
+      return here.space && here.space === B.space ? 'Fly straight up into space and over to it.' : 'Fly straight up into space, then go to lightspeed (L).';
+    };
+    const opened = performance.now();
     const go = id => {
+      if (performance.now() - opened < 450) return;   // the tap that opened the menu is not a choice
       const w = why(id);
       if (w) { UI.toast(w, 3500); return; }
       if (mode === 'station') send({ t: 'ki', d: id });
-      else if (mode === 'ship') send({ t: 'drive', d: id });
+      else if (mode === 'light') { send({ t: 'ls', d: id }); lightspeedFx(); }
       else { send({ t: 'po', d: id }); UI.toast('Portal open. Walk through it! Anyone nearby can follow you.'); }
       UI.closeModal();
     };
-    const S = MM.DIM_BY_ID[G.dimId].station;
-    const title = mode === 'station' ? S.name : mode === 'ship' ? 'Fly your ship' : G.you.chMax && G.you.ch > 0 ? 'Portal gun' : 'Borrowed portal gun';
-    const homes = [MM.homeDimId(profile.home), 'suburbia'].concat(MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].variantOf === 'suburbia' && !MM.DIM_BY_ID[id].timeline))
-      .concat(G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : []);
-    const TABS = {
-      Recent: () => recentDims.filter(id => MM.DIM_BY_ID[id]),
-      Earths: () => homes,
-      Worlds: () => MM.WORLD_IDS.filter(id => { const D = MM.DIM_BY_ID[id]; return !D.timeline && !D.outsideCurve && !D.pocket && D.variantOf !== 'suburbia' && id !== 'suburbia'; }),
-      'Other times': () => MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].timeline),
-      'Outside the Curve': () => MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].outsideCurve && !MM.DIM_BY_ID[id].timeline),
-      Map: null,
+    const S = here.station;
+    const title = mode === 'station' ? S.name : mode === 'ship' ? 'Where to? (by ship)' : mode === 'light' ? 'Lightspeed' : G.you.chMax && G.you.ch > 0 ? 'Portal gun' : 'Borrowed portal gun';
+    const pop = id => G.pop ? G.pop.d[id] || 0 : 0;
+    // The dimensions of a world (Earth also has everyone's home Earths), each with its timelines.
+    const dimsOf = W => {
+      let ids = W.dims.slice();
+      if (W.id === 'earth') ids = ids.concat([MM.homeDimId(profile.home)], G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : []);
+      return ids.filter((id, i, a) => a.indexOf(id) === i && MM.DIM_BY_ID[id]);
     };
-    let tab = tabWas || (recentDims.length > 1 ? 'Recent' : 'Worlds'), query = queryWas || '';
+    const worldPop = W => dimsOf(W).reduce((n, id) => n + pop(id) + MM.timelinesOf(id).reduce((m, t) => m + pop(t), 0), 0);
+    let world = worldWas || hereWorld || 'earth', query = queryWas || '', tab = tabWas || 'Worlds';
     openModal('dims', title, box => {
       box.classList.add('travel');
       const others = travelModes().filter(x => x !== mode);
       if (others.length) {
         const sw = el('div', { class: 'chips' });
-        for (const o of others) sw.append(el('button', { class: 'btn', onclick: () => { UI.closeModal(); openDims(o); } }, o === 'station' ? 'Use the station' : o === 'ship' ? 'Fly the ship' : 'Use the portal gun'));
+        for (const o of others) sw.append(el('button', { class: 'btn', onclick: () => { UI.closeModal(); openDims(o); } }, o === 'station' ? 'Use the station' : o === 'ship' || o === 'light' ? 'Fly the ship' : 'Use the portal gun'));
         box.append(sw);
       }
-      const search = el('input', { type: 'search', class: 'tsearch', placeholder: 'Search worlds (name or code)…', value: query, 'aria-label': 'Search worlds' });
+      // Where you are now, as world › dimension › timeline.
+      const dimNow = MM.dimensionOf(here.planets ? here.planets[0].dim : G.dimId), Dn = MM.DIM_BY_ID[dimNow], Wn = MM.WORLD_BY_ID[hereWorld];
+      box.append(el('p', { class: 'tcrumb' }, el('span', { text: 'You are here: ' }),
+        el('b', { text: (Wn ? Wn.icon + ' ' + Wn.name : here.name) }), el('span', { text: ' › ' + (Dn ? Dn.name : here.name) + ' › ' + (MM.DIM_BY_ID[G.dimId].timeline ? MM.DIM_BY_ID[G.dimId].name : here.planets ? 'in space' : 'the present') })));
+      const search = el('input', { type: 'search', class: 'tsearch', placeholder: 'Search worlds, dimensions and timelines (name or code)…', value: query, 'aria-label': 'Search' });
       const tabs = el('div', { class: 'ttabs', role: 'tablist' }), body = el('div', { class: 'tbody' });
       box.append(search, tabs, body);
+      const bg = d => 'background: linear-gradient(160deg, ' + d.sky[0] + ', ' + d.sky[1] + ' 70%, ' + d.ground[1] + ')';
       const card = id => {
         const d = MM.DIM_BY_ID[id];
         if (!d) return null;
-        const n = G.pop ? G.pop.d[id] || 0 : 0, w = id === G.dimId ? 'You are here.' : why(id), mine = id === MM.homeDimId(profile.home);
-        const c = el('button', { class: 'tcard' + (w ? ' locked' : ''), style: 'background: linear-gradient(160deg, ' + d.sky[0] + ', ' + d.sky[1] + ' 70%, ' + d.ground[1] + ')', onclick: () => go(id), title: w || d.blurb, 'aria-label': d.name + (w ? ': ' + w : '') },
+        const n = pop(id), w = id === G.dimId ? 'You are here.' : why(id), mine = id === MM.homeDimId(profile.home);
+        return el('button', { class: 'tcard' + (w ? ' locked' : ''), style: bg(d), onclick: () => go(id), title: w || d.blurb, 'aria-label': d.name + (w ? ': ' + w : '') },
           el('span', { class: 'tname', text: (mine ? '★ ' : '') + d.name }),
           el('span', { class: 'tcode', text: d.code + (n ? ' · ' + n + ' here' : '') }),
           el('span', { class: 'tblurb', text: w || d.blurb }));
-        return c;
+      };
+      // A dimension: the card for its present, and a chip for each other timeline.
+      const dimRow = (id, i) => {
+        const c = card(id);
+        const tl = MM.timelinesOf(id);
+        if (!tl.length) return c;
+        const wrap = el('div', { class: 'tdim' }, c);
+        const chips = el('div', { class: 'ttl', role: 'group', 'aria-label': 'Timelines of ' + MM.DIM_BY_ID[id].name });
+        chips.append(el('span', { class: 'tlab', text: '⧗ Timelines:' }));
+        for (const t of tl) {
+          const T = MM.DIM_BY_ID[t], w = t === G.dimId ? 'You are here.' : why(t), n = pop(t);
+          chips.append(el('button', { class: 'tchip' + (w ? ' locked' : ''), title: w || T.blurb, onclick: () => go(t), style: bg(T) }, T.name.replace(MM.DIM_BY_ID[id].name + ', ', '') + (n ? ' · ' + n : '')));
+        }
+        wrap.append(chips);
+        return wrap;
       };
       const render = () => {
         tabs.textContent = ''; body.textContent = '';
-        for (const t in TABS) tabs.append(el('button', { role: 'tab', 'aria-selected': String(!query && t === tab), onclick: () => { tab = t; query = ''; search.value = ''; render(); } }, t));
+        for (const t of ['Worlds', 'Recent', 'Map']) tabs.append(el('button', { role: 'tab', 'aria-selected': String(!query && t === tab), onclick: () => { tab = t; query = ''; search.value = ''; render(); } }, t));
         if (!query && tab === 'Map') { body.append(curveMap(go)); return; }
-        let ids;
-        if (query) {
-          const q = query.toLowerCase();
-          ids = MM.WORLD_IDS.concat(homes).filter((id, i, a) => a.indexOf(id) === i && MM.DIM_BY_ID[id] && !MM.DIM_BY_ID[id].pocket)
-            .filter(id => (MM.DIM_BY_ID[id].name + ' ' + MM.DIM_BY_ID[id].code).toLowerCase().includes(q));
-        } else ids = TABS[tab]();
-        ids = ids.filter((id, i, a) => a.indexOf(id) === i);
-        // Where you can go first, then the rest; busy worlds before quiet ones.
-        const pop = id => G.pop ? G.pop.d[id] || 0 : 0;
-        if (tab !== 'Recent' || query) ids.sort((a, b) => (!!why(a) - !!why(b)) || (pop(b) - pop(a)));
+        if (query || tab === 'Recent') {
+          let ids;
+          if (query) {
+            const q = query.toLowerCase();
+            ids = MM.WORLD_IDS.concat(dimsOf(MM.WORLD_BY_ID.earth)).filter((id, i, a) => a.indexOf(id) === i && MM.DIM_BY_ID[id] && !MM.DIM_BY_ID[id].pocket)
+              .filter(id => { const D = MM.DIM_BY_ID[id], W = MM.WORLD_BY_ID[MM.worldOf(id)]; return (D.name + ' ' + D.code + ' ' + (W ? W.name : '')).toLowerCase().includes(q); });
+            ids.sort((a, b) => (!!why(a) - !!why(b)) || (pop(b) - pop(a)));
+          } else ids = recentDims.filter(id => MM.DIM_BY_ID[id]);
+          const grid = el('div', { class: 'tgrid' });
+          for (const id of ids) { const c = card(id); if (c) grid.append(c); }
+          body.append(ids.length ? grid : el('p', { class: 'note', text: query ? 'Nowhere called that.' : 'Nowhere yet. Go somewhere and it shows up here.' }));
+          return;
+        }
+        // Worlds: one chip each, then the chosen world's dimensions and their timelines.
+        const strip = el('div', { class: 'tworlds', role: 'tablist', 'aria-label': 'Worlds' });
+        for (const W of MM.WORLDS) {
+          const n = worldPop(W);
+          strip.append(el('button', { class: 'tworld', role: 'tab', 'aria-selected': String(W.id === world), title: W.blurb, onclick: () => { world = W.id; render(); } },
+            el('span', { class: 'ticon', text: W.icon }), el('span', { text: W.name + (n ? ' · ' + n : '') })));
+        }
+        body.append(strip);
+        const W = MM.WORLD_BY_ID[world], P = MM.DIM_BY_ID[W.prime];
+        const how = W.realm ? 'Not a planet you can fly to: get there by portal, or lightspeed from space.'
+          : P.space && here.space === P.space ? 'In this universe: fly your ship up into space and over to it, or open a portal.'
+          : 'Another universe: open a portal, or fly up into space and go to lightspeed.';
+        body.append(el('div', { class: 'twhead' }, el('b', { text: W.icon + ' ' + W.name }), el('span', { text: W.blurb + ' ' + how })));
+        body.append(el('p', { class: 'tsub', text: 'Dimensions of ' + W.name + ' (' + dimsOf(W).length + ')' }));
         const grid = el('div', { class: 'tgrid' });
-        for (const id of ids) { const c = card(id); if (c) grid.append(c); }
-        body.append(ids.length ? grid : el('p', { class: 'note', text: query ? 'No world called that.' : 'Nowhere yet. Go somewhere and it shows up here.' }));
+        dimsOf(W).forEach((id, i) => { const c = dimRow(id, i); if (c) grid.append(c); });
+        body.append(grid);
       };
       search.oninput = () => { query = search.value.trim(); render(); };
       render();
       const fee = S && !S.free.includes(profile.arch) ? Object.keys(S.fee).map(k => S.fee[k] + ' ' + MM.MATERIALS[k].name).join(', ') : '';
       box.append(el('p', { class: 'note', text: mode === 'station' ? 'Step through the station portal' + (fee ? ' for ' + fee : ' (free for you)') + '.'
-        : mode === 'ship' ? 'Fly straight up to reach space and the planets nearby. Other dimensions need the Dimension Drive (15 s cooldown).'
+        : mode === 'ship' ? 'Worlds in this universe: fly straight up into space and over to the planet. Other dimensions and timelines: from space, go to lightspeed (L).'
+        : mode === 'light' ? 'Jump to the space around any world: another dimension needs the Dimension Drive, another timeline the Quantum Drive.'
         : 'Opens a portal in front of you for ' + MM.PORTAL_TTL + ' s. Anyone can walk through it, so your friends (and enemies) can follow.' }));
       if (!isTouch) setTimeout(() => search.focus(), 50);
     });
+  }
+  // Going to lightspeed: the stars stretch into lines and the screen flashes.
+  function lightspeedFx() {
+    const o = $('lightspeed');
+    if (!o) return;
+    o.classList.remove('on'); void o.offsetWidth; o.classList.add('on');
+    C.sfx('warp', 1);
+    G.shake = Math.max(G.shake, 0.25);
   }
   // The workbench: everything you could ever build, and exactly why you can or can't yet.
   function openCraft() {
@@ -1499,6 +1629,7 @@
       case 'KeyR': shootPair(); break;
       case 'KeyJ': openJournal(); break;
       case 'KeyB': toggleShip(); break;
+      case 'KeyL': lightspeedKey(); break;
       case 'KeyQ': ability(); break;
       case 'Digit1': useGadget('grenade'); break;
       case 'Digit2': useGadget('turret'); break;
@@ -1587,6 +1718,7 @@
   hold('tFire', 'fire'); hold('tJump', 'jump'); hold('tDown', 'down');
   $('tAb').addEventListener('pointerdown', () => ability());
   $('tPortal').addEventListener('pointerdown', () => portalAction());
+  $('tLight').addEventListener('pointerdown', () => lightspeedKey());
   $('tTalk').addEventListener('pointerdown', () => interact());
   $('tShip').addEventListener('pointerdown', () => toggleShip());
   $('tPair').addEventListener('pointerdown', () => shootPair());
@@ -1604,10 +1736,10 @@
   // ---------- Local movement ----------
   // Props: solid sideways, but you can stand on top of them.
   function groundAt(x, z, y) {
-    let g = MM.heightAt(G.dimId, x, z);
+    let g = MM.floorAt(G.dimId, x, z, y);   // the ground, or a house's floors and stairs
     const props = MM.propsNear(G.dimId, x, z, 0.5);
     for (const p of props) {
-      if (!G.alive[p.id] || MM.PROPS[p.type].arch) continue;
+      if (!G.alive[p.id] || MM.PROPS[p.type].arch || MM.PROPS[p.type].noTop) continue;
       const top = p.y + p.h * 0.92;
       if (y >= top - 0.6 && (x - p.x) ** 2 + (z - p.z) ** 2 < p.r * p.r) g = Math.max(g, top);
     }
@@ -1696,7 +1828,7 @@
     [nx, nz] = pushOut(nx, nz, ny, inShip ? 1.6 : 0.45);
     const lim = MM.boundOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1), limZ = MM.boundZOf(G.dimId) - (MM.DIM_BY_ID[G.dimId].interior ? 0 : 1);
     nx = Math.max(-lim, Math.min(lim, nx)); nz = Math.max(-limZ, Math.min(limZ, nz));
-    [nx, nz] = MM.collideWalls(G.dimId, nx, nz, 0.4);
+    [nx, nz] = MM.collideWalls(G.dimId, nx, nz, 0.4, me.y);
     const g = groundAt(nx, nz, Math.max(ny, me.y)) + (inShip ? 0.4 : 0);
     if (inShip) { if (ny < g) { ny = g; me.vy = Math.max(0, me.vy); }
       // Increased height limit for space travel - much higher for interplanetary travel
@@ -1982,7 +2114,7 @@
     for (let s = 0.8; s <= dist; s += 0.4) {
       const px = tx - fx_ * s + rx * sh * s / dist, py = ty - fy * s, pz = tz - fz * s + rz * sh * s / dist;
       let hit = false;
-      if (MM.DIM_BY_ID[G.dimId].walls) { const [wx, wz] = MM.collideWalls(G.dimId, px, pz, 0.15); if (wx !== px || wz !== pz) hit = true; }
+      if (MM.DIM_BY_ID[G.dimId].walls) { const [wx, wz] = MM.collideWalls(G.dimId, px, pz, 0.15, me.y); if (wx !== px || wz !== pz) hit = true; }
       if (!hit) for (const p of G.camProps || []) {
         if (!G.alive[p.id] || py > p.y + p.h || py < p.y - 1) continue;
         const [qx, qz] = MM.pushOutOfProp(p, px, pz, 0.3);
@@ -1999,7 +2131,14 @@
     if (room) {
       // Keep the camera inside the walls and under the ceiling.
       const hx = room.w / 2 - 0.5, hz = room.d / 2 - 0.5;
-      cx = Math.max(-hx, Math.min(hx, cx)); cz = Math.max(-hz, Math.min(hz, cz)); cy = Math.min(room.h - 0.5, cy);
+      cx = Math.max(-hx, Math.min(hx, cx)); cz = Math.max(-hz, Math.min(hz, cz));
+      // A house with an upstairs: stay on your floor, and only show the upstairs when you are
+      // up there (downstairs you see the rooms with the upper floor lifted off).
+      const Fl = MM.DIM_BY_ID[G.dimId].floors, up = Fl && MM.levelAt(G.dimId, me.y) === 1;
+      if (up) cy = Math.max(Fl.y + 0.4, Math.min(Fl.y + room.h - 0.5, cy));
+      else cy = Math.min(Fl ? Fl.y - 0.3 : room.h - 0.5, cy);
+      if (G.upperFor !== G.world) { G.upperFor = G.world; G.upperRoom = G.world && G.world.group.getObjectByName('roomUpper'); }
+      if (G.upperRoom) G.upperRoom.visible = !!up;
     }
     if (G.shake > 0) { cx += (Math.random() - 0.5) * G.shake; cy += (Math.random() - 0.5) * G.shake; cz += (Math.random() - 0.5) * G.shake; G.shake = Math.max(0, G.shake - dt * 1.5); }
     camera.position.set(cx, cy, cz);
@@ -2036,6 +2175,7 @@
     updateOthers(dt);
     flushDetail();
     if (!vr.on) updateCamera(dt);
+    updateRace();
     camera.getWorldPosition(camWorld);
     G.world.update(dt, clock.elapsedTime, camWorld);
     fx.update(dt);
@@ -2095,7 +2235,8 @@
     if (!m) { vr.say(G.you.chMax ? 'Portal gun is recharging.' : 'No portal gun. Find a station, a ship, or someone else\'s portal.'); return; }
     const w = MM.travelWhy(m === 'gun' ? 'portal' : m, G.dimId, id, travelOpts(m));
     if (w) { vr.say(w); return; }
-    send(m === 'station' ? { t: 'ki', d: id } : m === 'ship' ? { t: 'drive', d: id } : { t: 'po', d: id });
+    if (m === 'ship') { vr.say('Fly straight up into space first, then lightspeed.'); return; }
+    send(m === 'station' ? { t: 'ki', d: id } : m === 'light' ? { t: 'ls', d: id } : { t: 'po', d: id });
     if (m === 'gun') vr.say('Portal open to ' + MM.DIM_BY_ID[id].name + '. Walk through it!');
   }
   renderer.setAnimationLoop(frame);

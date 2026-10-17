@@ -1,8 +1,8 @@
 {
- "build": 11,
- "date": "2026-10-17T10:01:06.628Z",
+ "build": 12,
+ "date": "2026-10-17T10:54:09.710Z",
  "game": {
-  "base": "game/11/",
+  "base": "game/12/",
   "files": [
    {
     "p": "assets/characters/rick.mms",
@@ -61,13 +61,23 @@
    },
    {
     "p": "assets/interiors/smith.mmg",
-    "h": "f13e980b87e206e476e292b50e786c523ad6141de5092ffc22a0565de0751a56",
-    "s": 622348
+    "h": "40ae015140a9d5b3ed1576f26a5b27f320293a2209e8cfc3e8d0b67237eca643",
+    "s": 781024
    },
    {
     "p": "assets/interiors/smith.recipe.json",
-    "h": "1296f7506ed6ce60837f8861e3698a7a2a9ee6a4a0d48b476c3f98af7f881130",
-    "s": 1603
+    "h": "b9e0cbd72b7eb2dfcd43c940b9824d98bc70b93129aba251a7bcbd125da39518",
+    "s": 2213
+   },
+   {
+    "p": "assets/interiors/smith2.mmg",
+    "h": "2d4372d81d5012bf1621e8fbf9313f645caf32f5eebcdc110d8050f4a8d1c892",
+    "s": 278988
+   },
+   {
+    "p": "assets/interiors/smith2.recipe.json",
+    "h": "186fd8fb24a315e8e7b0322eace194124214ef84b57fdfdfc9fd1432f4f4ef9b",
+    "s": 1567
    },
    {
     "p": "assets/interiors/whitehouse.mmg",
@@ -101,8 +111,8 @@
    },
    {
     "p": "index.html",
-    "h": "6117229af2f60295f922bf54ff0517078f0ce2acdd858baf5ce5cade4efb00b1",
-    "s": 31511
+    "h": "f6ebe43a89a475b3f9cad9dd0daca20726b192eb78111cb7ed0b812535013c4b",
+    "s": 35031
    },
    {
     "p": "js/audio.js",
@@ -116,8 +126,8 @@
    },
    {
     "p": "js/dims.js",
-    "h": "a3aee2672207a9dfafeba178488748e631dffcbcafb89415c9e9b033cf61448e",
-    "s": 212288
+    "h": "4b769ba673e4a83443f762b1b1b0274852c0065d7f5edbd82ac29460cb0f642a",
+    "s": 233233
    },
    {
     "p": "js/fx.js",
@@ -126,8 +136,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "0645769710dbd5afbcd684fac245480f5c1786eee86ef377767c1f285eff0380",
-    "s": 122141
+    "h": "8bf0b2b4bc0fedde29476876cfdfff2ea61dfd460f835f315cd62c44a08fb50c",
+    "s": 130851
    },
    {
     "p": "js/mmg.js",
@@ -146,8 +156,8 @@
    },
    {
     "p": "js/ui.js",
-    "h": "319b0cb568a016df18d7e819b637d547397db0f6ec5ee4f2a7d342003a9906c6",
-    "s": 19149
+    "h": "32cf0ed2c680d7d7a9196736eaa4c52e399b50d45ea46e062295a198422acb21",
+    "s": 19368
    },
    {
     "p": "js/vr.js",
@@ -161,8 +171,8 @@
    },
    {
     "p": "shared/interiors.js",
-    "h": "465bf2a53b786a97f626c74847fb55ab4aa7748f8611a98d86a8974c05d4a376",
-    "s": 13474
+    "h": "d3b6c8270185d4c4cb3953ca4f8af515f158d4cb2229259568907674df0a6b27",
+    "s": 32272
    },
    {
     "p": "shared/layouts.js",
@@ -176,18 +186,23 @@
    },
    {
     "p": "shared/protocol.js",
-    "h": "cd71cb45c5e4f298fd7f2b069420747384b38a4b526a3e477a0d4f5289836037",
-    "s": 6137
+    "h": "7382ba849cb38b17187b4970c9e8b066ce942717b52b996d131f8834217d52af",
+    "s": 6255
+   },
+   {
+    "p": "shared/races.js",
+    "h": "70365af0494e8ab981a06dcbc40e888bd014e21dacb5f2a799668b2923dd1b7f",
+    "s": 3088
    },
    {
     "p": "shared/rules.js",
-    "h": "ea2aada0dea5eff40d34d9295c04bf64ff82e444518aec55a67225531edc2de3",
-    "s": 67491
+    "h": "6142afabc6e3c3df31599e6adbe0cc41b80b4196179ffb446086fae8578e22d8",
+    "s": 71186
    },
    {
     "p": "shared/world.js",
-    "h": "a9660fb839de77e5747d028471469c3831ca8ac7adb8f1929e60f37212906e06",
-    "s": 118620
+    "h": "ac04be77521197ebc830820bc6ee0d62e293df2036c462560d2f906977561a07",
+    "s": 131448
    },
    {
     "p": "sim/bot.js",
@@ -196,8 +211,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "9193a47a10eece08bc3e0d7e74c635ebc2d98d09459c20d037aeb1cfee38d139",
-    "s": 84071
+    "h": "b188f10075d634c88aa10a5d819343c165a503dcb3915d64afac50b77fd7dd36",
+    "s": 87486
    },
    {
     "p": "vendor/three.LICENSE",
@@ -211,7 +226,7 @@
    },
    {
     "p": "version.json",
-    "h": "e4d9f30b3b7cc6ca3f62aa6e449c5a725ad51b6043a633ddff027e5ca1b47f89",
+    "h": "9984b2fc923b2c4da9c26a960f54db728137e423d8a63fdf13cbbd898c285303",
     "s": 13
    }
   ]

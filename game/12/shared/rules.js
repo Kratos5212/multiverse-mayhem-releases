@@ -24,7 +24,7 @@
   MM.TICK = 1 / 30;             // server simulation step (seconds)
   MM.SNAP_EVERY = 2;            // a snapshot every 2 ticks = 15 per second
   MM.INSTANCE_CAP = 64;         // players per dimension instance (servers can raise it)
-  MM.WORLD_HALF = 170;          // playable area is -170..170 on x and z
+  MM.WORLD_HALF = 200;          // playable area is -200..200 on x and z
   MM.RESPAWN_TIME = 4;
   MM.SPAWN_PROTECT = 3;
 
@@ -45,13 +45,37 @@
   // Each is a building in a dimension. Daily tasks happen there, and some recipes
   // can only be built at a particular one.
   MM.LANDMARKS = [
-    // rot: which way the front faces (PI/2 = toward +x). The Smith house and Rick's garage stand side by side on one lot.
-    { id: 'home', dim: 'suburbia', name: 'Smith House', x: -14, z: 25, r: 7, h: 10, model: 'lm_home', rot: Math.PI / 2, door: { dim: 'smithhouse', x: -4.69, z: -4.2 } },
-    // Inside the Smith house (a Mojulo floor plan: see assets/interiors). Spots marked with a ring.
-    { id: 'smithexit', dim: 'smithhouse', name: 'Front door', x: -4.69, z: -4.95, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'suburbia', x: -5.5, z: 25 } },
-    { id: 'smithtv', dim: 'smithhouse', name: 'The couch (interdimensional cable)', x: -3.41, z: 1.6, r: 0.8, h: 1.2, model: 'lm_marker' },
-    { id: 'smithtable', dim: 'smithhouse', name: 'Dining table', x: 3.84, z: 1.9, r: 0.8, h: 1.2, model: 'lm_marker' },
-    { id: 'garage', dim: 'suburbia', name: "Rick's Garage", x: -14.5, z: 12.5, r: 5.5, h: 6.5, model: 'lm_garage', rot: Math.PI / 2, door: { dim: 'rickgarage', x: -2, z: 4 } },
+    // rot: which way the front faces (PI/2 = toward +x). The Smith house and Rick's garage
+    // stand side by side on one lot, facing the street: the garage on the left of the house
+    // (+z), the back yard behind both (where Rick and Morty buried their other selves).
+    { id: 'home', dim: 'suburbia', name: 'Smith House', x: -13.5, z: 16.5, r: 7, h: 11, model: 'lm_home', rot: Math.PI / 2, door: { dim: 'smithhouse', x: -0.6, z: -5.6 } },
+    { id: 'backdoor', dim: 'suburbia', name: 'Back door (into the kitchen)', x: -19.7, z: 12.05, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'smithhouse', x: 5.97, z: 5.6 } },
+    { id: 'sidedoor', dim: 'suburbia', name: "Side door (into Rick's room)", x: -16.3, z: 24.6, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'smithhouse', x: -8.2, z: 3.84 } },
+    { id: 'backyard', dim: 'suburbia', name: 'The back yard', x: -28.5, z: 21.5, r: 8.5, h: 3, model: 'lm_backyard', rot: Math.PI / 2 },
+    { id: 'graves', dim: 'suburbia', name: 'Two graves under the tree', x: -31.5, z: 15.5, r: 1.4, h: 1, model: 'lm_marker' },
+    // Inside the Smith house: two floors, each a Mojulo floor plan (shared/interiors.js has the
+    // plans). fy: the floor a spot is on (4.3 = upstairs). Spots are marked with a ring.
+    { id: 'smithexit', dim: 'smithhouse', name: 'Front door', x: 0, z: -6.3, r: 0.8, h: 2.2, fy: 0, model: 'lm_marker', door: { dim: 'suburbia', x: -6.3, z: 17.1 } },
+    { id: 'smithback', dim: 'smithhouse', name: 'Back door (to the yard)', x: 5.97, z: 6.3, r: 0.8, h: 2.2, fy: 0, model: 'lm_marker', door: { dim: 'suburbia', x: -20.6, z: 12.05 } },
+    { id: 'smithside', dim: 'smithhouse', name: 'Side door (to the garage)', x: -8.9, z: 3.84, r: 0.8, h: 2.2, fy: 0, model: 'lm_marker', door: { dim: 'suburbia', x: -16.3, z: 25.3 } },
+    { id: 'smithtv', dim: 'smithhouse', name: 'The couch (interdimensional cable)', x: -5.97, z: -3.0, r: 0.8, h: 1.2, fy: 0, model: 'lm_marker' },
+    { id: 'smithtable', dim: 'smithhouse', name: 'Dining table', x: 5.97, z: -1.6, r: 0.8, h: 1.2, fy: 0, model: 'lm_marker' },
+    { id: 'smithkitchen', dim: 'smithhouse', name: 'The fridge', x: 7.4, z: 1.9, r: 0.8, h: 1.2, fy: 0, model: 'lm_marker' },
+    { id: 'rickroom', dim: 'smithhouse', name: "Rick's room", x: -5.2, z: 2.3, r: 0.8, h: 1.2, fy: 0, model: 'lm_marker' },
+    { id: 'mortyroom', dim: 'smithhouse', name: "Morty's room", x: -4.4, z: -3.4, r: 0.8, h: 1.2, fy: 4.3, model: 'lm_marker' },
+    { id: 'summerroom', dim: 'smithhouse', name: "Summer's room", x: -4.4, z: 3.4, r: 0.8, h: 1.2, fy: 4.3, model: 'lm_marker' },
+    { id: 'masterroom', dim: 'smithhouse', name: "Beth and Jerry's room", x: 4.6, z: -3.4, r: 0.8, h: 1.2, fy: 4.3, model: 'lm_marker' },
+    { id: 'bathroom', dim: 'smithhouse', name: 'The bathroom', x: 5.0, z: 3.6, r: 0.8, h: 1.2, fy: 4.3, model: 'lm_marker' },
+    // Rick's garage stands open on the street: walk in through the big door. Inside, along
+    // the back wall, the workbench; the ship, the battery, the hatch to the lab and the door
+    // to the cellar. (Local garage coordinates turned to the street: front = +x.)
+    { id: 'garage', dim: 'suburbia', name: "Rick's Garage", x: -14.5, z: 31, r: 5.5, h: 6.5, model: 'lm_garage', rot: Math.PI / 2 },
+    { id: 'workbench', dim: 'suburbia', name: "Rick's Workbench", x: -18.0, z: 31, r: 1.6, h: 1.3, model: 'lm_workbench', alias: 'garage', rot: Math.PI / 2 },
+    { id: 'plumbus', dim: 'suburbia', name: 'Plumbus', x: -18.2, z: 33.7, r: 0.6, h: 1.6, model: 'lm_plumbus', rot: Math.PI / 2 },
+    { id: 'mbox', dim: 'suburbia', name: 'Meeseeks Box', x: -18.1, z: 27.6, r: 0.6, h: 1.4, model: 'lm_mbox', rot: Math.PI / 2 },
+    { id: 'battery', dim: 'suburbia', name: 'Microverse Battery', x: -11.6, z: 27.5, r: 0.8, h: 1.2, model: 'lm_battery', rot: 0, door: { dim: 'microverse', x: 0, z: 16 } },
+    { id: 'trapdoor', dim: 'suburbia', name: 'Hatch to the secret lab', x: -15.6, z: 28.1, r: 0.9, h: 0.3, model: 'lm_trapdoor', rot: Math.PI / 2, door: { dim: 'ricklab', x: 0, z: 6 } },
+    { id: 'cellardoor', dim: 'suburbia', name: 'Door to the wine cellar', x: -16.4, z: 35.25, r: 0.9, h: 3.4, model: 'lm_cellardoor', rot: Math.PI, door: { dim: 'cellar', x: 0, z: 6 } },
     { id: 'school', dim: 'suburbia', name: 'Harry Herpson High', x: 30, z: 22, r: 8.5, h: 8, model: 'lm_school', rot: Math.PI / 2, sign: { text: 'HARRY HERPSON HIGH SCHOOL', y: 6.95, z: 4.62, w: 9.5 } },
     { id: 'hospital', dim: 'suburbia', name: 'Horse Hospital', x: 30, z: -22, r: 7, h: 8, model: 'lm_hospital', rot: Math.PI / 2, sign: { text: 'HORSE HOSPITAL', y: 7.0, z: 5.1, w: 8 } },
     { id: 'office', dim: 'suburbia', name: 'Unemployment Office', x: -30, z: -22, r: 6.5, h: 7, model: 'lm_office', rot: -Math.PI / 2, sign: { text: 'UNEMPLOYMENT OFFICE', y: 6.4, z: 4.1, w: 8 } },
@@ -69,7 +93,7 @@
     // Ways into the pocket worlds, and back out.
     { id: 'anatomyentry', dim: 'suburbia', name: 'Anatomy Park (inside Ruben)', x: 66, z: -66, r: 5, h: 4, model: 'lm_anatomytent', door: { dim: 'anatomy', x: 0, z: 18 }, sign: { text: 'ANATOMY PARK', y: 4.4, z: 4.1, w: 6 } },
     { id: 'chalkdoor', dim: 'suburbia', name: "Rick's chalk door", x: -66, z: 66, r: 2.5, h: 3.5, model: 'lm_chalkdoor', door: { dim: 'froopy', x: 0, z: 16 } },
-    { id: 'microexit', dim: 'microverse', name: 'Out of the battery', x: 0, z: 10, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'rickgarage', x: 4.6, z: 5.4 } },
+    { id: 'microexit', dim: 'microverse', name: 'Out of the battery', x: 0, z: 10, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'suburbia', x: -12.6, z: 28.9 } },
     { id: 'anatomyexit', dim: 'anatomy', name: "Out of Ruben", x: 0, z: 12, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'suburbia', x: 66, z: -58 } },
     { id: 'froopyexit', dim: 'froopy', name: 'Back through the chalk door', x: 0, z: 10, r: 2.5, h: 3.5, model: 'lm_chalkdoor', door: { dim: 'suburbia', x: -66, z: 58 } },
     { id: 'curveedge', dim: 'beyond', name: 'Edge of the Curve', x: 0, z: 62, r: 8, h: 12, model: 'lm_curveedge' },
@@ -78,16 +102,9 @@
     { id: 'plumbusline', dim: 'plumbus', name: 'Plumbus Production Line', x: 0, z: 40, r: 8, h: 9, model: 'lm_plumbusline', sign: { text: 'PLUMBUS CO.', y: 8.2, z: 5.6, w: 7 } },
     { id: 'megatree', dim: 'megaseed', name: 'Mega Seed Tree', x: 0, z: 36, r: 6, h: 24, model: 'lm_megatree' },
     // Inside Rick's garage (its own little dimension). door: walking through takes you there.
-    { id: 'workbench', dim: 'rickgarage', name: "Rick's Workbench", x: 0, z: -6.6, r: 2.4, h: 1.3, model: 'lm_workbench', alias: 'garage' },
-    { id: 'plumbus', dim: 'rickgarage', name: 'Plumbus', x: -5.6, z: -6.4, r: 1.0, h: 1.6, model: 'lm_plumbus' },
-    { id: 'mbox', dim: 'rickgarage', name: 'Meeseeks Box', x: 5.6, z: -6.4, r: 0.9, h: 1.4, model: 'lm_mbox' },
-    { id: 'battery', dim: 'rickgarage', name: 'Microverse Battery', x: 6.4, z: 6.2, r: 1.1, h: 1.2, model: 'lm_battery', door: { dim: 'microverse', x: 0, z: 16 } },
-    { id: 'gdoor', dim: 'rickgarage', name: 'Garage door (outside)', x: 0, z: 8.2, r: 2.6, h: 4, model: 'lm_gdoor', door: { dim: 'suburbia', x: -7, z: 12.5 } },
-    { id: 'trapdoor', dim: 'rickgarage', name: 'Hatch to the secret lab', x: 6.3, z: -3.0, r: 1.2, h: 0.3, model: 'lm_trapdoor', door: { dim: 'ricklab', x: 0, z: 6 } },
-    { id: 'cellardoor', dim: 'rickgarage', name: 'Door to the wine cellar', x: -8.1, z: -3.4, r: 1.2, h: 3.4, model: 'lm_cellardoor', rot: Math.PI / 2, door: { dim: 'cellar', x: 0, z: 6 } },
-    { id: 'ladder', dim: 'ricklab', name: 'Ladder up to the garage', x: 0, z: 9.5, r: 1.2, h: 5, model: 'lm_ladder', door: { dim: 'rickgarage', x: 5, z: -1.4 } },
+    { id: 'ladder', dim: 'ricklab', name: 'Ladder up to the garage', x: 0, z: 9.5, r: 1.2, h: 5, model: 'lm_ladder', door: { dim: 'suburbia', x: -14.6, z: 28.3 } },
     { id: 'mindblowers', dim: 'ricklab', name: 'Mind Blowers', x: -8.5, z: -6, r: 1.4, h: 2.4, model: 'lm_mindblowers' },
-    { id: 'cellarexit', dim: 'cellar', name: 'Back to the garage', x: 0, z: 9.5, r: 1.4, h: 3.4, model: 'lm_cellardoor', door: { dim: 'rickgarage', x: -6, z: -3.4 } },
+    { id: 'cellarexit', dim: 'cellar', name: 'Back to the garage', x: 0, z: 9.5, r: 1.4, h: 3.4, model: 'lm_cellardoor', door: { dim: 'suburbia', x: -16.4, z: 33.9 } },
     { id: 'winerack', dim: 'cellar', name: "Rick's private stash", x: 0, z: -8.5, r: 2.0, h: 3, model: 'lm_winerack' },
     // ----- Downtown (just outside Seattle) -----
     { id: 'mall', dim: 'downtown', name: "Merpal's Mall", x: -66, z: -22, r: 12, h: 9, model: 'lm_mall', rot: Math.PI / 2, sign: { text: "MERPAL'S MALL", y: 7.4, z: 8.1, w: 10 } },
@@ -102,18 +119,28 @@
     { id: 'pentagon', dim: 'dc', name: 'The Pentagon', x: 100, z: -40, r: 20, h: 7, model: 'lm_pentagon', rot: -Math.PI / 2 },
     // ----- Area 51 -----
     { id: 'sonicstage', dim: 'area51', name: 'The Sonic Stage', x: 0, z: -40, r: 12, h: 9, model: 'lm_sonicstage', rot: 0 },
+    // ----- Snake Planet, Giant World, Atlantis, the Dream World, other times -----
+    { id: 'snakeclub', dim: 'snakeplanet', name: 'The Snake Jazz Club', x: 0, z: -34, r: 8, h: 8, model: 'lm_snakeclub', rot: 0 },
+    { id: 'dinocouncil', dim: 'dinoearth', name: 'The Dinosaur Council', x: 30, z: -30, r: 10, h: 10, model: 'lm_dinocouncil' },
+    { id: 'giantcastle', dim: 'giantland', name: "The Giants' Castle", x: 0, z: -60, r: 14, h: 26, model: 'lm_giantcastle', rot: 0 },
+    { id: 'nimbuspalace', dim: 'atlantis', name: "Mr. Nimbus's Palace", x: 0, z: -45, r: 12, h: 16, model: 'lm_nimbuspalace', rot: 0 },
+    { id: 'dreamschool', dim: 'dreamworld', name: 'Dream High School (it never ends)', x: 0, z: -40, r: 10, h: 9, model: 'lm_dreamschool', rot: 0 },
+    { id: 'timerift', dim: 'splitearth', name: 'The Time Rift', x: 22, z: 0, r: 4, h: 9, model: 'lm_timerift' },
+    // ----- Something to do in every world -----
+    { id: 'purgestage', dim: 'purge', name: 'The Festival Stage', x: 0, z: -34, r: 7, h: 7, model: 'lm_purgestage', rot: 0 },
+    { id: 'squanchclub', dim: 'squanch', name: "Squanchy's Party Hut", x: 0, z: -30, r: 7, h: 7, model: 'lm_squanchclub', rot: 0 },
+    { id: 'gazorpthrone', dim: 'gazorp', name: 'The Gazorpian Throne', x: 0, z: -32, r: 7, h: 9, model: 'lm_gazorpthrone', rot: 0 },
+    { id: 'froopyslide', dim: 'froopy', name: 'The Big Froopy Slide', x: 26, z: -26, r: 6, h: 10, model: 'lm_froopyslide' },
+    { id: 'pizzacounter', dim: 'pizzaworld', name: 'Pizza-Phone-Chair Exchange', x: 0, z: -30, r: 6, h: 6, model: 'lm_pizzacounter', rot: 0 },
+    { id: 'raidergarage', dim: 'wasteland', name: "The Raiders' Garage", x: 0, z: -34, r: 8, h: 7, model: 'lm_raidergarage', rot: 0 },
+    { id: 'unitycore', dim: 'unityworld', name: 'The Hive Core', x: 0, z: -34, r: 6, h: 14, model: 'lm_unitycore' },
+    { id: 'formsoffice', dim: 'federation', name: 'Bureau of Forms', x: 0, z: -40, r: 8, h: 9, model: 'lm_formsoffice', rot: 0 },
+    { id: 'geartemple', dim: 'gearworld', name: 'Temple of the Great Gear', x: 0, z: -36, r: 8, h: 12, model: 'lm_geartemple', rot: 0 },
+    { id: 'hamstertube', dim: 'hamsterworld', name: 'The Hamster Tubes', x: 24, z: -24, r: 6, h: 6, model: 'lm_hamstertube' },
+    { id: 'storyengine', dim: 'storytrain', name: 'The Story Engine', x: 0, z: -24, r: 7, h: 8, model: 'lm_storyengine', rot: 0 },
+    { id: 'detoxpod', dim: 'toxicworld', name: "Rick's Detox Machine", x: 0, z: -30, r: 5, h: 6, model: 'lm_detoxpod', rot: 0 },
     { id: 'hangar51', dim: 'area51', name: 'Hangar 18', x: 60, z: 10, r: 13, h: 10, model: 'lm_hangar', rot: -Math.PI / 2, sign: { text: 'HANGAR 18', y: 8.2, z: 9.6, w: 6 } },
   ];
-  // Highways between the parts of Earth. Each part has an on-ramp to every other part,
-  // in a row on its north edge; you come out at the matching ramp at the other end.
-  const EARTH = [['suburbia', 'the Smith neighbourhood'], ['downtown', 'Downtown'], ['dc', 'Washington, D.C.'], ['area51', 'Area 51']];
-  const rampAt = (from, to) => { const others = EARTH.filter(e => e[0] !== from).map(e => e[0]); return { x: -64 + 64 * others.indexOf(to), z: -160 }; };
-  for (const [from] of EARTH) for (const [to, name] of EARTH) {
-    if (from === to) continue;
-    const a = rampAt(from, to), b = rampAt(to, from);
-    MM.LANDMARKS.push({ id: 'hw_' + from + '_' + to, dim: from, name: 'Highway to ' + name, x: a.x, z: a.z, r: 4.5, h: 7, model: 'lm_highway', rot: 0,
-      sign: { text: name.toUpperCase().replace(/^THE /, ''), y: 6.1, z: 0.4, w: 7 }, door: { dim: to, x: b.x, z: b.z + 10 } });
-  }
   MM.LANDMARK_BY_ID = {};
   for (const l of MM.LANDMARKS) MM.LANDMARK_BY_ID[l.id] = l;
   MM.USE_RADIUS = 4;   // how close to a landmark's wall you must be to use it
@@ -141,6 +168,24 @@
     tour:    { at: 'monument', any: true, name: 'Ride up the Washington Monument', cd: 120, give: { s: 1 }, text: 'A very tall view of a very flat city. You spot three portals and a Secret Service agent pretending not to.' },
     congress:{ at: 'capitol', any: true, name: 'Sit in on Congress', cd: 200, give: { k: 2 }, text: 'Four hours of shouting. One bill passed. It was about portals, and it was confusing.' },
     warroom: { at: 'pentagon', any: true, name: 'Sit in the war room', cd: 240, give: { p: 2, k: 1 }, text: 'Generals pointing at a big screen. The big screen is pointing at your house.' },
+    festival:   { at: 'purgestage', any: true, name: 'Watch the Festival poetry', cd: 150, give: { s: 3 }, text: 'A farmer read a poem about murdering his neighbours. Everyone clapped. It was a really good poem.' },
+    squanchit:  { at: 'squanchclub', any: true, name: 'Squanch at the party', cd: 150, heal: 1, give: { p: 3 }, text: 'You squanched. They squanched. Somebody squanched on the ceiling. Best party in the galaxy.' },
+    tribute:    { at: 'gazorpthrone', any: true, name: 'Bring a tribute to the throne', cd: 200, give: { g: 3, s: 2 }, text: 'The Gazorpian matriarchs accepted your gift and did not eat you. A good day.' },
+    slide:      { at: 'froopyslide', any: true, name: 'Go down the Big Froopy Slide', cd: 100, heal: 1, give: { f: 2 }, text: 'Wheeee! It is so soft at the bottom. You do not ask what it is made of.' },
+    exchange:   { at: 'pizzacounter', any: true, name: 'Trade a pizza for a phone for a chair', cd: 150, give: { s: 2, p: 1 }, text: 'You traded a pizza for a phone, the phone for a chair, and sat on the chair. It complained.' },
+    raidercar:  { at: 'raidergarage', any: true, name: 'Soup up a raider car', cd: 200, give: { s: 5 }, text: 'Spikes on the hood, a skull on the grille, flames on the exhaust. The raiders nodded. Respect.' },
+    joinhive:   { at: 'unitycore', any: true, name: 'Join Unity for a minute', cd: 200, heal: 1, give: { c: 3 }, text: 'For one minute you were a whole planet. It was very peaceful, and a little bit creepy.' },
+    paperwork:  { at: 'formsoffice', any: true, name: 'File interdimensional paperwork', cd: 180, give: { k: 4 }, text: 'Form 27-B/6, stamped in triplicate by a bug-headed clerk. You got a refund. Nobody gets a refund.' },
+    gearprayer: { at: 'geartemple', any: true, name: 'Pray to the Great Gear', cd: 150, give: { s: 4 }, text: 'Clank clank. Clank. (You did not understand the sermon, but you liked the rhythm.)' },
+    tubes:      { at: 'hamstertube', any: true, name: 'Run through the hamster tubes', cd: 100, give: { f: 2, g: 1 }, text: 'You came out of the other end a little sweaty and the hamsters cheered.' },
+    storyride:  { at: 'storyengine', any: true, name: 'Ride the Story Train to the next act', cd: 200, give: { m: 1, p: 2 }, text: 'Act two: a twist you saw coming a mile away. The Story Lord was furious. Good.' },
+    detox:      { at: 'detoxpod', any: true, name: 'Run the detox', cd: 200, heal: 1, give: { g: 3, c: 1 }, text: 'Everything toxic in you went somewhere. Somewhere is here. Do not look at the puddle.' },
+    snakejazz:  { at: 'snakeclub', any: true, name: 'Listen to snake jazz', cd: 150, heal: 1, give: { g: 2, s: 1 }, text: 'Ssss-ss-ss-sssss. Ss-ss. You do not understand it, and that is the point.' },
+    dinotalk:   { at: 'dinocouncil', any: true, name: 'Ask the Dinosaur Council for wisdom', cd: 240, give: { m: 1, c: 2 }, text: 'They explained universal healthcare, then gave you a seed "for later". They are very patient with mammals.' },
+    giantcourt: { at: 'giantcastle', any: true, name: "Sit in on the giants' court", cd: 200, give: { k: 3, s: 3 }, text: 'The case: a tiny man pushed a giant down the stairs. The jury has questions. You kept your head down.' },
+    nimbus:     { at: 'nimbuspalace', any: true, name: 'Get an audience with Mr. Nimbus', cd: 200, heal: 1, give: { c: 3 }, text: '"I control the sea. And the police." He let you leave with some crystals and your dignity, mostly.' },
+    dreamtest:  { at: 'dreamschool', any: true, name: 'Take the test you never studied for', cd: 150, give: { p: 3 }, text: 'Every question is about a class you never took. You passed anyway. Dreams are like that.' },
+    timerift:   { at: 'timerift', any: true, name: 'Stitch the time rift', cd: 240, give: { c: 3, m: 1 }, text: 'You held the two timelines together until they clicked. A Time Cop nodded at you. Once.' },
     schwifty:{ at: 'sonicstage', any: true, name: 'Get Schwifty for the Cromulons', cd: 300, give: { m: 2, k: 2 }, text: 'SHOW ME WHAT YOU GOT! You took off your pants and your panties and the giant heads in the sky approved.' },
     hangar:  { at: 'hangar51', any: true, name: 'Look inside Hangar 18', cd: 200, give: { c: 3 }, text: 'Weather balloons. Lots of weather balloons. One of them waved.' },
     tinker:  { at: 'garage', name: 'Tinker in the garage', cd: 120, give: { s: 3, c: 1 }, text: 'You built something, took it apart, and kept the good bits.' },
@@ -149,6 +194,14 @@
     jobhunt: { at: 'office', name: 'Look for a job', cd: 120, give: { s: 1 }, text: 'They said they would call you. They will not call you.' },
     tv:      { at: 'smithtv', any: true, name: 'Watch interdimensional TV', cd: 90, heal: 1, give: {}, text: 'A show about a man who is also a ball. You feel restored.' },
     dinner:  { at: 'smithtable', name: 'Family dinner', cd: 180, heal: 1, give: { s: 2 }, text: 'Everyone argued. The mashed potatoes were good, though.' },
+    fridge:  { at: 'smithkitchen', any: true, name: 'Raid the fridge', cd: 120, heal: 1, give: {}, text: 'Leftover lasagna, a jar of something Rick labelled DO NOT, and juice. You had the lasagna.' },
+    rickbed: { at: 'rickroom', any: true, name: "Look under Rick's bed", cd: 240, give: { c: 2, s: 2 }, text: 'Crystals, a broken portal gun, and a shoebox marked "MEMORIES - DO NOT". You took the crystals.' },
+    homework:{ at: 'mortyroom', any: true, name: "Do Morty's homework", cd: 180, give: { k: 2 }, text: 'Math. Morty had drawn a sad face in every margin. You got a B. Rick says B is for Barely.' },
+    phone:   { at: 'summerroom', any: true, name: "Scroll on Summer's phone", cd: 150, give: { k: 1, p: 1 }, text: 'Forty-one notifications. Ethan is still a jerk. You liked a picture and made it worse.' },
+    wine:    { at: 'masterroom', any: true, name: "Find Beth's wine (and Jerry's sudoku)", cd: 200, heal: 1, give: { s: 1 }, text: 'A bottle under the bed and a sudoku with every square filled in with the number 7.' },
+    shower:  { at: 'bathroom', any: true, name: 'Take a shower', cd: 120, heal: 2, give: {}, text: 'Hot water, finally. Someone downstairs flushed. Cold water, finally.' },
+    graves:  { at: 'graves', any: true, name: 'Visit the graves in the back yard', cd: 300, give: { c: 1, m: 1 }, text: 'Here lie the Rick and Morty of this world. The ones you replaced. You brought flowers, and stood there a while.' },
+    garden:  { at: 'backyard', any: true, name: 'Do some gardening', cd: 150, heal: 1, give: { s: 1, f: 1 }, text: 'You weeded, you watered, and you did not dig too deep. Some things in this yard should stay buried.' },
     hug:     { at: 'home', name: 'Visit an old friend', cd: 120, heal: 1, give: { s: 2 }, text: 'They swear they have known you for years. It was lovely.' },
     forge:   { at: 'forge', name: 'Feed the forge', cd: 120, give: { g: 3 }, text: 'You fed it. It fed you back. Do not think about it.' },
     haggle:  { at: 'market', name: 'Haggle at the black market', cd: 120, give: { p: 2 }, text: 'You sold a "genuine" moon rock. It was a regular rock.' },
@@ -188,6 +241,7 @@
     shrink:   { cat: 'gadget', name: 'Shrink Ray Shot', cost: { s: 4, c: 2 }, max: 3, desc: 'One shot that shrinks the target to half size for 8 s.' },
     fluid:    { cat: 'gadget', name: 'Portal Fluid', cost: { c: 2 }, gun: true, desc: 'Refills one portal gun charge right away.' },
     timecrystal: { cat: 'gadget', name: 'Time Crystal', cost: { c: 5, m: 2 }, max: 1, desc: 'Press 5: freeze time around you for 4 s. Illegal for third-dimensional beings, so the Time Cops will come for you.' },
+    freeze:   { cat: 'gadget', name: 'Freeze Ray Shot', cost: { s: 3, c: 2 }, max: 3, desc: 'Press 6: one shot that freezes whoever it hits solid for a few seconds.' },
     meeseeks: { cat: 'gadget', name: 'Meeseeks Box', cost: { k: 3, s: 1 }, max: 2, desc: 'Press it (4): a Mr. Meeseeks pops out and fights for you for 30 s.' },
     // Rick's own body upgrades (only Ricks know how): robot limbs and a built-in scanner.
     // Pickle Rick's rat suit, built from rat parts and scrap (in a sewer, anywhere really).
@@ -215,9 +269,10 @@
     engine:   { cat: 'ship', name: 'Turbo Engine', cost: { p: 6, g: 4 }, at: 'shipyard', needs: 'hull', desc: 'The ship flies 60% faster.' },
     lasers:   { cat: 'ship', name: 'Ship Lasers', cost: { s: 6, c: 4, p: 3 }, at: 'market', needs: 'hull', desc: 'Heavy lasers while you fly.' },
     drive:    { cat: 'ship', name: 'Dimension Drive', cost: { c: 6, g: 4, p: 6, f: 4 }, at: 'shipyard', needs: 'engine', desc: 'Fly your ship straight into any dimension.' },
+    quantum:  { cat: 'ship', name: 'Quantum Drive', cost: { c: 12, g: 8, p: 12, f: 8 }, at: 'shipyard', needs: 'drive', desc: 'Enable light speed travel for instant interstellar jumps.' },
   };
   MM.RECIPE_IDS = Object.keys(MM.RECIPES);
-  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal'];
+  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal', 'freeze'];
   // Recipes everyone knows, whoever they are.
   MM.COMMON = ['meeseeks', 'megabrain'];
   MM.CATS = { gadget: 'Gadgets', self: 'You', gun: 'Portal gun', ship: 'Ship' };
@@ -469,7 +524,7 @@
     const A = MM.ARCHETYPES[arch];
     const up = {};
     for (const r of A.start || []) up[r] = 1;
-    return { up, step: 0, grants: [], cnt: { use: {}, dims: [], crafted: [], kill: {}, kills: 0, ko: 0, talk: 0, smash: 0, errand: 0 }, errands: [], tasks: {}, inv: { s: 0, c: 0, g: 0, p: 0, f: 0, m: 0, k: 0 }, chaos: 0 };
+    return { up, step: 0, grants: [], cnt: { use: {}, dims: [], crafted: [], kill: {}, kills: 0, ko: 0, talk: 0, smash: 0, errand: 0 }, errands: [], tasks: {}, inv: { s: 0, c: 0, g: 0, p: 0, f: 0, m: 0, k: 0 }, found: [], chaos: 0 };
   };
 
   MM.hasGun = (arch, up) => !!(MM.ARCHETYPES[arch].portal || up.gunbuild);
@@ -510,6 +565,9 @@
       jump: A.jump * (up.legs1 ? 1.1 : 1) * (up.legs2 ? 1.1 : 1) * (up.cyberlegs ? 1.35 : 1),
       fly: A.fly || up.wings ? 'wings' : up.jetpack ? 'jet' : null,
       dmg: (up.blaster1 ? 1.3 : 1) * (up.blaster2 ? 1.4 : 1) * (up.megabrain ? 1.1 : 1) * (up.cyberarm ? 1.35 : 1),
+      // Sprinting (Shift, or push the stick past its edge): a bit faster than walking, more
+      // with better legs.
+      sprint: 1.3 * (up.legs1 ? 1.06 : 1) * (up.legs2 ? 1.06 : 1) * (up.cyberlegs ? 1.15 : 1),
       scanner: !!up.scanner,
       cdMult: up.megabrain ? 0.7 : 1,
       cloak: !!up.cloak,
@@ -520,7 +578,14 @@
       const base = A.portal || { charges: 2, recharge: 25 };
       s.gun = { charges: base.charges + (up.guncap1 ? 1 : 0) + (up.guncap2 ? 1 : 0), recharge: base.recharge * (up.gunfast ? 0.65 : 1) };
     }
-    if (up.hull) s.ship = { speed: up.engine ? 30 : 19, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive };
+    if (up.hull) {
+      let baseSpeed = up.engine ? 30 : 19;
+      // Quantum drive provides massive speed boost for light speed travel
+      if (up.quantum) {
+        baseSpeed = 1000; // Light speed travel speed
+      }
+      s.ship = { speed: baseSpeed, lasers: !!up.lasers, engine: !!up.engine, drive: !!up.drive, quantum: !!up.quantum };
+    }
     // Rick helped build the Curve and can step outside it; Evil Morty broke out of it. Anyone
     // else needs the golden fluid.
     if (s.gun) s.gun.gold = arch === 'genius' || arch === 'evilmorty' || !!up.curvebreaker;
@@ -566,8 +631,10 @@
     face: ['round', 'long', 'wide'],
     top: ['labcoat', 'tshirt', 'tank', 'polo', 'sweater', 'armor', 'vest', 'none'],
     acc: ['none', 'goggles', 'antennae', 'tophat', 'headband', 'eyepatch', 'halo', 'crown', 'cap'],
+    // How your portals look: Rick's classic green swirl, a hard ring, spiral arms, or static.
+    portalStyle: ['swirl', 'ring', 'spiral', 'storm'],
     nums: { height: [0.8, 1.3], width: [0.75, 1.35], head: [0.8, 1.45] },
-    colors: ['skin', 'hairColor', 'topColor', 'shirtColor', 'pantsColor', 'shoeColor', 'accColor', 'portalColor'],
+    colors: ['skin', 'hairColor', 'topColor', 'shirtColor', 'pantsColor', 'shoeColor', 'accColor', 'portalColor', 'portalColor2'],
   };
 
   MM.defaultLook = function () {
@@ -575,7 +642,7 @@
       species: 'human', hair: 'rick', brow: 'uni', eyes: 'tired', mouth: 'flat', face: 'long', top: 'labcoat', acc: 'none',
       height: 1.15, width: 0.95, head: 1.1,
       skin: '#f2d2b6', hairColor: '#b9d4e0', topColor: '#f4f6f8', shirtColor: '#7fb2d6', pantsColor: '#6b4f2c',
-      shoeColor: '#3a2a1a', accColor: '#444444', portalColor: '#39ff6a',
+      shoeColor: '#3a2a1a', accColor: '#444444', portalColor: '#39ff6a', portalColor2: '', portalStyle: 'swirl',
     };
   };
 
@@ -620,7 +687,7 @@
   MM.sanitizeLook = function (raw) {
     const out = MM.defaultLook();
     if (!raw || typeof raw !== 'object') return out;
-    for (const k of ['species', 'hair', 'brow', 'eyes', 'mouth', 'face', 'top', 'acc']) {
+    for (const k of ['species', 'hair', 'brow', 'eyes', 'mouth', 'face', 'top', 'acc', 'portalStyle']) {
       if (typeof raw[k] === 'string' && MM.LOOK[k].includes(raw[k])) out[k] = raw[k];
     }
     for (const k in MM.LOOK.nums) {
@@ -631,6 +698,15 @@
       if (typeof raw[k] === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw[k])) out[k] = raw[k].toLowerCase();
     }
     return out;
+  };
+
+  // The two ends of your portal pair: your portal colour, and the second colour if you picked
+  // one (otherwise a deeper shade of the same, so both ends stay yours: green for a Rick).
+  MM.pairColors = function (look) {
+    const a = (look && look.portalColor) || '#39ff6a';
+    let b = look && look.portalColor2;
+    if (!b) { const n = parseInt(a.slice(1), 16), f = v => Math.round(v * 0.62).toString(16).padStart(2, '0'); b = '#' + f(n >> 16 & 255) + f(n >> 8 & 255) + f(n & 255); }
+    return [a, b];
   };
 
   // Names: letters, digits, spaces and a little punctuation, 2-20 characters.

@@ -513,6 +513,153 @@
       s.add(P.torus, '#9aa3ab', [0, 0.55, 0.39], null, [0.26, 0.26, 0.3]);
       s.add(P.cyl, '#9aa3ab', [0.25, 1.02, -0.22], [Math.PI / 2, 0, 0], [0.05, 0.04, 0.05]);
     },
+    // ----- Furniture and centrepieces for the drawn insides (shared/interiors.js) -----
+    in_sofa(s) {
+      s.add(P.box, '#6a5a8a', [0, 0.25, 0.05], null, [2.2, 0.5, 0.8]);
+      s.add(P.box, '#7a6a9a', [0, 0.62, -0.3], null, [2.2, 0.7, 0.25]);
+      for (const x of [-1.0, 1.0]) s.add(P.box, '#7a6a9a', [x, 0.45, 0.05], null, [0.25, 0.5, 0.8]);
+      for (const x of [-0.5, 0.5]) s.add(P.box, '#8a7aaa', [x, 0.55, 0.1], null, [0.95, 0.12, 0.6]);
+    },
+    in_table(s) {
+      s.add(P.box, '#8a5a32', [0, 0.75, 0], null, [2.8, 0.1, 1.6]);
+      for (const x of [-1.2, 1.2]) for (const z of [-0.65, 0.65]) s.add(P.box, '#6a4222', [x, 0.37, z], null, [0.1, 0.74, 0.1]);
+      for (const x of [-0.8, 0, 0.8]) for (const z of [-1.1, 1.1]) { s.add(P.box, '#7a4a2a', [x, 0.45, z], null, [0.45, 0.06, 0.45]); s.add(P.box, '#7a4a2a', [x, 0.75, z + Math.sign(z) * 0.2], null, [0.45, 0.6, 0.05]); }
+      s.add(P.cyl, '#e8e4dc', [0, 0.82, 0], null, [0.18, 0.04, 0.18]);
+    },
+    in_bed(s) {
+      s.add(P.box, '#6a4a32', [0, 0.25, 0], null, [1.8, 0.4, 2.2]);
+      s.add(P.box, '#f0ece2', [0, 0.5, 0.1], null, [1.7, 0.18, 2.0]);
+      s.add(P.box, '#5a8ac8', [0, 0.6, 0.35], null, [1.72, 0.08, 1.4]);
+      s.add(P.box, '#ffffff', [0, 0.65, -0.75], null, [1.2, 0.15, 0.4]);
+      s.add(P.box, '#6a4a32', [0, 0.7, -1.1], null, [1.8, 1.0, 0.1]);
+    },
+    in_desk(s) {
+      s.add(P.box, '#8a6a4a', [0, 0.74, 0], null, [1.6, 0.08, 0.8]);
+      for (const x of [-0.72, 0.72]) s.add(P.box, '#6a4a2a', [x, 0.37, 0], null, [0.08, 0.74, 0.74]);
+      s.add(P.box, '#2a2e36', [0, 1.05, -0.2], null, [0.6, 0.42, 0.05]);
+      s.add(P.box, '#5fb4ff', [0, 1.05, -0.17], null, [0.52, 0.34, 0.02], true);
+      s.add(P.box, '#3a3a40', [0, 0.45, 0.6], null, [0.5, 0.08, 0.5]);
+    },
+    in_shelf(s) {
+      s.add(P.box, '#6a4a2a', [0, 1.1, 0], null, [2.0, 2.2, 0.6]);
+      for (let y = 0.35; y < 2.1; y += 0.5) for (let i = 0; i < 6; i++) s.add(P.box, ['#c84848', '#4878c8', '#48a868', '#e8c848'][(i + Math.round(y * 2)) % 4], [-0.8 + i * 0.32, y + 0.17, 0.22], null, [0.22, 0.34, 0.2]);
+    },
+    in_counter(s) {
+      s.add(P.box, '#7a5a3a', [0, 0.5, 0], null, [3.6, 1.0, 1.0]);
+      s.add(P.box, '#d8d0c0', [0, 1.04, 0], null, [3.7, 0.08, 1.1]);
+      s.add(P.box, '#2a2e36', [1.2, 1.3, -0.2], null, [0.5, 0.4, 0.4]);
+      s.add(P.box, '#ffd84d', [-1.0, 1.15, 0.1], null, [0.3, 0.14, 0.3]);
+    },
+    in_plant(s) {
+      s.add(P.cyl, '#b86a3a', [0, 0.25, 0], null, [0.3, 0.5, 0.3]);
+      for (const [x, y, z, r] of [[0, 1.0, 0, 0.45], [0.2, 1.3, 0.1, 0.32], [-0.18, 1.25, -0.1, 0.3]]) s.add(P.sphere, '#3f9a3a', [x, y, z], null, [r, r, r]);
+    },
+    in_bench(s) {
+      s.add(P.box, '#8a6a4a', [0, 0.45, 0], null, [2.0, 0.08, 0.5]);
+      for (const x of [-0.85, 0.85]) s.add(P.box, '#5a4a3a', [x, 0.22, 0], null, [0.1, 0.44, 0.45]);
+    },
+    f_furnace(s) {
+      s.add(P.box, '#5a2a2a', [0, 1.5, 0], null, [3.4, 3.0, 2.6]);
+      s.add(P.box, '#3a1818', [0, 3.3, -0.3], null, [1.2, 1.2, 1.2]);
+      s.add(P.box, '#ff8a2a', [0, 1.0, 1.31], null, [1.6, 1.1, 0.04], true);
+      s.add(P.box, '#ffd84d', [0, 0.85, 1.33], null, [1.1, 0.6, 0.04], true);
+      for (const x of [-1.4, 1.4]) s.add(P.cyl, '#c8576b', [x, 1.6, 1.0], null, [0.25, 3.2, 0.25]);
+    },
+    f_anvil(s) {
+      s.add(P.box, '#4a4a4e', [0, 0.25, 0], null, [0.5, 0.5, 0.4]);
+      s.add(P.box, '#5a5a60', [0, 0.65, 0], null, [1.1, 0.3, 0.45]);
+      s.add(P.cyl, '#5a5a60', [0.6, 0.7, 0], [0, 0, Math.PI / 2], [0.15, 0.3, 0.15]);
+    },
+    f_stage(s) {
+      s.add(P.box, '#4a2a3a', [0, 0.27, 0], null, [7, 0.55, 4]);
+      s.add(P.box, '#ff5fd0', [0, 0.56, 1.98], null, [7, 0.04, 0.06], true);
+      s.add(P.box, '#2a1a2a', [0, 2.6, -1.9], null, [7, 4.2, 0.2]);
+      for (const x of [-2.6, 2.6]) { s.add(P.box, '#1a1a1e', [x, 1.2, -1.2], null, [0.9, 1.3, 0.7]); s.add(P.cyl, '#3a3a40', [x, 1.2, -0.84], [Math.PI / 2, 0, 0], [0.3, 0.03, 0.3]); }
+      s.add(P.cylLo, '#c8c8d0', [0, 1.1, 0.8], null, [0.03, 1.1, 0.03]);
+      s.add(P.sphere, '#2a2a2a', [0, 1.72, 0.8], null, [0.08, 0.1, 0.08]);
+      for (const x of [-2, 0, 2]) s.add(P.sphere, ['#ff5fd0', '#5ff8ff', '#ffd84d'][(x + 2) / 2], [x, 4.5, -1.6], null, [0.25, 0.25, 0.25], true);
+    },
+    f_conveyor(s) {
+      s.add(P.box, '#3a3a40', [0, 0.85, 0], null, [8, 0.15, 1.4]);
+      for (let x = -3.5; x <= 3.5; x += 1.75) s.add(P.box, '#5a5a62', [x, 0.4, 0], null, [0.15, 0.8, 1.2]);
+      for (let x = -3; x <= 3; x += 1.5) s.add(P.sphere, ['#ff8fc8', '#5ff8ff', '#b46aff'][Math.abs(Math.round(x)) % 3], [x, 1.1, 0], null, [0.3, 0.25, 0.3]);
+      s.add(P.box, '#8a8a92', [3.6, 1.6, 0], null, [0.8, 1.6, 1.6]);
+    },
+    f_vat(s) {
+      s.add(P.cyl, '#8a909a', [0, 1.1, 0], null, [1.3, 2.2, 1.3]);
+      s.add(P.cyl, '#5ff8ff', [0, 2.22, 0], null, [1.15, 0.06, 1.15], true);
+      for (const a of [0, 2.1, 4.2]) s.add(P.box, '#5ff8ff', [Math.cos(a) * 0.5, 2.6, Math.sin(a) * 0.5], [0.2, a, 0.1], [0.25, 0.8, 0.25], true);
+    },
+    f_ringtable(s) {
+      const n = 14;
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; s.add(P.box, '#c8ccd8', [Math.sin(a) * 2.2, 0.8, Math.cos(a) * 2.2], [0, a, 0], [1.05, 0.1, 0.7]); s.add(P.box, '#4a5470', [Math.sin(a) * 3.0, 0.5, Math.cos(a) * 3.0], [0, a, 0], [0.5, 1.0, 0.1]); }
+      s.add(P.cyl, '#4a5470', [0, 0.4, 0], null, [1.2, 0.8, 1.2]);
+      s.add(P.sphere, '#5ff8ff', [0, 1.4, 0], null, [0.6, 0.6, 0.6], true);
+    },
+    f_podium(s) {
+      s.add(P.box, '#6a4a2a', [0, 0.6, 0], null, [1.0, 1.2, 0.7]);
+      s.add(P.box, '#8a6a4a', [0, 1.25, -0.05], [-0.25, 0, 0], [1.1, 0.08, 0.8]);
+      s.add(P.cyl, '#ffd84d', [0, 0.7, 0.36], [Math.PI / 2, 0, 0], [0.25, 0.03, 0.25]);
+    },
+    f_ballpit(s) {
+      for (const [x, z, w, d] of [[0, -2.3, 5, 0.3], [0, 2.3, 5, 0.3], [-2.4, 0, 0.3, 4.6], [2.4, 0, 0.3, 4.6]]) s.add(P.box, '#5fb4ff', [x, 0.3, z], null, [w, 0.6, d]);
+      for (let i = 0; i < 46; i++) { const x = ((i * 37) % 44) / 10 - 2.1, z = ((i * 53) % 40) / 10 - 2.0; s.add(P.sphere, ['#ff5f5f', '#ffd84d', '#5fb4ff', '#5fdc5f'][i % 4], [x, 0.35, z], null, [0.22, 0.22, 0.22]); }
+    },
+    f_throne(s) {
+      s.add(P.box, '#c8a040', [0, 0.25, 0], null, [2.4, 0.5, 2.0]);
+      s.add(P.box, '#a83838', [0, 0.85, 0.1], null, [1.4, 0.7, 1.2]);
+      s.add(P.box, '#c8a040', [0, 2.0, -0.6], null, [1.6, 3.0, 0.3]);
+      for (const x of [-0.75, 0.75]) s.add(P.box, '#c8a040', [x, 1.2, 0.1], null, [0.2, 0.6, 1.2]);
+      for (const x of [-0.6, 0, 0.6]) s.add(P.cone, '#ffd84d', [x, 3.7, -0.6], null, [0.18, 0.5, 0.18]);
+    },
+    f_tvwall(s) {
+      s.add(P.box, '#2a2a30', [0, 1.75, -0.2], null, [8, 3.5, 0.3]);
+      const cols = ['#5fb4ff', '#ff8fc8', '#5fdc5f', '#ffd84d', '#b46aff', '#ff8a4a'];
+      for (let r = 0; r < 3; r++) for (let c = 0; c < 6; c++) { s.add(P.box, '#111114', [-3.3 + c * 1.32, 0.7 + r * 1.05, -0.02], null, [1.2, 0.9, 0.08]); s.add(P.box, cols[(r * 2 + c) % 6], [-3.3 + c * 1.32, 0.7 + r * 1.05, 0.03], null, [1.05, 0.75, 0.02], true); }
+    },
+    f_statue(s) {
+      s.add(P.box, '#d8d4c8', [0, 0.5, 0], null, [1.4, 1.0, 1.4]);
+      s.add(P.capsule, '#e8e4d8', [0, 1.9, 0], null, [0.35, 1.0, 0.35]);
+      s.add(P.sphere, '#e8e4d8', [0, 2.75, 0], null, [0.3, 0.32, 0.3]);
+    },
+    f_ufo(s) {
+      s.add(P.cyl, '#b8c0c8', [0, 1.4, 0], null, [4.2, 0.5, 4.2]);
+      s.add(P.sphere, '#9ac8e8', [0, 1.9, 0], null, [1.6, 1.0, 1.6]);
+      for (let i = 0; i < 8; i++) { const a = i / 8 * Math.PI * 2; s.add(P.sphere, '#5ff86a', [Math.sin(a) * 3.6, 1.35, Math.cos(a) * 3.6], null, [0.2, 0.2, 0.2], true); }
+      for (const a of [0.5, 2.6, 4.7]) s.add(P.cylLo, '#6a7078', [Math.sin(a) * 2.6, 0.6, Math.cos(a) * 2.6], [Math.cos(a) * 0.3, 0, -Math.sin(a) * 0.3], [0.08, 1.4, 0.08]);
+      s.add(P.box, '#6a7a5a', [1.5, 2.2, 0.5], [0.3, 0.4, 0.2], [3.2, 0.06, 2.6]);   // the tarp, half off
+    },
+    f_doorwall(s) {
+      s.add(P.box, '#e8dcc4', [0, 1.5, -0.2], null, [9, 3, 0.3]);
+      const cols = ['#8a3a2a', '#3a6a8a', '#e8e4dc', '#2a5a3a', '#c8a040', '#6a3a8a'];
+      for (let i = 0; i < 6; i++) { const x = -3.75 + i * 1.5; s.add(P.box, '#fbf6ea', [x, 1.15, -0.02], null, [1.15, 2.3, 0.08]); s.add(P.box, cols[i], [x, 1.1, 0.03], null, [0.95, 2.1, 0.05]); s.add(P.sphere, '#ffd84d', [x + 0.35, 1.1, 0.08], null, [0.06, 0.06, 0.06]); }
+    },
+    // The Smiths' bathroom upstairs.
+    bathtub(s) {
+      s.add(P.box, '#f4f4f0', [0, 0.3, 0], null, [0.85, 0.6, 1.8]);
+      s.add(P.box, '#bfe4f4', [0, 0.5, 0], null, [0.65, 0.04, 1.6]);
+      s.add(P.box, '#e8e8e2', [0, 0.61, 0], null, [0.85, 0.04, 1.8]);
+      s.add(P.cylLo, '#b8bec4', [0, 0.9, 0.78], [Math.PI / 2, 0, 0], [0.03, 0.3, 0.03]);
+      s.add(P.cylLo, '#b8bec4', [0, 1.9, 0.86], null, [0.02, 2.0, 0.02]);   // shower riser
+      s.add(P.cylLo, '#b8bec4', [0, 2.9, 0.7], null, [0.14, 0.03, 0.14]);
+      s.add(P.box, '#9ad0e8', [-0.43, 1.6, 0], null, [0.02, 2.0, 1.8]);   // the curtain
+    },
+    toilet(s) {
+      s.add(P.box, '#f4f4f0', [0, 0.2, 0.05], null, [0.38, 0.4, 0.5]);
+      s.add(P.cyl, '#f4f4f0', [0, 0.42, 0.12], null, [0.24, 0.06, 0.28]);
+      s.add(P.cyl, '#e2e2dc', [0, 0.46, 0.12], null, [0.2, 0.02, 0.24]);
+      s.add(P.box, '#f4f4f0', [0, 0.62, -0.2], null, [0.46, 0.42, 0.2]);
+    },
+    bathsink(s) {
+      s.add(P.cyl, '#f4f4f0', [0, 0.4, 0], null, [0.12, 0.8, 0.12]);
+      s.add(P.box, '#f4f4f0', [0, 0.86, 0], null, [0.6, 0.12, 0.45]);
+      s.add(P.box, '#bfe4f4', [0, 0.92, 0.02], null, [0.42, 0.02, 0.28]);
+      s.add(P.cylLo, '#b8bec4', [0, 1.0, -0.16], null, [0.025, 0.2, 0.025]);
+    },
+    bathmirror(s) {
+      s.add(P.box, '#e2e2dc', [0, 1.75, 0], null, [0.7, 0.9, 0.04]);
+      s.add(P.box, '#cfe8f4', [0, 1.75, 0.025], null, [0.6, 0.8, 0.02], true);
+    },
     lm_plumbus(s) {
       s.add(P.cyl, '#6b6458', [0, 0.45, 0], null, [0.6, 0.9, 0.6]);
       s.add(P.capsule, '#f4a0b8', [0, 1.3, 0], [0, 0, 0.2], [0.22, 0.7, 0.22]);
@@ -635,10 +782,86 @@
       for (let y = 0; y < 4; y++) for (let i = 0; i < 8; i++) s.add(P.cyl, ['#3a6a2a', '#6a1a2a', '#ffd84d'][(i * 3 + y) % 3], [-1.7 + i * 0.48, 0.45 + y * 0.7, 0.3], [Math.PI / 2, 0, 0], [0.11, 0.6, 0.11], (i * 3 + y) % 3 === 2);
     },
     // ----- Landmarks -----
-    // The Smith family home: two storeys, tan siding, brown roof, porch with columns.
+    // The Smith family home: two storeys of cream siding under a brown roof, a porch with
+    // white columns, the front door a little left of the middle. The garage stands on its left
+    // (its own landmark); out the back, a door to the kitchen, and one on the garage side into
+    // Rick's room. Doors match the floor plan inside (shared/interiors.js).
     lm_home(s) {
-      suburbanHouse(s, { w: 12.5, d: 9.5, h: 6.0, stories: 2, wall: '#e6d2a8', trim: '#fbf6ea', roof: '#6b4a3a', door: '#7a3326', shutter: null, porch: true, chimney: true, winX: [-3.6, 3.6] });
-      s.add(P.box, '#c9b48c', [0, 0.05, 6.5], null, [1.4, 0.05, 3]);     // front path
+      const w = 14, d = 10, h = 6.4, wall = '#ecdcb4', trim = '#fbf6ea', roof = '#5e3f2e', door = '#7a3326';
+      suburbanHouse(s, { w, d, h, stories: 2, wall, trim, roof, door, shutter: '#4e6a3a', porch: false, chimney: true, winX: [-4.4, 3.4], doorX: -0.63, roofH: 3.6 });
+      // A porch across most of the front: deck, white columns and rail, its own little roof.
+      s.add(P.box, '#a89a84', [-0.4, 0.28, d / 2 + 1.25], null, [9.2, 0.18, 2.5]);
+      s.add(P.box, '#b8b0a2', [-0.63, 0.12, d / 2 + 2.8], null, [2.0, 0.22, 0.7]);                      // the step
+      for (const x of [-4.8, -2.0, 0.8, 3.8]) s.add(P.cyl, trim, [x, 1.85, d / 2 + 2.3], null, [0.12, 2.9, 0.12]);
+      for (const [x0, x1] of [[-4.8, -1.6], [0.4, 3.8]]) {
+        s.add(P.box, trim, [(x0 + x1) / 2, 0.95, d / 2 + 2.3], null, [x1 - x0, 0.08, 0.08]);
+        for (let x = x0 + 0.3; x < x1; x += 0.3) s.add(P.box, trim, [x, 0.66, d / 2 + 2.3], null, [0.04, 0.55, 0.04]);
+      }
+      s.add(P.box, roof, [-0.4, 3.45, d / 2 + 1.3], [-0.22, 0, 0], [9.6, 0.16, 2.9]);
+      s.add(P.box, trim, [-0.4, 3.22, d / 2 + 2.45], null, [9.6, 0.2, 0.12]);
+      // The back door to the kitchen, with steps down to the yard.
+      s.add(P.box, trim, [4.45, 1.6, -d / 2 - 0.03], null, [1.4, 2.5, 0.08]);
+      s.add(P.box, '#f4f0e6', [4.45, 1.55, -d / 2 - 0.07], null, [1.0, 2.2, 0.06]);
+      s.add(P.box, '#bfdcec', [4.45, 2.0, -d / 2 - 0.11], null, [0.6, 0.7, 0.02]);
+      s.add(P.box, '#b8b0a2', [4.45, 0.3, -d / 2 - 0.7], null, [2.0, 0.3, 1.3]);
+      // The side door into Rick's room, on the garage side.
+      s.add(P.box, trim, [-w / 2 - 0.03, 1.6, -2.8], null, [0.08, 2.5, 1.4]);
+      s.add(P.box, door, [-w / 2 - 0.07, 1.55, -2.8], null, [0.06, 2.2, 1.0]);
+      s.add(P.box, '#b8b0a2', [-w / 2 - 0.6, 0.25, -2.8], null, [1.1, 0.2, 1.6]);
+      // Back windows (kitchen, Summer's room, the bathroom).
+      for (const [x, y] of [[-3.6, 2.2], [1.6, 2.2], [-3.6, 5.2], [3.6, 5.2]]) {
+        s.add(P.box, '#fbfaf6', [x, y, -d / 2 - 0.03], null, [1.54, 1.44, 0.1]);
+        s.add(P.box, '#bfdcec', [x, y, -d / 2 - 0.08], null, [1.3, 1.2, 0.04]);
+        s.add(P.box, '#fbfaf6', [x, y, -d / 2 - 0.11], null, [0.07, 1.2, 0.03]);
+      }
+      s.add(P.box, '#c9b48c', [-0.63, 0.05, d / 2 + 4.6], null, [1.4, 0.05, 3]);     // front path
+      for (const x of [-6.2, 5.6]) s.add(P.sphere, '#3f8a34', [x, 0.6, d / 2 + 0.8], null, [1.1, 0.8, 0.8]);   // bushes by the porch
+    },
+    // The back yard: lawn, a grey brick wall round three sides, Rick's white shed with a brown
+    // roof in the far corner, the big tree, and under it the two graves where Rick and Morty
+    // buried this Earth's Rick and Morty ("Rick Potion #9"). Front (+z) = toward the house.
+    lm_backyard(s) {
+      const brick = '#8e8c88', cap = '#a8a6a0', mortar = '#77756f';
+      s.add(P.box, '#62b444', [0, 0.02, 0.2], null, [26.8, 0.04, 17.2]);
+      // The wall, 1.8 m, with piers every 3 m and a capping course.
+      const wallRun = (x1, z1, x2, z2) => {
+        const len = Math.hypot(x2 - x1, z2 - z1), a = Math.atan2(x2 - x1, z2 - z1);
+        s.add(P.box, brick, [(x1 + x2) / 2, 0.9, (z1 + z2) / 2], [0, a, 0], [0.3, 1.8, len]);
+        s.add(P.box, cap, [(x1 + x2) / 2, 1.85, (z1 + z2) / 2], [0, a, 0], [0.38, 0.1, len + 0.08]);
+        for (let y = 0.3; y < 1.8; y += 0.3) s.add(P.box, mortar, [(x1 + x2) / 2, y, (z1 + z2) / 2], [0, a, 0], [0.31, 0.03, len]);
+        const n = Math.max(1, Math.round(len / 3));
+        for (let i = 0; i <= n; i++) s.add(P.box, brick, [x1 + (x2 - x1) * i / n, 1.0, z1 + (z2 - z1) * i / n], [0, a, 0], [0.45, 2.0, 0.45]);
+      };
+      wallRun(-13.5, -8.5, 13.5, -8.5); wallRun(-13.5, -8.5, -13.5, 8.0); wallRun(13.5, -8.5, 13.5, 8.9);
+      // Rick's shed: white boards, a brown gable roof, a door facing the house.
+      const sx = -8.5, sz = -5.5;
+      s.add(P.box, '#f2efe6', [sx, 1.2, sz], null, [3.0, 2.4, 2.6]);
+      for (let x = -1.35; x <= 1.4; x += 0.3) s.add(P.box, '#dedad0', [sx + x, 1.2, sz + 1.31], null, [0.04, 2.4, 0.02]);
+      s.add(P.prism, '#6a4430', [sx, 2.4, sz], null, [3.6, 1.2, 3.2]);
+      s.add(P.box, '#8a6a4a', [sx + 0.4, 1.0, sz + 1.32], null, [1.0, 2.0, 0.04]);
+      s.add(P.box, '#bfdcec', [sx - 0.9, 1.6, sz + 1.32], null, [0.6, 0.5, 0.03]);
+      // The big tree, and the two graves in its shade: low mounds of turned earth.
+      const tx = 9.5, tz = -6;
+      s.add(P.cylLo, '#6e4a2c', [tx, 1.8, tz], null, [0.42, 3.6, 0.42]);
+      s.add(P.cylLo, '#6e4a2c', [tx + 0.6, 3.8, tz], [0, 0, -0.6], [0.2, 1.8, 0.2]);
+      s.add(P.cylLo, '#6e4a2c', [tx - 0.6, 3.9, tz + 0.1], [0.2, 0, 0.55], [0.2, 1.7, 0.2]);
+      for (const [x, y, z, r] of [[0, 5.8, 0, 3.0], [1.9, 5.3, 0.6, 2.0], [-1.9, 5.4, -0.3, 2.0], [0.4, 5.5, 1.9, 1.9], [-0.3, 5.4, -1.9, 1.9], [0.6, 7.3, 0.2, 2.0]]) s.add(P.sphere, y > 6.5 ? '#58b048' : '#47963a', [tx + x, y, tz + z], null, [r, r * 0.85, r]);
+      for (const gx of [6.3, 7.7]) {
+        s.add(P.box, '#6a4a30', [gx, 0.12, -4], null, [0.9, 0.24, 2.0]);
+        s.add(P.sphere, '#7a5838', [gx, 0.2, -4], null, [0.5, 0.18, 1.0]);
+      }
+      s.add(P.sphere, '#ff6a8a', [6.3, 0.34, -3.3], null, [0.12, 0.08, 0.12]);   // somebody left flowers
+      s.add(P.sphere, '#ffe066', [7.7, 0.34, -3.2], null, [0.12, 0.08, 0.12]);
+      s.add(P.box, '#8a6a4a', [10.8, 0.6, -2.2], [0, 0.4, -0.2], [0.08, 1.2, 0.4]);  // the shovel, still leaning there
+      // Bushes along the wall, a patio by the back door, a grill and two lawn chairs.
+      for (const [x, z] of [[-12.6, 2], [-12.6, -3], [12.6, 3.5], [-3, -7.6], [2.5, -7.6]]) s.add(P.sphere, '#3f8a34', [x, 0.55, z], null, [0.9, 0.7, 0.9]);
+      s.add(P.box, '#bcb4a6', [4.5, 0.05, 6.7], null, [4.5, 0.08, 3.4]);
+      s.add(P.cyl, '#2a2a2a', [2.6, 0.9, 6.1], null, [0.35, 0.3, 0.35]);
+      s.add(P.cylLo, '#2a2a2a', [2.6, 0.45, 6.1], null, [0.04, 0.9, 0.04]);
+      for (const x of [5.2, 6.6]) {
+        s.add(P.box, '#ffffff', [x, 0.42, 5.6], null, [0.6, 0.06, 0.6]);
+        s.add(P.box, '#ffffff', [x, 0.75, 5.32], [-0.3, 0, 0], [0.6, 0.65, 0.06]);
+      }
     },
     // Rick's garage: same siding and roof as the house, white sectional door, side window.
     // Rick's garage, standing open: thin walls you can walk between, the big door rolled up
@@ -2176,14 +2399,14 @@
   // Big things in the sky that make each dimension recognisable.
   function skyDecor(dim, group) {
     const add = (shape, pos) => { const m = C.meshOf(shape.build(), 0); m.position.set(pos[0], pos[1], pos[2]); m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } }); group.add(m); return m; };
-    if (dim.id === 'suburbia') {
+    if ((dim.shapeOf || dim.id) === 'suburbia') {
       for (let i = 0; i < 14; i++) {
         const s = new C.Shape();
         for (let j = 0; j < 4; j++) s.add(P.sphereLo, '#ffffff', [j * 9 - 13, Math.sin(j * 2) * 2, (j % 2) * 4], null, [9, 5, 7], true);
         const a = i / 14 * Math.PI * 2, d = 300 + (i % 3) * 60;
         add(s, [Math.cos(a) * d, 110 + (i % 4) * 25, Math.sin(a) * d]);
       }
-    } else if (dim.id === 'meatlands') {
+    } else if ((dim.shapeOf || dim.id) === 'meatlands') {
       const s = new C.Shape();
       s.add(P.sphere, '#fff2e0', [0, 0, 0], null, [60, 60, 60], true);
       s.add(P.sphere, '#e0b020', [0, 0, 44], null, [30, 30, 20], true);
@@ -2192,7 +2415,7 @@
       eye.lookAt(0, 0, 0);
       group.userData.eye = eye;
       group.add(stars(300, 560, '#ffb0c0', 2));
-    } else if (dim.id === 'bazaar') {
+    } else if ((dim.shapeOf || dim.id) === 'bazaar') {
       const s1 = new C.Shape(); s1.add(P.sphere, '#ffd36b', [0, 0, 0], null, [55, 55, 55], true);
       add(s1, [-250, 210, -330]);
       const s2 = new C.Shape(); s2.add(P.sphere, '#7affea', [0, 0, 0], null, [30, 30, 30], true);
@@ -2201,7 +2424,7 @@
       ring.position.set(-250, 210, -330); ring.rotation.set(1.2, 0.3, 0);
       group.add(ring);
       group.add(stars(900, 560, '#ffffff', 2));
-    } else if (dim.id === 'beyond') {
+    } else if ((dim.shapeOf || dim.id) === 'beyond') {
       // Far off: the wall of the Central Finite Curve, a golden helix of universes; everywhere
       // else, countless loose universes glowing in the dark.
       const h = new C.Shape();
@@ -2213,7 +2436,7 @@
       helix.rotation.z = 0.25;
       group.add(stars(1600, 560, '#ffe6a0', 2.5));
       group.add(stars(600, 560, '#c9a8ff', 2));
-    } else if (dim.id === 'citadel') {
+    } else if ((dim.shapeOf || dim.id) === 'citadel') {
       // The rest of the Citadel floating around you, and a planet.
       for (let i = 0; i < 7; i++) {
         const s = new C.Shape();
@@ -2227,7 +2450,7 @@
       const pl = new C.Shape(); pl.add(P.sphere, '#5a3aa8', [0, 0, 0], null, [90, 90, 90], true); pl.add(P.torus, '#b48aff', [0, 0, 0], [1.2, 0.2, 0], [130, 130, 0.5], true);
       add(pl, [-280, 260, -380]);
       group.add(stars(2000, 560, '#ffffff', 2));
-    } else if (dim.id === 'dogworld') {
+    } else if ((dim.shapeOf || dim.id) === 'dogworld') {
       for (let i = 0; i < 12; i++) {
         const s = new C.Shape();
         for (let j = 0; j < 4; j++) s.add(P.sphereLo, '#ffffff', [j * 9 - 13, Math.sin(j * 2) * 2, (j % 2) * 4], null, [9, 5, 7], true);
@@ -2238,7 +2461,7 @@
       const b = new C.Shape(); b.add(P.capsule, '#fff4dc', [0, 0, 0], [0, 0, Math.PI / 2], [12, 60, 12], true);
       for (const sx of [-1, 1]) for (const sy of [-1, 1]) b.add(P.sphere, '#fff4dc', [sx * 38, sy * 10, 0], null, [16, 16, 16], true);
       add(b, [220, 230, -360]).rotation.z = 0.3;
-    } else if (dim.id === 'megaseed') {
+    } else if ((dim.shapeOf || dim.id) === 'megaseed') {
       for (let i = 0; i < 10; i++) {
         const s = new C.Shape();
         s.add(P.cyl, '#5a3a6a', [0, 0, 0], null, [8, 160, 8], true);
@@ -2248,7 +2471,7 @@
       }
       const sun2 = new C.Shape(); sun2.add(P.sphere, '#ffe066', [0, 0, 0], null, [40, 40, 40], true);
       add(sun2, [150, 200, -400]);
-    } else if (dim.id === 'featherhold') {
+    } else if ((dim.shapeOf || dim.id) === 'featherhold') {
       for (let i = 0; i < 9; i++) {
         const s = new C.Shape();
         s.add(P.cone, '#b98c4e', [0, -14, 0], [Math.PI, 0, 0], [14, 26, 14], true);
@@ -2263,7 +2486,7 @@
         const a = i / 10 * Math.PI * 2 + 0.3;
         add(s, [Math.cos(a) * 340, 150 + (i % 3) * 20, Math.sin(a) * 340]);
       }
-    } else if (dim.id === 'moon') {
+    } else if ((dim.shapeOf || dim.id) === 'moon') {
       const s = new C.Shape();
       s.add(P.sphere, '#2f6fd8', [0, 0, 0], null, [80, 80, 80], true);
       for (let i = 0; i < 9; i++) s.add(P.sphereLo, '#3fae4a', [Math.sin(i * 2.3) * 55, Math.cos(i * 1.7) * 50, 45], null, [26, 18, 14], true);
@@ -2309,7 +2532,7 @@
         if (k > 0) tmp.lerp(paint(rp[0], rp[1], rp[2], P.t2), k);
       }
     }
-    if (dim.id === 'meatlands') {
+    if ((dim.shapeOf || dim.id) === 'meatlands') {
       const v = Math.abs(Math.sin(x * 0.11 + Math.sin(z * 0.07) * 3) * Math.cos(z * 0.09 + Math.sin(x * 0.05) * 2));
       if (v < 0.05) tmp.set('#7c1e34');
     }
@@ -2317,12 +2540,12 @@
       const gx = Math.abs(((x % 12) + 12) % 12 - 6), gz = Math.abs(((z % 12) + 12) % 12 - 6);
       if (gx > 5.8 || gz > 5.8) tmp.set('#5ff8ff');
     }
-    if (dim.id === 'bazaar') {
+    if ((dim.shapeOf || dim.id) === 'bazaar') {
       const gx = Math.abs(((x % 8) + 8) % 8 - 4), gz = Math.abs(((z % 8) + 8) % 8 - 4);
       if ((gx > 3.85 || gz > 3.85) && Math.hypot(x, z) < 60) tmp.set('#5ff8ff');
     }
-    if (dim.id === 'moon') { const d = y / 10; tmp.multiplyScalar(1 + Math.max(-0.35, Math.min(0.15, d * 0.3))); }
-    if (dim.id === 'featherhold') { const sl = Math.abs(MM.heightAt(dim.id, x + 1.5, z) - y) + Math.abs(MM.heightAt(dim.id, x, z + 1.5) - y); if (sl > 1.4) tmp.set(sl > 2.4 ? '#a27a42' : '#b98c4e'); else if (y > 6) tmp.lerp(new T.Color('#8fae4a'), 0.6); }
+    if ((dim.shapeOf || dim.id) === 'moon') { const d = y / 10; tmp.multiplyScalar(1 + Math.max(-0.35, Math.min(0.15, d * 0.3))); }
+    if ((dim.shapeOf || dim.id) === 'featherhold') { const sl = Math.abs(MM.heightAt(dim.id, x + 1.5, z) - y) + Math.abs(MM.heightAt(dim.id, x, z + 1.5) - y); if (sl > 1.4) tmp.set(sl > 2.4 ? '#a27a42' : '#b98c4e'); else if (y > 6) tmp.lerp(new T.Color('#8fae4a'), 0.6); }
     for (const l of P.lms) { if (Math.abs(x - l.x) > l.r + 3.5 || Math.abs(z - l.z) > l.r + 3.5) continue; const d = Math.hypot(x - l.x, z - l.z); if (d < l.r + 3.5) tmp.copy(P.side).lerp(P.base[1], 0.35); }
     return tmp;
   }
@@ -2510,14 +2733,36 @@
       // the light baked in. We add a ceiling and a warm lamp for the characters.
       const g = new T.Group();
       C.loadMMG(R.mesh).then(geo => { const m = new T.Mesh(geo, C.mmgMat); m.name = 'roomMesh'; g.add(m); }).catch(e => console.warn('room mesh', e));
-      const ceil = new T.Mesh(new T.PlaneGeometry(R.w + 0.6, R.d + 0.6), new T.MeshBasicMaterial({ color: '#efe6d6' }));   // one-sided: seen from below only
-      ceil.rotation.x = Math.PI / 2; ceil.position.y = R.h + 0.02;
-      g.add(ceil);
+      const ceilMat = new T.MeshBasicMaterial({ color: '#efe6d6' });
+      // One-sided ceilings: seen from below only.
+      const ceiling = (x0, z0, x1, z1, y, parent) => {
+        const c = new T.Mesh(new T.PlaneGeometry(x1 - x0, z1 - z0), ceilMat);
+        c.rotation.x = Math.PI / 2; c.position.set((x0 + x1) / 2, y, (z0 + z1) / 2);
+        (parent || g).add(c);
+      };
+      const Fl = dim.floors, W = R.w / 2 + 0.3, D = R.d / 2 + 0.3;
+      if (!Fl) ceiling(-W, -D, W, D, R.h + 0.02);
+      else {
+        // Downstairs ceiling, open over the stairwell; the stairs; and the upstairs, which is
+        // only shown while you are up there (js/game.js).
+        const [hx0, hz0, hx1, hz1] = Fl.hole;
+        ceiling(-W, -D, hx0, D, Fl.y - 0.02); ceiling(hx1, -D, W, D, Fl.y - 0.02); ceiling(hx0, hz1, hx1, D, Fl.y - 0.02);
+        g.add(makeStairs(Fl));
+        const upper = new T.Group();
+        upper.name = 'roomUpper'; upper.position.y = Fl.y; upper.visible = false;
+        C.loadMMG(R.upper).then(geo => upper.add(new T.Mesh(geo, C.mmgMat))).catch(e => console.warn('upper mesh', e));
+        ceiling(-W, -D, W, D, R.h + 0.02, upper);
+        const lamp2 = new T.PointLight('#fff1d0', 0.5, 30);
+        lamp2.position.set(0, R.h - 1, 0);
+        upper.add(lamp2);
+        g.add(upper);
+      }
       const lamp = new T.PointLight('#fff1d0', 0.6, 40);
-      lamp.position.set(0, R.h - 1, 0);
+      lamp.position.set(0, (Fl ? Fl.y : R.h) - 1, 0);
       g.add(lamp);
       return g;
     }
+    if (R.plan) return drawnRoom(R);
     const s = new C.Shape(), w = R.w, d = R.d, h = R.h;
     s.add(P.box, dim.ground[0], [0, -0.1, 0], null, [w, 0.2, d]);
     // Floor planks / tiles for a bit of texture.
@@ -2556,12 +2801,68 @@
     return g;
   }
 
+  // A building's inside drawn from its floor plan (shared/interiors.js): a floor per room,
+  // the walls (inside ones from the plan, the front one with the way in), skirting, a ceiling
+  // and hanging lights. The furniture comes in as props.
+  function drawnRoom(R) {
+    const s = new C.Shape(), L = R.look, h = R.h, W = R.w, D = R.d, I = { plan: R.plan, scale: R.scale };
+    R.plan.rooms.forEach((r, i) => {
+      const a = MM.interiorXZ(I, r.x, r.y), b = MM.interiorXZ(I, r.x + r.w, r.y + r.h);
+      s.add(P.box, L.floor[i % 2], [(a.x + b.x) / 2, -0.05, (a.z + b.z) / 2], null, [Math.abs(b.x - a.x), 0.1, Math.abs(b.z - a.z)]);
+    });
+    const wall = (x1, z1, x2, z2) => {
+      const len = Math.hypot(x2 - x1, z2 - z1), ang = Math.atan2(x2 - x1, z2 - z1), mx = (x1 + x2) / 2, mz = (z1 + z2) / 2;
+      s.add(P.box, L.wall, [mx, h / 2, mz], [0, ang, 0], [0.2, h, len]);
+      s.add(P.box, L.trim, [mx, 0.15, mz], [0, ang, 0], [0.26, 0.3, len]);
+      s.add(P.box, L.trim, [mx, h - 0.1, mz], [0, ang, 0], [0.24, 0.2, len]);
+    };
+    for (const [x1, z1, x2, z2] of MM.planWalls(I)) wall(x1, z1, x2, z2);
+    const e = R.plan.doors.find(d => d.entry), ex = MM.interiorXZ(I, e.x, e.y).x, hw = W / 2, hd = D / 2, g = 0.9;
+    wall(-hw, hd, hw, hd); wall(-hw, -hd, -hw, hd); wall(hw, -hd, hw, hd);
+    wall(-hw, -hd, ex - g, -hd); wall(ex + g, -hd, hw, -hd);
+    s.add(P.box, L.wall, [ex, 2.6 + (h - 2.6) / 2, -hd], null, [2 * g, h - 2.6, 0.2]);
+    s.add(P.box, L.trim, [ex, 2.65, -hd], null, [2 * g + 0.3, 0.14, 0.3]);
+    s.add(P.box, shade(L.wall, 0.85), [0, h + 0.1, 0], null, [W + 0.4, 0.2, D + 0.4]);
+    for (let x = -W / 2 + W / 6; x < W / 2; x += W / 3) for (let z = -D / 2 + D / 4; z < D / 2; z += D / 2) {
+      s.add(P.cylLo, '#2a2a2a', [x, h - 0.25, z], null, [0.03, 0.5, 0.03]);
+      s.add(P.sphereLo, '#fff4c0', [x, h - 0.55, z], null, [0.2, 0.14, 0.2], true);
+    }
+    const grp = C.meshOf(s.build(), 0.05);
+    grp.traverse(o => { if (o.material && o.material.side === T.BackSide) o.visible = false; });
+    const lamp = new T.PointLight('#fff1d0', 0.7, 50);
+    lamp.position.set(0, h - 1.2, 0);
+    grp.add(lamp);
+    return grp;
+  }
+
+  // A carpeted staircase between two floors (dim.floors.stair: x0..x1 wide, climbing from z0
+  // to z1), with a closed side underneath where it is low and a banister along the open side.
+  function makeStairs(Fl) {
+    const S = Fl.stair, s = new C.Shape(), n = 14, run = S.z1 - S.z0, dir = Math.sign(run), w = S.x1 - S.x0, cx = (S.x0 + S.x1) / 2;
+    const step = Math.abs(run) / n, rise = Fl.y / n;
+    for (let i = 0; i < n; i++) {
+      const z = S.z0 + dir * (i + 0.5) * step, y = (i + 1) * rise;
+      s.add(P.box, '#cdbb98', [cx, y - 0.04, z], null, [w, 0.08, step + 0.02]);                         // the tread (carpet)
+      s.add(P.box, '#f2ece0', [cx, y - rise / 2, z - dir * step / 2], null, [w, rise, 0.03]);            // the riser
+      if (y < 2.4) s.add(P.box, '#f2ece0', [S.x0 + 0.04, y / 2, z], null, [0.08, y, step + 0.01]);     // closed in where it is low
+      else s.add(P.box, '#f2ece0', [S.x0 + 0.04, y - 0.2, z], null, [0.08, 0.32, step + 0.01]);        // the stringer above your head
+      if (i % 2 === 0) s.add(P.box, '#f8f4ea', [S.x0 + 0.06, y + 0.45, z], null, [0.04, 0.9, 0.04]);      // spindles
+    }
+    // The banister along the open side, and its newel post at the bottom.
+    const len = Math.hypot(run, Fl.y), ang = Math.atan2(Fl.y, Math.abs(run));
+    s.add(P.box, '#6e4a2a', [S.x0 + 0.06, Fl.y / 2 + 0.92, (S.z0 + S.z1) / 2], [dir > 0 ? -ang : ang, 0, 0], [0.08, 0.07, len]);
+    s.add(P.box, '#6e4a2a', [S.x0 + 0.06, 0.55, S.z0 - dir * 0.05], null, [0.14, 1.1, 0.14]);
+    const g = C.meshOf(s.build(), 0.03);
+    g.traverse(o => { if (o.material && o.material.side === T.BackSide) o.visible = false; });
+    return g;
+  }
+
   // ---------- Kiosk ----------
   C.kioskModel = dim => makeKiosk(dim, dim && dim.station);
   // Public portal stations: the Citadel's green portal arch and Federation customs.
   function makeKiosk(dim, St) {
     St = St || { name: 'Portal Station', fee: {} };
-    const fed = dim && dim.id === 'federation';
+    const fed = dim && (dim.shapeOf || dim.id) === 'federation';
     const col = fed ? '#5fb4ff' : '#39ff6a', metal = fed ? '#c9ccd4' : '#59606e', dark = fed ? '#3c4a66' : '#2b303a';
     const s = new C.Shape();
     s.add(P.cyl, dark, [0, 0.25, 0], null, [3.6, 0.5, 3.6]);

@@ -272,6 +272,13 @@
   // ---------- Full character ----------
   // Every character is built twice: smooth for up close and plain for far away. Both sit
   // on the same joints, so one animation drives them; setDetail() shows one or the other.
+  // The sculpt is made for the canon colours and proportions; a customised character keeps the
+  // built model so its colours and shape still show.
+  function sculptFits(look, arch) {
+    const L = MM.sanitizeLook(look), K = MM.canonLook(arch);
+    for (const k of ['species', 'top', 'skin', 'topColor', 'shirtColor', 'pantsColor', 'hairColor', 'hair']) if (L[k] !== K[k]) return false;
+    return Math.abs(L.height - K.height) < 0.02 && Math.abs(L.width - K.width) < 0.02 && Math.abs(L.head - K.head) < 0.02;
+  }
   C.buildAvatar = function (look, arch, opts) {
     // Up close: smooth boxes on plain primitives (a few thousand triangles). Far: coarse.
     let av, lo;
@@ -288,6 +295,20 @@
       for (const m of av.parts[k].children.slice()) if (!joints.has(m)) av.lodNear.push(m);
       if (!lo.parts[k]) continue;
       for (const m of lo.parts[k].children.slice()) if (!loJoints.has(m)) { av.parts[k].add(m); av.lodFar.push(m); }
+    }
+    // A sculpted body (scripts/models/) replaces the close-up model, part by part, for the
+    // canon look. Far away it is still the simple one.
+    const sc = C.sculpts[arch];
+    if (sc && !(opts && opts.classic) && sculptFits(look, arch)) {
+      for (const name in sc.parts) {
+        const pivot = av.parts[name];
+        if (!pivot) continue;
+        for (const m of pivot.children.slice()) if (!joints.has(m) && av.lodNear.includes(m)) { pivot.remove(m); av.lodNear.splice(av.lodNear.indexOf(m), 1); }
+        const g = C.meshOf(sc.parts[name], (opts && opts.thick) || 0.022);
+        g.traverse(o => { o.userData.shared = true; });
+        pivot.add(g); av.lodNear.push(g);
+      }
+      av.sculpted = true;
     }
     av.near = null;
     av.setDetail = near => {
@@ -412,9 +433,13 @@
         const coat = L.topColor;
         C.capsuleAt(ts, coat, torsoR * 1.08, torsoLen + 0.12, [0, legLen - 0.05, -0.03]);
         ts.add(P.box, L.shirtColor, [0, legLen + torsoLen * 0.5, torsoR * 0.98], null, [torsoR * 0.75, torsoLen * 0.95, 0.04]);
-        const tail = new T.CylinderGeometry(torsoR * 1.08, torsoR * 1.35, legLen * 0.65, 14, 1, true, 0.5, Math.PI * 2 - 1.0);
-        ts.add(tail, coat, [0, legLen - legLen * 0.3, -0.02]);
-        tail.dispose();
+        // The tails flare out and sit deep at the back, so a striding leg stays inside the coat
+        // instead of poking through it; a darker lining shows where the coat is open.
+        const tail = new T.CylinderGeometry(torsoR * 1.1, torsoR * 1.55, legLen * 0.62, 16, 1, true, 0.5, Math.PI * 2 - 1.0);
+        ts.add(tail, coat, [0, legLen - legLen * 0.29, -0.05], null, [1, 1, 1.25]);
+        const lining = tail.clone(); lining.scale(-0.96, 1, 0.96);
+        ts.add(lining, shade(coat, 0.72), [0, legLen - legLen * 0.29, -0.05], null, [1, 1, 1.25]);
+        tail.dispose(); lining.dispose();
         ts.add(P.box, shade(coat, 0.9), [torsoR * 0.42, legLen + torsoLen * 0.72, torsoR * 0.98], [0, 0, -0.3], [0.12, 0.3, 0.05]);
         ts.add(P.box, shade(coat, 0.9), [-torsoR * 0.42, legLen + torsoLen * 0.72, torsoR * 0.98], [0, 0, 0.3], [0.12, 0.3, 0.05]);
       } else if (top === 'polo' || top === 'sweater') {
@@ -533,7 +558,7 @@
     root.add(shadow);
 
     const av = {
-      root, body, parts, look: L, arch, height: (neckY + headTop * 1.0 + headR) , phase: Math.random() * 6, attackT: 0, deadT: 0, t: Math.random() * 10,
+      root, body, parts, look: L, arch, coat: top === 'labcoat', height: (neckY + headTop * 1.0 + headR) , phase: Math.random() * 6, attackT: 0, deadT: 0, t: Math.random() * 10,
       shield: null,
       animate(dt, st) { animate(av, dt, st); },
       dispose() {
@@ -695,6 +720,8 @@
     // Getting hit: a jolt through the body.
     if (av.hitT > 0) { av.hitT -= dt; const k2 = Math.max(0, av.hitT) / 0.3; tilt -= k2 * 0.5 * (av.hitDir || 1); headX -= k2 * 0.8; aL -= k2 * 0.9; aR -= k2 * 0.9; aLz += k2 * 0.4; aRz -= k2 * 0.4; }
     const set = (o, ax, v, sharp) => { if (o) o.rotation[ax] = sharp ? v : lerp(o.rotation[ax], v, f); };
+    // In a long coat the legs swing back less (Rick shuffles; the coat would split otherwise).
+    if (av.coat && ground) { lL = Math.min(lL, 0.24); lR = Math.min(lR, 0.24); }
     set(p.legL, 'x', lL); set(p.legR, 'x', lR);
     set(p.shinL, 'x', kL); set(p.shinR, 'x', kR);
     set(p.armL, 'x', aL); set(p.armR, 'x', aR, av.attackT > 0);
@@ -760,7 +787,7 @@
     av.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
     // Effects
     const fx = st.fx || 0;
-    const sc = (fx & 8) ? 0.5 : 1;
+    const sc = ((fx & 8) ? 0.5 : 1) * (av.baseScale || 1);
     av.root.scale.setScalar(lerp(av.root.scale.x, sc, Math.min(1, dt * 6)));
     av.root.visible = !(fx & 32) || Math.floor(av.t * 8) % 2 === 0 || dead;
     if (fx & 1) {
