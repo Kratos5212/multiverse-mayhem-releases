@@ -97,8 +97,14 @@
       this.nextEvent = host.time + 60 + Math.random() * 90;
       // [type, count] or [type, count, x, z] for someone who lives at a particular spot.
       const bx = MM.boundOf(this.dimId) - 0.8, bz = MM.boundZOf(this.dimId) - 0.8, cl = (v, b) => Math.max(-b, Math.min(b, v));
-      for (const [type, count, x, z] of this.dim.npc) for (let i = 0; i < count; i++) this.spawnNpc(type, false, x !== undefined ? { at: { x: cl(x + (Math.random() - 0.5) * 6, bx), z: cl(z + (Math.random() - 0.5) * 6, bz) } } : null);
-      for (const k in this.dim.pickups) for (let i = 0; i < this.dim.pickups[k]; i++) this.spawnPickup(k, false);
+      // spread: somewhere within that distance of x, z (a town inside a bigger world).
+      for (const [type, count, x, z, spread] of MM.npcListOf(this.dimId)) for (let i = 0; i < count; i++) {
+        const j = spread || 3, at = x !== undefined ? { x: cl(x + (Math.random() - 0.5) * 2 * j, bx), z: cl(z + (Math.random() - 0.5) * 2 * j, bz) } : null;
+        if (at && spread) [at.x, at.z] = MM.collideProps(this.dimId, at.x, at.z, 0.8, null);
+        this.spawnNpc(type, false, at ? { at } : null);
+      }
+      this.pickupSet = MM.pickupsOf(this.dimId);
+      for (const k in this.pickupSet) for (let i = 0; i < this.pickupSet[k]; i++) this.spawnPickup(k, false);
       for (let i = MM.curioCount(this.dimId); i > 0; i--) this.spawnPickup('q:' + MM.pickCurio(this.dimId), false);
     }
 
@@ -142,7 +148,7 @@
         event: this.event ? { name: this.event.E.name, text: this.event.E.text, left: r2(this.event.until - this.host.time) } : null,
       };
     }
-    portalRow(po) { return { id: po.id, x: r2(po.x), y: r2(po.y), z: r2(po.z), r: r2(po.r), d: po.destDim, col: po.col, ttl: r2(po.until - this.host.time) }; }
+    portalRow(po) { return { id: po.id, x: r2(po.x), y: r2(po.y), z: r2(po.z), r: r2(po.r), d: po.destDim, col: po.col, st: po.st || 'swirl', ttl: r2(po.until - this.host.time) }; }
 
     // ----- The tick -----
     tick(dt) {
@@ -166,7 +172,7 @@
         // Keep the world stocked with this dimension's materials.
         const have = {};
         for (const pk of this.pickups.values()) if (!pk.drop) have[pk.c] = (have[pk.c] || 0) + 1;
-        for (const k in this.dim.pickups) if ((have[k] || 0) < this.dim.pickups[k]) this.spawnPickup(k, true);
+        for (const k in this.pickupSet) if ((have[k] || 0) < this.pickupSet[k]) this.spawnPickup(k, true);
         // And with its curios, more slowly.
         if (this.host.tickN % 300 === 0) {
           let q = 0;
@@ -208,7 +214,7 @@
       const players = [...this.players.values()];
       if (E.spawn) for (const [type, n] of E.spawn) for (let i = 0; i < n; i++) {
         const p = pick(players), a = Math.random() * 6.28, d = 14 + Math.random() * 16;
-        const x = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, p.x + Math.cos(a) * d)), z = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, p.z + Math.sin(a) * d));
+        const x = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, p.x + Math.cos(a) * d)), z = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, p.z + Math.sin(a) * d));
         this.spawnNpc(type, true, { at: { x, z }, until: now + E.dur + 20 });
       }
       if (E.loot) for (let i = 0; i < E.loot[1]; i++) {
@@ -243,11 +249,10 @@
           if (segDist2(ox, oy, oz, pr.x, pr.y, pr.z, t.x, t.y + 0.8, t.z) < 1.1 * 1.1) { hit = { t }; break; }
         }
         if (!hit) {
-          const props = MM.genProps(this.dimId);
-          for (let i = 0; i < props.length; i++) {
-            const st = this.props[i];
+          const near = MM.propsNear(this.dimId, (ox + pr.x) / 2, (oz + pr.z) / 2, Math.hypot(pr.x - ox, pr.z - oz) / 2 + 2);
+          for (const p of near) {
+            const i = p.id, st = this.props[i];
             if (st.hp <= 0) continue;
-            const p = props[i];
             const r = p.r + (pr.rad || 0.15);
             if (pr.y < p.y - 0.5 || pr.y > p.y + p.h) continue;
             if (dist2(pr.x, pr.z, p.x, p.z) < r * r || dist2((ox + pr.x) / 2, (oz + pr.z) / 2, p.x, p.z) < r * r) { hit = { prop: i }; break; }
@@ -297,10 +302,11 @@
         if (d < rad + n.T.r) this.hurtNpc(n, Math.round(dmg * (1 - d / (rad + n.T.r) * 0.6)), owner);
       }
       for (const t of [...this.turrets.values()]) if (Math.hypot(t.x - x, t.z - z) < rad) this.hurtTurret(t, dmg);
-      const props = MM.genProps(this.dimId);
-      for (let i = 0; i < props.length; i++) {
-        if (this.props[i].hp <= 0) continue;
-        const p = props[i];
+      const hitP = new Set();
+      for (const p of MM.propsNear(this.dimId, x, z, rad)) {
+        const i = p.id;
+        if (this.props[i].hp <= 0 || hitP.has(i)) continue;
+        hitP.add(i);
         const d = Math.hypot(p.x - x, p.z - z) - p.r;
         if (d < rad && y < p.y + p.h + rad * 0.5) this.hurtProp(i, Math.round((opts.propDmg || dmg * 1.8) * (1 - Math.max(0, d) / rad * 0.6)), owner);
       }
@@ -418,8 +424,8 @@
           if (now >= n.wait && dist2(n.x, n.z, n.tx, n.tz) < 1) {
             n.wait = now + 1 + Math.random() * 4;
             const a = Math.random() * 6.28, d = 4 + Math.random() * 14;
-            n.tx = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, n.home.x + Math.cos(a) * d));
-            n.tz = Math.max(-MM.WORLD_HALF + 25, Math.min(MM.WORLD_HALF - 25, n.home.z + Math.sin(a) * d));
+            n.tx = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, n.home.x + Math.cos(a) * d));
+            n.tz = Math.max(-MM.boundOf(this.dimId) + 25, Math.min(MM.boundOf(this.dimId) - 25, n.home.z + Math.sin(a) * d));
           }
           if (now >= n.wait) goal = { x: n.tx, z: n.tz };
         }
@@ -430,7 +436,7 @@
             let nx = n.x + dx / l * step, nz = n.z + dz / l * step;
             [nx, nz] = MM.collideProps(this.dimId, nx, nz, T.r, null);
             [nx, nz] = MM.collideWalls(this.dimId, nx, nz, T.r);
-            const lim = Math.min(MM.WORLD_HALF - 15, MM.boundOf(this.dimId) - 0.8), limZ = Math.min(MM.WORLD_HALF - 15, MM.boundZOf(this.dimId) - 0.8);
+            const lim = MM.boundOf(this.dimId) - (this.dim.interior ? 0.8 : 15), limZ = MM.boundZOf(this.dimId) - (this.dim.interior ? 0.8 : 15);
             n.x = Math.max(-lim, Math.min(lim, nx)); n.z = Math.max(-limZ, Math.min(limZ, nz));
             n.r = Math.atan2(dx, dz);
           }
@@ -605,6 +611,8 @@
         case 'ship': this.onShip(p, m.on); break;
         case 'pvp': p.pvp = m.on; this.toast(p, m.on ? 'Fights on: players who also turned fights on can hurt you, and you them.' : 'Fights off: no other player can hurt you.'); break;
         case 'drive': this.onDrive(p, m.d); break;
+        case 'orbit': this.onOrbit(p); break;
+        case 'land': this.onLand(p, m.d); break;
         case 'door': this.onDoor(p, m.l); break;
         case 'tm': this.onTeam(p, m); break;
         case 'uc': this.onCurio(p, m.id); break;
@@ -734,7 +742,8 @@
       const inst = this.instanceWithRoom(dimId, preferInst);
       const spot = at ? { x: at.x, z: at.z, y: MM.heightAt(dimId, at.x, at.z) } : MM.spawnPoint(dimId);
       p.inst = inst;
-      p.x = spot.x; p.y = spot.y + (p.ship ? 3 : 0.1); p.z = spot.z; p.a = 0;
+      p.x = spot.x; p.y = at && at.y !== undefined ? at.y : spot.y + (p.ship ? 3 : 0.1); p.z = spot.z; p.a = 0;
+      if (MM.DIM_BY_ID[dimId].planets && !p.ship) p.ship = !!p.st.ship;   // nobody walks in space
       p.ep++;
       p.lastSt = this.time;
       p.portalCool = this.time + 2;
@@ -797,14 +806,14 @@
       const moved = Math.hypot(x - p.x, z - p.z);
       const ground = MM.heightAt(p.inst.dimId, x, z);
       const g = p.inst.dim.gravity;
-      const jv = p.st.jump;
+      const quirk = p.inst.dim.quirk, jv = p.st.jump * (quirk === 'bouncy' ? 1.6 : 1);
       // Vertical: you can only rise as fast as your jump (or wings, jetpack, ship, a blast)
       // allows, and never above your reach. Falling is always fine.
-      const reach = (p.ship ? 120 : p.st.fly === 'wings' ? 70 : jv * jv / (2 * g) + 14 + (p.st.fly === 'jet' ? 20 : 0)) + (now < (p.flingUntil || 0) ? 150 : 0);
+      const reach = (p.ship ? 1020 : p.st.fly === 'wings' ? 70 : jv * jv / (2 * g) + 14 + (p.st.fly === 'jet' ? 20 : 0)) + (now < (p.flingUntil || 0) ? 150 : 0) + (quirk === 'swim' || quirk === 'dreamy' ? 90 : 0);
       let y = m.y;
       if (y < ground - 1.5) y = ground;
       const rise = y - p.y;
-      const maxRise = (p.ship ? 26 : p.st.fly ? 14 : jv) * dt * 1.6 + 1.2 + (kb ? 30 * dt + 3 : 0);
+      const maxRise = (p.ship ? 26 : p.st.fly || quirk === 'swim' || quirk === 'dreamy' ? 14 : jv) * dt * 1.6 + 1.2 + (kb ? 30 * dt + 3 : 0);
       if (moved > allowed || rise > maxRise || (y > ground + reach && rise > 0.3)) {
         p.strikes += 1;
         if (p.strikes > 25) { this.kick(c, 'Movement check failed'); return; }
@@ -901,6 +910,7 @@
       if (p.arch === 'sidekick' && Math.random() < 0.2) { inst.ev({ k: 'dodge', id: p.id }); return; }
       if (now < p.fx.shield) amt *= 0.3;
       if (p.ship) amt *= 0.6;
+      if (inst.dim.quirk === 'bouncy') amt *= 0.5;   // Froopyland: nothing here can hurt you. Much.
       amt = Math.max(1, Math.round(amt));
       p.hp -= amt;
       inst.ev({ k: 'dmg', p: p.id, d: amt, by: src ? src.id : 0 });
@@ -1057,8 +1067,14 @@
       p.cdUse = this.time + 1;
       if (p.ship && MM.DIM_BY_ID[l.door.dim].interior) { this.toast(p, 'Park your ship first (B).'); return; }
       const from = p.inst, ox = p.x, oz = p.z;
+      // Every Earth shares the insides (the Smith house, Rick's lab...). Remember which Earth you
+      // came in from, and the way out takes you back there instead of to C-137.
+      const here = MM.DIM_BY_ID[from.dimId], to = MM.DIM_BY_ID[l.door.dim];
+      let dest = l.door.dim;
+      if (to.interior || to.pocket) { if (!(here.interior || here.pocket)) p.doorBack = here.variantOf ? from.dimId : null; }
+      else if (p.doorBack && MM.DIM_BY_ID[p.doorBack].variantOf === dest) { dest = p.doorBack; p.doorBack = null; }
       p.inst.ev({ k: 'kiosk', id: p.id });
-      this.travel(p, l.door.dim, { x: l.door.x, z: l.door.z });
+      this.travel(p, dest, { x: l.door.x, z: l.door.z });
       this.bringTeam(p, from, ox, oz);
     }
 
@@ -1085,8 +1101,9 @@
       const now = this.time;
       const dest = this.instanceWithRoom(destDim, this.instances.get(destDim + '#' + inst.idx));
       const spot = MM.randomSpot(destDim, Math.random, 10, 70);
-      const a = { id: this.ent(), x, y: MM.heightAt(inst.dimId, x, z), z, r, destDim, destKey: dest.key, col, owner, until: now + MM.PORTAL_TTL };
-      const b = { id: this.ent(), x: spot.x, y: spot.y, z: spot.z, r: Math.random() * 6.28, destDim: inst.dimId, destKey: inst.key, col, owner, until: now + MM.PORTAL_TTL };
+      const op = this.players.get(owner), st = op && op.look.portalStyle || 'swirl';
+      const a = { id: this.ent(), x, y: MM.heightAt(inst.dimId, x, z), z, r, destDim, destKey: dest.key, col, st, owner, until: now + MM.PORTAL_TTL };
+      const b = { id: this.ent(), x: spot.x, y: spot.y, z: spot.z, r: Math.random() * 6.28, destDim: inst.dimId, destKey: inst.key, col, st, owner, until: now + MM.PORTAL_TTL };
       a.link = b.id; b.link = a.id;
       inst.portals.set(a.id, a); dest.portals.set(b.id, b);
       inst.ev({ k: 'po+', po: inst.portalRow(a) });
@@ -1137,6 +1154,39 @@
       this.bringTeam(p, from, ox, oz);   // teammates near the ship ride along as passengers
     }
 
+    // Out of the atmosphere: into the space around this world, above its planet.
+    onOrbit(p) {
+      const D = p.inst.dim, now = this.time;
+      if (p.dead || !p.ship || D.interior || D.planets || now < (p.cdOrbit || 0)) return;
+      if (p.y - MM.heightAt(p.inst.dimId, p.x, p.z) < MM.ORBIT_ALT - 40) return;
+      p.cdOrbit = now + 3;
+      const S = MM.spaceDimOf(p.inst.dimId), P = S.planets.find(q => q.dim === p.inst.dimId) || S.planets[0];
+      const from = p.inst, ox = p.x, oz = p.z;
+      p.inst.ev({ k: 'warp', id: p.id });
+      this.travel(p, S.id, { x: P.x + (Math.random() - 0.5) * 20, z: P.z + (Math.random() - 0.5) * 20, y: P.y + P.r + 30 });
+      p.kbUntil = this.time + 1.5;
+      this.bringTeam(p, from, ox, oz);
+      this.toast(p, 'You left the atmosphere. Fly into a planet to land on it.');
+    }
+    // Fly into a planet from space: land in its sky. Earth and its moon only need the ship;
+    // the other planets of the universe need the Turbo Engine (as for flying there directly).
+    onLand(p, d) {
+      const S = p.inst.dim, now = this.time;
+      if (p.dead || !p.ship || !S.planets || now < (p.cdOrbit || 0)) return;
+      const P = S.planets.find(q => q.dim === d);
+      if (!P || Math.hypot(p.x - P.x, p.y - P.y, p.z - P.z) > P.r + 70) return;
+      const home = S.planets[0].dim, sh = p.st.ship, H = MM.DIM_BY_ID[home];
+      const why = d === home ? '' : MM.travelWhy('ship', H.variantOf === 'suburbia' ? 'suburbia' : home, d, { hull: true, engine: sh.engine, drive: sh.drive });
+      if (why) { p.cdOrbit = now + 2; this.toast(p, why); return; }
+      p.cdOrbit = now + 3;
+      const sp = MM.spawnPoint(d), from = p.inst, ox = p.x, oz = p.z;
+      p.inst.ev({ k: 'warp', id: p.id });
+      this.travel(p, d, { x: sp.x, z: sp.z, y: MM.heightAt(d, sp.x, sp.z) + 180 });
+      p.kbUntil = this.time + 1.5;
+      this.bringTeam(p, from, ox, oz);
+      this.toast(p, 'Coming in to land on ' + MM.DIM_BY_ID[d].name + '. Shift to go down, B to step out on the ground.');
+    }
+
     // ----- Crafting -----
     // Recipes are checked here, not on the client: lore, path unlocks, cost, and place.
     onCraft(p, id) {
@@ -1172,7 +1222,7 @@
       const now = this.time;
       if (p.dead || p.ship || now < (p.cdPair || 0)) return;
       if (!MM.canPair(p.arch, p.prog.up)) { this.toast(p, MM.helpless(p.arch, p.prog.up) ? MM.HELPLESS_TEXT : 'You need a portal gun for that.'); return; }
-      if (dist2(m.x, m.z, p.x, p.z) > (MM.PAIR_RANGE + 10) ** 2 || Math.abs(m.y - p.y) > 150) return;
+      if (dist2(m.x, m.z, p.x, p.z) > (MM.PAIR_RANGE + 10) ** 2 || Math.abs(m.y - p.y) > MM.PAIR_RANGE) return;
       const l = Math.hypot(m.nx, m.ny, m.nz) || 1;
       p.cdPair = now + 0.2;
       const P = { x: r2(m.x), y: r2(m.y), z: r2(m.z), nx: r2(m.nx / l), ny: r2(m.ny / l), nz: r2(m.nz / l) };
@@ -1453,6 +1503,10 @@
           this.dirty(p);
         }
         if (p.arch === 'mutant' && !p.dead && p.hp < p.maxHp && this.tickN % 10 === 0) { p.hp = Math.min(p.maxHp, p.hp + 1); this.dirty(p); }
+        // World rules: the living flesh heals you; the toxic air hurts (never below a tenth).
+        const q = p.inst && p.inst.dim.quirk;
+        if (q === 'regen' && !p.dead && p.hp < p.maxHp && this.tickN % 60 === 0) { p.hp = Math.min(p.maxHp, p.hp + 2); this.dirty(p); }
+        if (q === 'toxic' && !p.dead && now >= p.fx.shield && now >= p.fx.prot && !p.ship && p.hp > p.maxHp * 0.1 && this.tickN % 75 === 0) { p.hp -= 1; p.inst.ev({ k: 'dmg', p: p.id, d: 1, by: 0 }); this.dirty(p); }
       }
       for (const inst of this.instances.values()) {
         if (inst.players.size === 0 && inst.idx > 0 && inst.portals.size === 0 && now - inst.emptySince > 60) { this.instances.delete(inst.key); continue; }

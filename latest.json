@@ -1,9 +1,14 @@
 {
- "build": 10,
- "date": "2026-10-13T06:46:16.604Z",
+ "build": 11,
+ "date": "2026-10-17T10:01:06.628Z",
  "game": {
-  "base": "game/10/",
+  "base": "game/11/",
   "files": [
+   {
+    "p": "assets/characters/rick.mms",
+    "h": "ed69486adda44c7daa4f6169047b7d0e6c5b117611757ea07e20628d0f233572",
+    "s": 196364
+   },
    {
     "p": "assets/interiors/hospital.mmg",
     "h": "ba1cb56f3ef938207c5c3ab83a7c547fab376b76cca26214dc4d33ead9829105",
@@ -96,8 +101,8 @@
    },
    {
     "p": "index.html",
-    "h": "b94041ae5d2ea6262b8d19d8442bb177bf9d1c68b7588679d5d843820019872c",
-    "s": 28953
+    "h": "6117229af2f60295f922bf54ff0517078f0ce2acdd858baf5ce5cade4efb00b1",
+    "s": 31511
    },
    {
     "p": "js/audio.js",
@@ -106,13 +111,13 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "236ed393933fe5822034455429eb1d76e02b259c6242cc08e4c2dbf39402f9b8",
-    "s": 58094
+    "h": "bbf4b092e66da34ca47481ed3a27fa205129c51961c0d63a0386a10a5547cb39",
+    "s": 59925
    },
    {
     "p": "js/dims.js",
-    "h": "81700d3f908cfd85aa336ebebd99799f00fdca4edc0f879533053070f47a0b0f",
-    "s": 186699
+    "h": "a3aee2672207a9dfafeba178488748e631dffcbcafb89415c9e9b033cf61448e",
+    "s": 212288
    },
    {
     "p": "js/fx.js",
@@ -121,13 +126,13 @@
    },
    {
     "p": "js/game.js",
-    "h": "cae4cfe70ffbc7079d240680016a3c45862f17351db0a6728ae0f3346c4d2012",
-    "s": 107008
+    "h": "0645769710dbd5afbcd684fac245480f5c1786eee86ef377767c1f285eff0380",
+    "s": 122141
    },
    {
     "p": "js/mmg.js",
-    "h": "1be6bb80a90107d7ae21d0e8a87bb77b07adb9a1562dd551e00aec9f96c2e99e",
-    "s": 2085
+    "h": "40ea4a7ae6e70b77e38d98a9bea241543d1a44a4e17a1ffb4822ed143bfe7ce9",
+    "s": 3331
    },
    {
     "p": "js/net.js",
@@ -141,8 +146,8 @@
    },
    {
     "p": "js/ui.js",
-    "h": "0d7b19e13ab31a57ddd48f9ee10e62d2964f8dda9f975f396e555dd788d970e5",
-    "s": 18557
+    "h": "319b0cb568a016df18d7e819b637d547397db0f6ec5ee4f2a7d342003a9906c6",
+    "s": 19149
    },
    {
     "p": "js/vr.js",
@@ -151,8 +156,8 @@
    },
    {
     "p": "shared/curios.js",
-    "h": "24a48b56a258a6a24f9d4389ac9b52d5a7141769d941faa2eabdcff130617586",
-    "s": 13394
+    "h": "4c08b5b1726cca65fc9434e18ba339e5ea4c6d480d046e41d94845097848cac8",
+    "s": 14237
    },
    {
     "p": "shared/interiors.js",
@@ -165,29 +170,34 @@
     "s": 30418
    },
    {
+    "p": "shared/portals.js",
+    "h": "1e45ec4280bd631d03b0c6f0ce78edfd3a88b9e18ecbc236258af186984c76f1",
+    "s": 7963
+   },
+   {
     "p": "shared/protocol.js",
-    "h": "5d378c9524d38868c1ac7c181d384303d87d7608ceb12b5b0b2f51be6ca5c282",
-    "s": 5413
+    "h": "cd71cb45c5e4f298fd7f2b069420747384b38a4b526a3e477a0d4f5289836037",
+    "s": 6137
    },
    {
     "p": "shared/rules.js",
-    "h": "c4e3dd58cc53099d3ed95197027820be1ecea518de54c3d0844f9d886f2994a1",
-    "s": 62723
+    "h": "ea2aada0dea5eff40d34d9295c04bf64ff82e444518aec55a67225531edc2de3",
+    "s": 67491
    },
    {
     "p": "shared/world.js",
-    "h": "6aad9376f5ea2dee4b5fadcf94d0d26105492fd85e34e4949fcfe2f20af9467f",
-    "s": 100640
+    "h": "a9660fb839de77e5747d028471469c3831ca8ac7adb8f1929e60f37212906e06",
+    "s": 118620
    },
    {
     "p": "sim/bot.js",
-    "h": "9a4c45be12b70d8613ddb0016f2fe09755f8bad15c4590059b6b9f853a32a132",
-    "s": 15876
+    "h": "c6b76acd15542ddc818a122f96448bc25bdf2fa2c81f8d181512a9e43a468867",
+    "s": 15883
    },
    {
     "p": "sim/host.js",
-    "h": "711a33b0db21a4204b64c38780b321e85d06e9c5e0436e4c96c2b26e4fc21323",
-    "s": 77785
+    "h": "9193a47a10eece08bc3e0d7e74c635ebc2d98d09459c20d037aeb1cfee38d139",
+    "s": 84071
    },
    {
     "p": "vendor/three.LICENSE",
@@ -201,7 +211,7 @@
    },
    {
     "p": "version.json",
-    "h": "77a123620108f513d6bdeb55a3638fccbdb21e73302e2cdda8f35721919bdc97",
+    "h": "e4d9f30b3b7cc6ca3f62aa6e449c5a725ad51b6043a633ddff027e5ca1b47f89",
     "s": 13
    }
   ]

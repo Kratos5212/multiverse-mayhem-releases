@@ -44,10 +44,12 @@
       sky: ['#5fb4ff', '#d9f3ff'], fog: '#cdeaff', fogFar: 230, sun: '#fff4dc', ambient: '#9fc6ff',
       ground: ['#5fae3e', '#78c24b', '#4c9636'], accent: '#ffffff',
       props: [['tree', 40], ['hedge', 20]], streets: { grid: 44, extent: 150 }, spawn: { x: 2, z: -3, spread: 5 },
-      npc: [['neighbor', 9], ['schoolkid', 4]], pickups: { s: 18, c: 2 }, mat: 's',
+      // Rick's things in his open garage (the interactive ones are landmarks).
+      fixed: [['spacecruiser', -13.0, 14.5, Math.PI / 2, 0.8], ['shelf', -17.2, 8.6, 0], ['washer', -13.4, 8.6, 0], ['curioshelf', -11.6, 16.5, Math.PI]],
+      npc: [['neighbor', 9], ['schoolkid', 4], ['butterbot', 1, -16.5, 11]], pickups: { s: 18, c: 2 }, mat: 's',
     },
     {
-      id: 'meatlands', flat: 140, name: 'Cronenberged Earth', code: 'PRIME', seed: 4242, gravity: 24, amp: 9, scale: 0.02,
+      id: 'meatlands', flat: 140, name: 'Cronenberged Earth', code: 'PRIME', seed: 4242, gravity: 24, amp: 9, scale: 0.02, quirk: 'regen',
       blurb: 'The Prime Dimension: Rick\'s love potion turned everyone into Cronenbergs, so he and Morty moved to a replacement Earth. Everything is meat now. It is warm. It is watching.',
       sky: ['#3d0a1c', '#c4485f'], fog: '#7a2236', fogFar: 170, sun: '#ffc2b0', ambient: '#b05068',
       ground: ['#c9576b', '#e07a85', '#9c3a4e'], accent: '#fff2c8',
@@ -133,7 +135,7 @@
       props: [['redmesa', 20], ['bonepile', 16], ['spikeplant', 30]], npc: [['gazorpian', 10]], pickups: { g: 8, s: 6 }, mat: 'g',
     },
     {
-      id: 'froopy', name: 'Froopyland', code: 'FR-00', seed: 9339, gravity: 18, amp: 6, scale: 0.013,
+      id: 'froopy', name: 'Froopyland', code: 'FR-00', seed: 9339, gravity: 18, amp: 6, scale: 0.013, quirk: 'bouncy',
       blurb: 'A soft, safe world built for children. Nothing here can hurt you. Probably.',
       sky: ['#9ad8ff', '#ffd6f0'], fog: '#f0e0ff', fogFar: 230, sun: '#ffffff', ambient: '#ffd8f0',
       ground: ['#8ae0a8', '#a8f0c0', '#f0c8e8'], accent: '#ff8fd0',
@@ -206,7 +208,7 @@
       npc: [['giant', 7]], pickups: { s: 14, f: 4 }, mat: 's',
     },
     {
-      id: 'atlantis', flat: 130, name: 'Atlantis', code: 'AT-1', seed: 1919, gravity: 9, amp: 6, scale: 0.012,
+      id: 'atlantis', flat: 130, name: 'Atlantis', code: 'AT-1', seed: 1919, gravity: 9, amp: 6, scale: 0.012, quirk: 'swim',
       blurb: "Mr. Nimbus's sunken city. Columns, coral, kelp, and a sea king who very much controls the police.",
       sky: ['#0a3a6a', '#2a8ac8'], fog: '#1a5a8a', fogFar: 150, sun: '#c8f0ff', ambient: '#5aa0d0',
       ground: ['#c8b88a', '#b8a878', '#8aa890'], accent: '#5ff8e0',
@@ -214,12 +216,38 @@
       npc: [['merfolk', 12], ['seamonster', 4]], pickups: { c: 10, s: 4 }, mat: 'c',
     },
     {
-      id: 'dreamworld', name: 'The Dream World', code: 'ZZZ', seed: 6116, gravity: 16, amp: 9, scale: 0.012,
+      id: 'dreamworld', name: 'The Dream World', code: 'ZZZ', seed: 6116, gravity: 16, amp: 9, scale: 0.012, quirk: 'dreamy',
       blurb: 'Inside someone\'s dream, from "Lawnmower Dog". Doors float, clocks melt, the school hallway goes on forever, and Scary Terry is somewhere behind you.',
       sky: ['#2a0a4a', '#ff8ad0'], fog: '#5a2a7a', fogFar: 200, sun: '#ffd8f8', ambient: '#b88ae0',
       ground: ['#5a3a8a', '#7a4aa0', '#3a2a6a'], accent: '#ffe066',
       props: [['floatdoor', 24], ['meltclock', 16], ['locker', 30], ['dreamstair', 10]],
       npc: [['dreamer', 8], ['scaryterry', 2]], pickups: { p: 10, f: 4 }, mat: 'p',
+    },
+    // ----- Crazier still -----
+    {
+      id: 'storytrain', flat: 150, name: 'The Story Train', code: 'ST-4', seed: 4646, gravity: 22, amp: 1, scale: 0.01, outsideCurve: false,
+      blurb: 'From "Never Ricking Morty": an endless train of anthology stories, run by the Story Lord. Every carriage is a different plot, and they all go somewhere you can guess.',
+      sky: ['#2a1a4a', '#d8a8ff'], fog: '#7a5aa8', fogFar: 230, sun: '#ffe8ff', ambient: '#b098d8',
+      ground: ['#3a2a5a', '#4a3a6a', '#2a1e48'], accent: '#ffd84d',
+      props: [['storybook', 26], ['lamp', 24], ['crate', 20]],
+      // The train itself: a long line of carriages through the middle of the world.
+      fixed: Array.from({ length: 15 }, (_, i) => ['traincar', -126 + i * 18, 56, Math.PI / 2]),
+      npc: [['passenger', 10], ['storylord', 2]], pickups: { p: 10, m: 1, s: 6 }, mat: 'p',
+    },
+    {
+      id: 'toxicworld', flat: 120, name: 'The Toxic Dimension', code: 'TX-1', seed: 7337, gravity: 24, amp: 4, scale: 0.014,
+      blurb: 'From "Rest and Ricklaxation": everything Rick and Morty detoxed out of themselves ended up here. Including a toxic Rick and Morty. The air hurts.',
+      sky: ['#2a3a0a', '#b8e04a'], fog: '#6a8a2a', fogFar: 190, sun: '#efffc0', ambient: '#a8c870',
+      ground: ['#4a5a2a', '#5a6a2a', '#3a4a1e'], accent: '#a8ff3a', quirk: 'toxic',
+      props: [['toxicbarrel', 40], ['sludgepool', 22], ['bonepile', 12], ['wreck', 10]],
+      npc: [['toxicrick', 4], ['raider', 4]], pickups: { g: 12, c: 4 }, mat: 'g',
+    },
+    {
+      id: 'zigerion', variantOf: 'suburbia', name: 'Zigerion Simulation', code: 'SIM-1',
+      blurb: 'From "M. Night Shaym-Aliens!": a fake Earth inside a Zigerion scam ship, rendered by a simulation that is not quite good enough. The locals repeat themselves. A lot.',
+      sky: ['#0a2a14', '#5aff8a'], fog: '#3a8a5a', fogFar: 200, sun: '#e8fff0', ambient: '#90d8a8',
+      ground: ['#2a6a3a', '#3a7a4a', '#1e5a2e'], accent: '#5aff8a', glitch: true, tiles: true,
+      extra: [], npc: [['simperson', 10], ['zigerion', 3]], pickups: { s: 16, c: 3 }, mat: 'c',
     },
     // ----- Other times: the same Earth, earlier, or split in two -----
     {
@@ -378,15 +406,60 @@
   // Alternate Earths share the home street plan (same seed, same streets) with their own twist.
   function fillVariant(d) {
     const B = MM.DIM_BY_ID[d.variantOf];
-    for (const k of ['seed', 'gravity', 'amp', 'scale', 'streets', 'spawn', 'flat']) if (d[k] === undefined) d[k] = B[k];
+    for (const k of ['seed', 'gravity', 'amp', 'scale', 'streets', 'spawn', 'flat', 'regions', 'bound', 'fixed']) if (d[k] === undefined) d[k] = B[k];
     d.props = (B.props || []).concat(d.extra || []);
     // The same buildings stand here too (minus the doors into this Earth's garage and the
     // highways): the Smith house, the school, the hospital. Tasks there work the same.
     for (const l of MM.LANDMARKS.slice()) if (l.dim === d.variantOf && !/^hw_/.test(l.id) && l.id !== 'anatomyentry' && l.id !== 'chalkdoor') {
-      const c = Object.assign({}, l, { id: d.id + '_' + l.id, alias: l.id, dim: d.id, door: undefined });
+      const c = Object.assign({}, l, { id: d.id + '_' + l.id, alias: l.id, dim: d.id });
+      // The same doors as the original (the Smith house, the school, Rick's lab hatch...),
+      // looked up live because building insides get their doors later (shared/interiors.js).
+      // Coming back out takes you home to this Earth (see Host.onDoor).
+      delete c.door;
+      Object.defineProperty(c, 'door', { get: () => l.door, enumerable: false });
       MM.LANDMARKS.push(c); MM.LANDMARK_BY_ID[c.id] = c;
     }
   }
+  // ----- One Earth -----
+  // The Smith neighbourhood, Downtown, Washington, D.C. and Area 51 are one world: the suburb
+  // in the middle, the others around it with countryside and roads in between. Each part is
+  // still planned on its own (its own seed and town plan) and placed at its offset; its
+  // landmarks move into the big world. Every Earth (the alternate ones, everyone's home
+  // dimension) is built the same way.
+  MM.EARTH_REGIONS = [
+    { dim: 'downtown', ox: 400, oz: 0, name: 'Downtown' },
+    { dim: 'dc', ox: -400, oz: 0, name: 'Washington, D.C.' },
+    { dim: 'area51', ox: 0, oz: -400, name: 'Area 51' },
+  ];
+  MM.REGION_HALF = 200;
+  MM.DIM_BY_ID.suburbia.regions = MM.EARTH_REGIONS;
+  MM.DIM_BY_ID.suburbia.bound = 600;
+  for (const R of MM.EARTH_REGIONS) { const D = MM.DIM_BY_ID[R.dim]; D.hidden = true; D.regionOf = 'suburbia'; }
+  for (const l of MM.LANDMARKS) {
+    const R = MM.EARTH_REGIONS.find(q => q.dim === l.dim);
+    if (!R) continue;
+    l.origin = R.dim; l.lx = l.x; l.lz = l.z;
+    if (l.rot === undefined) l.rot = Math.atan2(-l.x, -l.z);   // keep facing its own town's middle
+    l.x += R.ox; l.z += R.oz; l.dim = 'suburbia';
+  }
+  // Which part of a composite world a point is in: { R (null for the middle), lx, lz }.
+  MM.regionAt = function (dimId, x, z) {
+    const D = MM.DIM_BY_ID[dimId];
+    if (!D || !D.regions) return null;
+    for (const R of D.regions) { const lx = x - R.ox, lz = z - R.oz; if (Math.abs(lx) < MM.REGION_HALF && Math.abs(lz) < MM.REGION_HALF) return { R, lx, lz }; }
+    return { R: null, lx: x, lz: z };
+  };
+  // Who lives in a world, and what lies around: a composite world adds each part's own.
+  MM.npcListOf = function (dimId) {
+    const D = MM.DIM_BY_ID[dimId], out = D.npc.slice();
+    for (const R of D.regions || []) for (const [t, n, x, z] of MM.DIM_BY_ID[R.dim].npc) out.push(x !== undefined ? [t, n, x + R.ox, z + R.oz] : [t, n, R.ox, R.oz, 150]);
+    return out;
+  };
+  MM.pickupsOf = function (dimId) {
+    const D = MM.DIM_BY_ID[dimId], out = Object.assign({}, D.pickups);
+    for (const R of D.regions || []) { const P = MM.DIM_BY_ID[R.dim].pickups; for (const k in P) out[k] = (out[k] || 0) + P[k]; }
+    return out;
+  };
   for (const d of MM.DIMS) if (d.variantOf) fillVariant(d);
   MM.fillVariant = fillVariant;
   MM.DIM_IDS = MM.DIMS.map(d => d.id);
@@ -542,6 +615,10 @@
     dreamstair:  { r: 2.4, h: 9, hp: 150, drop: { p: 2 }, arch: true },
     timeshard:   { r: 0.7, h: 3.5, hp: 40, drop: { c: 1 }, arch: true },
     flowerbed:   { r: 1.4, h: 0.8, hp: 10, drop: { f: 1 }, arch: true },
+    storybook:   { r: 1.6, h: 3.2, hp: 60, drop: { p: 1 } },
+    traincar:    { r: 3.0, h: 4.2, hp: 1e9, drop: {}, fixed: true },
+    toxicbarrel: { r: 0.7, h: 1.4, hp: 30, drop: { g: 1 } },
+    sludgepool:  { r: 3.0, h: 0.3, hp: 1e9, drop: {}, fixed: true, arch: true },
     lm_snakeclub:   { r: 8, h: 8, hp: 9999, drop: {} },
     lm_dinocouncil: { r: 10, h: 10, hp: 9999, drop: {} },
     lm_giantcastle: { r: 14, h: 26, hp: 9999, drop: {} },
@@ -781,6 +858,30 @@
       human: { species: ['human'], top: ['sweater'], acc: ['cap'], look: { hair: 'bald', brow: 'angry', mouth: 'grin', face: 'long', height: 1.15, width: 0.9, head: 1.0,
         skin: '#b0583e', topColor: '#2a6a3a', shirtColor: '#c83a3a', pantsColor: '#5a3a2a', shoeColor: '#2a1a12', accColor: '#3a2a1a' } },
       names: ['Scary Terry'] },
+    passenger: { name: 'Passenger', hp: 30, speed: 2.6, hostile: false, dmg: 0, drop: { p: 1, s: 1 }, r: 0.6, h: 1.8,
+      human: { species: ['human', 'alien'], top: ['sweater', 'vest', 'polo'], acc: ['none', 'tophat', 'goggles'] },
+      names: ['A Man Who Has Seen Things', 'The Conductor (maybe)', 'A Plot Device', 'Anthology Annie'],
+      talk: ['Every carriage is a story. This one is about a man on a train. Wait.', 'The Story Lord wants a big ending. He always wants a big ending.', 'Do not get off at the flashback. Nobody comes back from the flashback.', 'I have been on this train for three seasons.'],
+      moods: { line: 60, gift: 10, trade: 8, errand: 12, buff: 6, dance: 4 } },
+    storylord: { name: 'Story Lord', hp: 180, speed: 4.0, hostile: true, dmg: 15, drop: { p: 4, m: 1 }, r: 0.7, h: 2.1,
+      human: { species: ['human'], top: ['armor'], acc: ['crown'], look: { hair: 'slick', brow: 'angry', mouth: 'grin', face: 'long', height: 1.2, width: 1.0, head: 1.0,
+        skin: '#d8c8b0', topColor: '#3a2a5a', shirtColor: '#ffd84d', pantsColor: '#2a1e3a', shoeColor: '#111111', accColor: '#ffd84d', hairColor: '#2a1a1a' } },
+      names: ['The Story Lord'] },
+    toxicrick: { name: 'Toxic Rick', hp: 120, speed: 4.6, hostile: true, dmg: 13, drop: { g: 4, c: 2 }, r: 0.6, h: 2.0,
+      human: { species: ['human'], top: ['labcoat'], acc: ['none'], look: { hair: 'rick', brow: 'uni', eyes: 'tired', mouth: 'grin', face: 'long', height: 1.25, width: 0.8, head: 0.95,
+        skin: '#a8d870', hairColor: '#5a7a2a', topColor: '#c8e890', shirtColor: '#6a8a3a', pantsColor: '#3a4a1e', shoeColor: '#1e2a10' } },
+      names: ['Toxic Rick', 'Toxic Morty (in a Rick suit)'] },
+    simperson: { name: 'Simulated Neighbour', hp: 25, speed: 2.4, hostile: false, dmg: 0, drop: { c: 1 }, r: 0.6, h: 1.8,
+      human: { species: ['human'], top: ['polo', 'tshirt'], acc: ['none'], colors: { topColor: '#5aff8a', pantsColor: '#2a6a3a', shirtColor: '#5aff8a' } },
+      names: ['Neighbour.exe', 'Generic Dad 4', 'Background Jogger'],
+      talk: ['Hello, neighbour! Hello, neighbour! Hello, neighbour!', 'What a nice day. (The sky flickered.)', 'Have you signed up for Concentrated Dark Matter? Just tell us the recipe.', 'I am definitely a real person. Beep.'],
+      moods: { line: 70, gift: 8, trade: 6, errand: 8, buff: 4, dance: 4 } },
+    zigerion: { name: 'Zigerion', hp: 40, speed: 3.0, hostile: false, dmg: 0, drop: { c: 2, k: 2 }, r: 0.6, h: 1.6,
+      human: { species: ['alien'], top: ['armor'], acc: ['goggles'], look: { hair: 'bald', brow: 'none', eyes: 'wide', mouth: 'flat', face: 'round', height: 0.85, width: 0.9, head: 1.35,
+        skin: '#d8b8a8', topColor: '#6a6a8a', shirtColor: '#6a6a8a', pantsColor: '#3a3a5a', shoeColor: '#222222', accColor: '#5aff8a' } },
+      names: ['Prince Nebulon', 'Zigerion Scammer', 'Zigerion Tech'],
+      talk: ['Welcome back to Earth, sir. This is definitely Earth.', 'What is the recipe for Concentrated Dark Matter? Asking for a friend.', 'Do not look at the edges. The edges are not done.', 'We are the greatest con artists in the galaxy. Please rate us five stars.'],
+      moods: { line: 60, gift: 6, trade: 10, errand: 10, buff: 4, angry: 4 } },
     gazorpian: { name: 'Gazorpian', hp: 90, speed: 4.2, hostile: true, dmg: 14, drop: { g: 3, s: 2 }, r: 1.2, h: 2.6 },
     froopy: { name: 'Froopy', hp: 30, speed: 2.8, hostile: false, dmg: 0, drop: { f: 2 }, r: 0.7, h: 1.4,
       names: ['Fluffle', 'Snoob', 'Mister Wobbs', 'Bloop', 'Gentle Toot'],
@@ -895,6 +996,10 @@
     dreamworld: [{ id: 'nightmare', name: 'Nightmare', text: 'You can run, but you cannot hide. Scary Terry brought friends.', spawn: [['scaryterry', 3]], dur: 70 },
       { id: 'lucid', name: 'Lucid Dream', text: 'You know you are dreaming. Everything is easier.', loot: ['p', 12], talkBoost: 1, dur: 50 }],
     splitearth: [{ id: 'fracture', name: 'Time Fracture', text: 'The timeline split again. Time Cops are cracking down.', spawn: [['timecop', 2]], dur: 70 }],
+    storytrain: [{ id: 'twist', name: 'Plot Twist', text: 'The Story Lord sent his enforcers into the carriages.', spawn: [['storylord', 3]], dur: 80 },
+      { id: 'finale', name: 'Season Finale', text: 'Everyone gets a moment. Free plasma for the cast.', loot: ['p', 12], talkBoost: 1, dur: 50 }],
+    toxicworld: [{ id: 'spill', name: 'Toxic Spill', text: 'A fresh batch of detox waste came through. More Toxic Ricks with it.', spawn: [['toxicrick', 4]], dur: 80 }],
+    zigerion: [{ id: 'scam', name: 'Scam in Progress', text: 'The Zigerions are working on you. Everyone suddenly wants the recipe.', loot: ['c', 10], talkBoost: 1, dur: 60 }],
     froopy: [{ id: 'sugar', name: 'Sugar Rush', text: 'It is raining candy. And feathers. Do not ask.', loot: ['f', 12], talkBoost: 1, dur: 50 }],
     anatomy: [{ id: 'outbreak', name: 'Outbreak', text: 'The diseases have escaped containment. Again.', spawn: [['bacteria', 9]], dur: 90 }],
     pizzaworld: [{ id: 'delivery', name: 'Rush Hour', text: 'Everyone is delivering everyone. Grab a slice.', loot: ['s', 12], talkBoost: 1, dur: 50 }],
@@ -936,6 +1041,7 @@
   MM.heightAt = function (dimId, x, z) {
     let h = baseHeight(dimId, x, z);
     for (const { l, y } of landmarksIn(dimId)) {
+      if (Math.abs(x - l.x) > l.r + 12 || Math.abs(z - l.z) > l.r + 12) continue;
       const d = Math.hypot(x - l.x, z - l.z);
       if (d < l.r + 12) h += (y - h) * (1 - smooth(l.r + 2, l.r + 12, d));
     }
@@ -944,6 +1050,37 @@
   function baseHeight(dimId, x, z) {
     const dim = MM.DIM_BY_ID[dimId];
     if (dim.interior) return 0;
+    if (dim.planets) return -150;   // space: no ground, just a floor far below
+    if (dim.regions) return compositeHeight(dim, x, z);
+    return cellHeight(dim, x, z) + smooth(MM.WORLD_HALF - 30, MM.WORLD_HALF + 10, Math.max(Math.abs(x), Math.abs(z))) * 28;
+  }
+  // Countryside between the towns: gentle rolling hills, the same in every part of the world,
+  // so each town fades into it at its edge without a step.
+  function compositeHeight(dim, x, z) {
+    let h = (MM.fbm(x * 0.005, z * 0.005, dim.seed + 3, 4) - 0.5) * 2 * 7;
+    const cells = [{ D: dim, ox: 0, oz: 0 }].concat(dim.regions.map(R => ({ D: MM.DIM_BY_ID[R.dim], ox: R.ox, oz: R.oz })));
+    for (const c of cells) {
+      const lx = x - c.ox, lz = z - c.oz, m = Math.max(Math.abs(lx), Math.abs(lz));
+      if (m >= MM.REGION_HALF) continue;
+      const k = 1 - smooth(162, 196, m);
+      h += (cellHeight(c.D, lx, lz) - h) * k;
+    }
+    // Roads between the towns stay level.
+    for (const s of MM.EARTH_LINKS) {
+      const d = segD(x, z, s);
+      if (d < 16) h *= smooth(6, 16, d);
+    }
+    return h + smooth(dim.bound - 30, dim.bound + 10, Math.max(Math.abs(x), Math.abs(z))) * 28;
+  }
+  function segD(x, z, s) {
+    const dx = s[2] - s[0], dz = s[3] - s[1], l2 = dx * dx + dz * dz || 1;
+    const t = Math.max(0, Math.min(1, ((x - s[0]) * dx + (z - s[1]) * dz) / l2));
+    return Math.hypot(x - (s[0] + dx * t), z - (s[1] + dz * t));
+  }
+  // The roads joining the suburb to the other towns.
+  MM.EARTH_LINKS = [[140, 0, 262, 0], [-140, 0, -262, 0], [0, -140, 0, -262]];
+  function cellHeight(dim, x, z) {
+    const dimId = dim.id;
     const r = Math.sqrt(x * x + z * z);
     let h = (MM.fbm(x * dim.scale, z * dim.scale, dim.seed, 4) - 0.5) * 2 * dim.amp;
     h *= smooth(14, 40, r);
@@ -957,7 +1094,6 @@
     if (dimId === 'suburbia') h *= smooth(138, 160, Math.max(Math.abs(x), Math.abs(z)));
     if (dim.flat) h *= smooth(dim.flat, dim.flat + 30, Math.max(Math.abs(x), Math.abs(z)));   // towns sit on level ground
     if (dimId === 'featherhold') h += Math.pow(MM.fbm(x * 0.02 + 5, z * 0.02, dim.seed + 7, 2), 3) * 30 * smooth(30, 60, r);
-    h += smooth(MM.WORLD_HALF - 30, MM.WORLD_HALF + 10, Math.max(Math.abs(x), Math.abs(z))) * 28;
     return h;
   }
 
@@ -1000,8 +1136,14 @@
       const t = MM.PROPS[type];
       out.push({ id: out.length, type, x, z, rot, s: scale, r: t.r * scale, h: t.h * scale, hp: Math.round(t.hp * scale) });
     };
-    for (const l of MM.LANDMARKS) if (l.dim === dimId) add(l.model, l.x, l.z, l.rot !== undefined ? l.rot : dim.interior ? (l.z < -3 ? 0 : l.z > 3 ? Math.PI : l.x < 0 ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(-l.x, -l.z), 1);
-    for (const [type, x, z, rot] of dim.fixed || []) add(type, x, z, rot, 1);
+    for (const l of MM.LANDMARKS) {
+      // A town that is part of a bigger world plans around its own landmarks, in its own
+      // coordinates; the bigger world gets them through that town's props.
+      if (l.origin === dimId) { add(l.model, l.lx, l.lz, l.rot, 1); continue; }
+      if (l.dim !== dimId || (dim.regions && l.origin)) continue;
+      add(l.model, l.x, l.z, l.rot !== undefined ? l.rot : dim.interior ? (l.z < -3 ? 0 : l.z > 3 ? Math.PI : l.x < 0 ? Math.PI / 2 : -Math.PI / 2) : Math.atan2(-l.x, -l.z), 1);
+    }
+    for (const [type, x, z, rot, sc] of dim.fixed || []) add(type, x, z, rot, sc || 1);
     const onRoad = v => { const m = ((v % 44) + 44) % 44; return Math.min(m, 44 - m) < 7.5; };
     if (dim.streets) {
       // Blocks between streets every 44 m. Each block has two rows of houses back to back,
@@ -1038,17 +1180,36 @@
       layout(kit);
       layoutCache[dimId] = { roads: kit.roads, plazas: kit.plazas };
     } else for (const [type, n] of dim.props) {
-      // Open worlds got bigger: a few more things to fill the extra ground.
-      const t = MM.PROPS[type], count = MM.boundOf(dimId) >= MM.WORLD_HALF ? Math.round(n * 1.3) : n;
+      // Open worlds got bigger: a few more things to fill the extra ground. A composite world
+      // spreads its own things over the countryside too, but not into the other towns.
+      const comp = !!dim.regions, area = comp ? 5 : 1;
+      const t = MM.PROPS[type], count = Math.round((MM.boundOf(dimId) >= MM.WORLD_HALF ? n * 1.3 : n) * area);
       for (let i = 0, tries = 0; i < count && tries < count * 40; tries++) {
-        const span = Math.min(MM.WORLD_HALF - 28, MM.boundOf(dimId) - 3);
+        const span = comp ? MM.boundOf(dimId) - 28 : Math.min(MM.WORLD_HALF - 28, MM.boundOf(dimId) - 3);
         const x = (r() * 2 - 1) * span, z = (r() * 2 - 1) * span;
         const s = 0.8 + r() * 0.5;
-        if (dim.streets && (onRoad(x) || onRoad(z))) continue;
+        if (comp) {
+          const at = MM.regionAt(dimId, x, z);
+          if (at.R) continue;
+          if (MM.EARTH_LINKS.some(q => segD(x, z, q) < 8 + t.r * s)) continue;
+          if (Math.max(Math.abs(x), Math.abs(z)) < 150 && dim.streets && (onRoad(x) || onRoad(z))) continue;
+        } else if (dim.streets && (onRoad(x) || onRoad(z))) continue;
         if (!free(x, z, t.r * s)) continue;
         add(type, x, z, r() * Math.PI * 2, s);
         i++;
       }
+    }
+    // The other towns of a composite world, each planned in its own space and moved into place.
+    if (dim.regions) {
+      const roads = [], plazas = [];
+      for (const R of dim.regions) {
+        for (const p of MM.genProps(R.dim)) out.push(Object.assign({}, p, { id: out.length, x: p.x + R.ox, z: p.z + R.oz }));
+        const L = MM.layoutOf(R.dim);
+        for (const q of L.roads) roads.push(Object.assign({}, q, { x1: q.x1 + R.ox, z1: q.z1 + R.oz, x2: q.x2 + R.ox, z2: q.z2 + R.oz }));
+        for (const q of L.plazas) plazas.push(Object.assign({}, q, { x: q.x + R.ox, z: q.z + R.oz }));
+      }
+      for (const [x1, z1, x2, z2] of MM.EARTH_LINKS) roads.push({ x1, z1, x2, z2, w: 9, style: 'asphalt' });
+      layoutCache[dimId] = { roads, plazas };
     }
     for (const p of out) p.y = MM.heightAt(dimId, p.x, p.z);
     return (propCache[dimId] = out);
@@ -1106,16 +1267,32 @@
     lm_gooble: [-7.2, 7.2, -5.2, 7.65], lm_fakedoors: [-4.7, 4.7, -3.7, 3.9], lm_antsjohnson: [-4.7, 4.7, -3.7, 3.9], lm_plumbusline: [-6, 6, -5, 5.11],
     lm_mall: [-11.5, 11.5, -7.25, 10.6], lm_shoneys: [-5.9, 5.9, -4.4, 4.6], lm_needful: [-4.25, 4.25, -4.25, 4.7], lm_wong: [-5.7, 5.7, -4.7, 5.2],
     lm_tvstore: [-5.2, 5.2, -4.2, 4.35], lm_whitehouse: [-12.3, 12.3, -5.8, 9.6], lm_capitol: [-15.5, 15.5, -7.5, 9.5], lm_sonicstage: [-9, 9, -5, 5],
-    lm_hangar: [-7.6, 7.6, -9, 9.2], snakehut: [-2.8, 2.8, -2.8, 2.8], lm_snakeclub: [-7.5, 7.5, -5, 5], lm_dinocouncil: [-9, 9, -9, 9],
+    lm_hangar: [-7.6, 7.6, -9, 9.2], traincar: [-1.6, 1.6, -8.4, 8.4], lm_raidergarage: [-7, 7, -5, 5], lm_formsoffice: [-7.5, 7.5, -5.5, 5.5], lm_pizzacounter: [-5, 5, -3, 3], snakehut: [-2.8, 2.8, -2.8, 2.8], lm_snakeclub: [-7.5, 7.5, -5, 5], lm_dinocouncil: [-9, 9, -9, 9],
     lm_nimbuspalace: [-11, 11, -7, 7], lm_dreamschool: [-9.3, 9.3, -4.8, 5.2], locker: [-1.2, 1.2, -0.4, 0.4], spacecruiser: [-2.02, 2.02, -2.5, 2.5],
   };
   for (const k in BOX) if (MM.PROPS[k]) MM.PROPS[k].box = BOX[k];
-  MM.PROPS.lm_highway.arch = true;   // a gantry over the road: walk (and drive) under it
+  // Rick's garage is open: three walls and the front either side of the big door (and the
+  // side door), as segments [x1, z1, x2, z2] in the model's own frame. You walk in.
+  MM.PROPS.lm_garage.walls = [[-4.5, -4.5, 4.5, -4.5], [-4.5, -4.5, -4.5, 4.5], [4.5, -4.5, 4.5, 4.5], [-4.5, 4.5, -3.4, 4.5], [2.2, 4.5, 3.05, 4.5], [4.15, 4.5, 4.5, 4.5]];
+  delete MM.PROPS.lm_garage.box;
+  MM.PROPS.lm_garage.boxR = 6.4;
+
   // How far from its centre a prop can block (its circle, or its box's far corner).
-  MM.propReach = p => { const T = MM.PROPS[p.type]; if (!T.box) return p.r; if (!T.boxR) { const [x0, x1, z0, z1] = T.box; T.boxR = Math.hypot(Math.max(-x0, x1), Math.max(-z0, z1)); } return T.boxR * (p.s || 1); };
+  MM.propReach = p => { const T = MM.PROPS[p.type]; if (T.walls) return T.boxR * (p.s || 1); if (!T.box) return p.r; if (!T.boxR) { const [x0, x1, z0, z1] = T.box; T.boxR = Math.hypot(Math.max(-x0, x1), Math.max(-z0, z1)); } return T.boxR * (p.s || 1); };
   // Push a circle (x, z, rad) out of prop p. Returns [x, z], moved or not.
   MM.pushOutOfProp = function (p, x, z, rad) {
     const T = MM.PROPS[p.type];
+    if (T.walls) {
+      const c = Math.cos(p.rot), s = Math.sin(p.rot), k = p.s || 1, dx = x - p.x, dz = z - p.z, r = rad / k + 0.1;
+      let lx = (dx * c - dz * s) / k, lz = (dx * s + dz * c) / k, moved = false;
+      for (const [x1, z1, x2, z2] of T.walls) {
+        const ex = x2 - x1, ez = z2 - z1, l2 = ex * ex + ez * ez || 1;
+        const t = Math.max(0, Math.min(1, ((lx - x1) * ex + (lz - z1) * ez) / l2));
+        const px = x1 + ex * t, pz = z1 + ez * t, ox = lx - px, oz = lz - pz, d2 = ox * ox + oz * oz;
+        if (d2 < r * r) { let d = Math.sqrt(d2), ux = ox, uz = oz; if (d < 1e-6) { const l = Math.sqrt(l2); ux = -ez / l; uz = ex / l; d = 1; } lx = px + ux / d * r; lz = pz + uz / d * r; moved = true; }
+      }
+      return moved ? [p.x + (lx * c + lz * s) * k, p.z + (-lx * s + lz * c) * k] : [x, z];
+    }
     if (T.box) {
       const c = Math.cos(p.rot), s = Math.sin(p.rot), dx = x - p.x, dz = z - p.z, k = p.s || 1;
       let lx = (dx * c - dz * s) / k, lz = (dx * s + dz * c) / k;
@@ -1147,8 +1324,33 @@
     }
     return [x, z];
   };
+  // Props by 24 m grid cell, so collisions only look at what is near (Earth has well over a
+  // thousand props). A prop sits in every cell its reach touches.
+  const gridCache = {}, GRID = 24;
+  function propGrid(dimId) {
+    if (gridCache[dimId]) return gridCache[dimId];
+    const g = new Map();
+    for (const p of MM.genProps(dimId)) {
+      const R = MM.propReach(p);
+      for (let i = Math.floor((p.x - R) / GRID); i <= Math.floor((p.x + R) / GRID); i++) for (let j = Math.floor((p.z - R) / GRID); j <= Math.floor((p.z + R) / GRID); j++) {
+        const k = i * 4096 + j;
+        let b = g.get(k); if (!b) g.set(k, b = []);
+        b.push(p);
+      }
+    }
+    return (gridCache[dimId] = g);
+  }
+  // Props whose reach may come within rad of (x, z). May list a prop twice.
+  MM.propsNear = function (dimId, x, z, rad) {
+    const g = propGrid(dimId), out = [];
+    for (let i = Math.floor((x - rad) / GRID); i <= Math.floor((x + rad) / GRID); i++) for (let j = Math.floor((z - rad) / GRID); j <= Math.floor((z + rad) / GRID); j++) {
+      const b = g.get(i * 4096 + j);
+      if (b) for (const p of b) out.push(p);
+    }
+    return out;
+  };
   MM.collideProps = function (dimId, x, z, rad, alive) {
-    const props = MM.genProps(dimId);
+    const props = MM.propsNear(dimId, x, z, rad);
     for (const p of props) {
       if (alive && !alive[p.id]) continue;
       if (MM.PROPS[p.type].arch) continue;
@@ -1215,9 +1417,59 @@
     fillVariant(d);
     return d;
   };
-  // Looking up a home dimension by id makes it (deterministically) the first time.
+  // ---------- World rules ----------
+  // Things that make a world play differently, shown when you arrive.
+  MM.QUIRKS = {
+    swim: 'Underwater: hold Jump to swim up, and you sink slowly.',
+    bouncy: 'Everything is soft: you jump much higher, and everything hurts you half as much.',
+    dreamy: 'A dream: now and then you remember you can fly (hold Jump).',
+    regen: 'The flesh is warm and alive: it slowly heals you while you stand on it.',
+    toxic: 'The air is toxic: it slowly hurts you unless your shield is up.',
+  };
+  MM.quirkOf = dimId => { const D = MM.DIM_BY_ID[dimId]; return D && D.quirk; };
+
+  // ---------- Space ----------
+  // Fly your ship straight up out of a world's atmosphere and you are in the space around it:
+  // its planet below you, and the other planets of the same universe (for the show's home
+  // universe: Earth and its moon, Bird World, Gazorpazorp, Planet Squanch...). Fly into a
+  // planet to land on it. A world with no neighbours just has itself, alone in the dark.
+  MM.ORBIT_ALT = 250;          // how high above the ground the atmosphere ends
+  MM.spaceKey = dimId => { const D = MM.DIM_BY_ID[dimId]; return D.space || D.id; };
+  MM.spaceDimOf = dimId => MM.DIM_BY_ID['sp_' + MM.spaceKey(dimId)];
+  function ensureSpaceDim(id) {
+    const key = id.slice(3);
+    if (!MM.DIM_BY_ID[key] && !MM.DIMS.some(d => d.space === key)) return undefined;
+    const inC137 = k => MM.DIMS.filter(d => d.space === k && !d.hidden && !d.interior && !d.pocket).map(d => d.id);
+    let list = inC137(key);
+    // Every Earth (the alternate ones, everyone's home) has its own sky with the same Moon and
+    // planets around it.
+    const K = MM.DIM_BY_ID[key];
+    if (K && K.variantOf === 'suburbia') list = [key].concat(inC137('c137').filter(d => d !== 'suburbia'));
+    if (!list.length) list = [key];
+    // The home planet in the middle (Earth, if it is there), its moon close by, the rest around.
+    list.sort((a, b) => (b === 'suburbia') - (a === 'suburbia'));
+    const planets = [];
+    const rest = list.filter((d, i) => i > 0 && d !== 'moon');
+    planets.push({ dim: list[0], x: 0, y: 0, z: 0, r: 110 });
+    if (list.includes('moon') && list[0] !== 'moon') planets.push({ dim: 'moon', x: 230, y: 30, z: -90, r: 32 });
+    rest.forEach((d, i) => { const a = (i + 0.5) / rest.length * Math.PI * 2; planets.push({ dim: d, x: Math.cos(a) * 470, y: ((i % 3) - 1) * 90 + 120, z: Math.sin(a) * 470, r: 52 + (i % 3) * 8 }); });
+    const home = MM.DIM_BY_ID[list[0]];
+    const d = {
+      id, name: 'Space around ' + home.name, code: home.code, hidden: true, planets, spaceOf: key,
+      blurb: 'Out of the atmosphere. Fly into a planet to land on it.', seed: 4242, gravity: 0, amp: 0, scale: 0.01, bound: 650,
+      sky: ['#000004', '#060a1e'], fog: '#02030a', fogFar: 1450, sun: '#ffffff', ambient: '#8a96c8',
+      ground: ['#000000', '#000000', '#000000'], accent: '#ffffff', props: [], npc: [], pickups: {}, mat: 's', spawn: { x: 0, z: 0 },
+    };
+    MM.DIMS.push(d); byId[id] = d; MM.DIM_IDS.push(id);
+    return d;
+  }
+  // Looking up a home dimension (or a space) by id makes it (deterministically) the first time.
   const byId = MM.DIM_BY_ID;
-  const make = k => { if (typeof k === 'string' && !(k in byId) && MM.HOME_RE.test(k)) MM.ensureHomeDim(k); };
+  const make = k => {
+    if (typeof k !== 'string' || k in byId) return;
+    if (MM.HOME_RE.test(k)) MM.ensureHomeDim(k);
+    else if (k.startsWith('sp_')) ensureSpaceDim(k);
+  };
   MM.DIM_BY_ID = new Proxy(byId, {
     get(t, k) { make(k); return t[k]; },
     has(t, k) { make(k); return k in t; },

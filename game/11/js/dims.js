@@ -641,17 +641,42 @@
       s.add(P.box, '#c9b48c', [0, 0.05, 6.5], null, [1.4, 0.05, 3]);     // front path
     },
     // Rick's garage: same siding and roof as the house, white sectional door, side window.
+    // Rick's garage, standing open: thin walls you can walk between, the big door rolled up
+    // under the eaves, the side door open, a concrete floor, beams and a hanging light.
+    // Collision is the walls only (MM.PROPS.lm_garage.walls), so you just walk in.
     lm_garage(s) {
-      const w = 9, d = 9, h = 3.6, wall = '#e6d2a8', trim = '#fbf6ea';
+      const w = 9, d = 9, h = 3.6, t = 0.2, wall = '#e6d2a8', inner = '#9c936e', trim = '#fbf6ea';
       s.add(P.box, '#4a443c', [0, 0.2, 0], null, [w + 0.2, 0.4, d + 0.2]);
-      s.add(P.box, wall, [0, 0.4 + h / 2, 0], null, [w, h, d]);
-      siding(s, w, h, d / 2 + 0.01, shade(wall, 0.9));
+      s.add(P.box, '#77776f', [0, 0.41, 0], null, [w - 0.3, 0.02, d - 0.3]);                        // concrete floor
+      const panel = (x, z, sx, sz) => { s.add(P.box, wall, [x, 0.4 + h / 2, z], null, [sx, h, sz]); };
+      panel(0, -d / 2 + t / 2, w, t);                                                                  // back
+      panel(-w / 2 + t / 2, 0, t, d); panel(w / 2 - t / 2, 0, t, d);                                  // sides
+      panel((-w / 2 + -3.4) / 2, d / 2 - t / 2, w / 2 - 3.4, t);                                       // front, left of the door
+      panel((2.2 + 3.05) / 2, d / 2 - t / 2, 0.85, t); panel((4.15 + w / 2) / 2, d / 2 - t / 2, 0.35, t);
+      s.add(P.box, wall, [-0.6, 0.4 + 3.1 + (h - 3.1) / 2, d / 2 - t / 2], null, [5.6, h - 3.1, t]);   // over the big door
+      s.add(P.box, wall, [3.6, 0.4 + 2.3 + (h - 2.3) / 2, d / 2 - t / 2], null, [1.1, h - 2.3, t]);    // over the side door
+      // Inside: khaki panelling, wooden studs, beams across.
+      for (const sx of [-1, 1]) s.add(P.box, inner, [sx * (w / 2 - t - 0.01), 0.4 + h / 2, 0], null, [0.02, h - 0.1, d - 0.5]);
+      s.add(P.box, inner, [0, 0.4 + h / 2, -d / 2 + t + 0.01], null, [w - 0.5, h - 0.1, 0.02]);
+      for (let i = -3; i <= 3; i++) s.add(P.box, '#6e5034', [i * 1.25, 0.4 + h / 2, -d / 2 + t + 0.06], null, [0.09, h, 0.09]);
+      for (let i = -3; i <= 3; i++) s.add(P.box, '#6e5034', [0, 0.4 + h - 0.12, i * 1.25], null, [w - 0.4, 0.14, 0.14]);
+      s.add(P.box, '#d8d2c4', [0, 0.4 + h + 0.02, 0], null, [w - 0.2, 0.06, d - 0.2]);                 // ceiling
+      s.add(P.cylLo, '#2a2a2a', [0, 0.4 + h - 0.45, 0], null, [0.02, 0.6, 0.02]);
+      s.add(P.sphere, '#fff6c8', [0, 0.4 + h - 0.8, 0], null, [0.16, 0.12, 0.16], true);               // the bulb
+      // Outside: siding on the walls beside the doors, corner trim, the gable roof, the
+      // rolled-up door under the eaves.
+      for (let y = 0.7; y < 0.4 + h; y += 0.32) {
+        s.add(P.box, shade(wall, 0.9), [(-w / 2 - 3.4) / 2 - 0.15, y, d / 2 + 0.01], null, [w / 2 - 3.4 + 0.3, 0.03, 0.02]);
+        if (y > 3.6) s.add(P.box, shade(wall, 0.9), [0.2, y, d / 2 + 0.01], null, [7.3, 0.03, 0.02]);
+      }
       for (const sx of [-1, 1]) for (const sz of [-1, 1]) s.add(P.box, trim, [sx * w / 2, 0.4 + h / 2, sz * d / 2], null, [0.22, h, 0.22]);
       gable(s, w, d, 0.4 + h, 2.4, '#6b4a3a', trim);
-      garageDoor(s, -0.6, d / 2, 5.6, 2.9, trim);
+      s.add(P.box, trim, [-0.6, 0.4 + 3.15, d / 2 + 0.02], null, [5.9, 0.12, 0.1]);                    // door frame
+      for (const sx of [-1, 1]) s.add(P.box, trim, [-0.6 + sx * 2.9, 0.4 + 1.55, d / 2 + 0.02], null, [0.12, 3.1, 0.1]);
+      s.add(P.box, '#f4f2ec', [-0.6, 0.4 + 2.95, d / 2 - 0.5], null, [5.4, 0.24, 0.9]);                 // the rolled-up door
+      s.add(P.box, trim, [3.6, 0.4 + 2.35, d / 2 + 0.02], null, [1.25, 0.1, 0.1]);
+      s.add(P.box, '#8a7a6a', [4.12, 0.4 + 1.1, d / 2 + 0.45], [0, 1.2, 0], [0.85, 2.1, 0.06]);         // side door, swung open
       win(s, w / 2, 2.4, -1.5, 1.2, 1.0, null, 1);
-      s.add(P.box, trim, [3.6, 1.5, d / 2 + 0.03], null, [1.1, 2.3, 0.08]);
-      s.add(P.box, '#8a7a6a', [3.6, 1.45, d / 2 + 0.07], null, [0.85, 2.1, 0.06]);
       s.add(P.box, '#b8b0a2', [0, 0.03, d / 2 + 3], null, [6, 0.06, 6]);   // driveway apron
     },
     // Harry Herpson High: red brick, white cornice, two rows of windows, a columned entrance, flagpole.
@@ -1794,6 +1819,124 @@
       const c = ['#ff6f8a', '#ffe066', '#ffffff', '#c88aff'];
       for (let i = 0; i < 8; i++) { s.add(P.cylLo, '#3a8a3a', [(i % 4) * 0.6 - 0.9, 0.6, (i < 4 ? -0.3 : 0.3)], null, [0.03, 0.6, 0.03]); s.add(P.sphereLo, c[i % 4], [(i % 4) * 0.6 - 0.9, 0.95, (i < 4 ? -0.3 : 0.3)], null, [0.16, 0.12, 0.16]); }
     },
+    // ----- Something to do in every world -----
+    lm_purgestage(s) {
+      s.add(P.box, '#8a6a3a', [0, 0.6, 0], null, [12, 1.2, 7]);
+      for (let i = -5; i <= 5; i++) s.add(P.box, '#6a4a2a', [i * 1.1, 0.62, 3.5], null, [1.0, 1.2, 0.1]);
+      for (const sx of [-1, 1]) { s.add(P.cylLo, '#5a3a1a', [sx * 5.6, 3.6, -3], null, [0.18, 6, 0.18]); s.add(P.cone, '#ff8a2a', [sx * 5.6, 7.1, -3], null, [0.5, 1.0, 0.5], true); }
+      s.add(P.box, '#c8302a', [0, 5.4, -3.1], null, [11, 2.0, 0.1]);
+      s.add(P.box, '#f4e0b0', [0, 5.4, -3.0], null, [8, 0.6, 0.06]);
+      for (let i = 0; i < 6; i++) s.add(P.cyl, '#d8b84a', [-4 + i * 1.6, 1.6, -1], null, [0.3, 0.8, 0.3]);   // pumpkins? bales.
+      s.add(P.cylLo, '#3a3a3a', [0, 2.0, 1], null, [0.04, 1.6, 0.04]); s.add(P.sphereLo, '#3a3a3a', [0, 2.9, 1], null, [0.12, 0.16, 0.12]);   // the microphone
+    },
+    lm_squanchclub(s) {
+      s.add(P.hemi, '#c84a8a', [0, 0, 0], null, [7, 6, 7]);
+      s.add(P.box, '#2a0a2a', [0, 1.6, 6.5], null, [2.6, 3.2, 1.2]);
+      for (let i = 0; i < 10; i++) { const a = i / 10 * Math.PI * 2; s.add(P.sphereLo, ['#ff6fd0', '#5ff8ff', '#ffe066'][i % 3], [Math.cos(a) * 6.6, 3.2 + Math.sin(i) * 0.8, Math.sin(a) * 6.6], null, [0.35, 0.35, 0.35], true); }
+      s.add(P.cyl, '#ffd84d', [0, 6.5, 0], null, [0.8, 1.6, 0.8], true);
+      s.add(P.box, '#ffe066', [0, 4.6, 6.4], null, [4.2, 0.9, 0.1], true);
+    },
+    lm_gazorpthrone(s) {
+      for (let i = 0; i < 4; i++) s.add(P.box, '#8a3a2a', [0, 0.4 + i * 0.6, -i * 0.9], null, [8 - i * 1.4, 0.6, 6 - i * 0.9]);
+      s.add(P.box, '#c8a040', [0, 4.6, -3.2], null, [3.2, 3.4, 1.0]);
+      s.add(P.box, '#c8a040', [0, 3.0, -2.2], null, [3.2, 0.6, 2.2]);
+      for (const sx of [-1, 1]) { s.add(P.box, '#c8a040', [sx * 1.7, 3.6, -2.3], null, [0.4, 1.6, 2.2]); s.add(P.cone, '#f0e8d0', [sx * 1.4, 6.8, -3.2], [0, 0, sx * -0.4], [0.3, 1.6, 0.3]); }
+      for (let i = 0; i < 7; i++) s.add(P.cone, '#f0e8d0', [-3 + i, 6.6, -3.4], null, [0.16, 0.9, 0.16]);   // bone crown
+      for (const sx of [-1, 1]) s.add(P.cylLo, '#e8d8b0', [sx * 4.2, 3, 1.5], null, [0.3, 6, 0.3]);
+    },
+    lm_froopyslide(s) {
+      s.add(P.cyl, '#ffb0e0', [0, 4.5, 0], null, [1.2, 9, 1.2]);
+      s.add(P.cyl, '#b0d8ff', [0, 9.2, 0], null, [2.0, 0.5, 2.0]);
+      for (let i = 0; i < 26; i++) { const a = i * 0.42, y = 9 - i * 0.34; s.add(P.box, i % 2 ? '#c8ffb0' : '#ffe0a0', [Math.cos(a) * 2.6, y, Math.sin(a) * 2.6], [0, -a, -0.35], [1.8, 0.25, 1.0]); }
+      s.add(P.sphere, '#ffd6f0', [0, 10, 0], null, [1.6, 1.0, 1.6]);
+    },
+    lm_pizzacounter(s) {
+      s.add(P.box, '#e2483d', [0, 1.6, -1.5], null, [10, 3.2, 3]);
+      s.add(P.box, '#f4e8c8', [0, 1.1, 1.2], null, [9, 1.0, 1.4]);
+      s.add(P.cyl, '#ffcf6a', [-3, 1.75, 1.2], null, [0.7, 0.08, 0.7]); s.add(P.cyl, '#e2483d', [-3, 1.8, 1.2], null, [0.5, 0.05, 0.5]);
+      s.add(P.box, '#2a2a2a', [0, 1.9, 1.2], [0.3, 0, 0], [0.5, 0.06, 0.9]);   // a phone
+      s.add(P.box, '#8a5a2a', [3, 1.95, 1.2], null, [0.7, 0.08, 0.7]); s.add(P.box, '#8a5a2a', [3, 2.4, 0.9], null, [0.7, 0.9, 0.08]);   // a chair
+      s.add(P.box, '#ffe066', [0, 3.8, -0.1], null, [7, 1.0, 0.2], true);
+    },
+    lm_raidergarage(s) {
+      s.add(P.box, '#7a6a5a', [0, 2.6, -2], null, [14, 5.2, 6]);
+      s.add(P.box, '#2a2420', [0, 1.8, 1.02], null, [8, 3.6, 0.1]);
+      for (let i = -6; i <= 6; i++) s.add(P.cone, '#b8b8b8', [i * 1.1, 5.6, 1.0], null, [0.18, 1.2, 0.18]);
+      s.add(P.sphere, '#e8e0d0', [0, 4.6, 1.2], null, [0.6, 0.55, 0.3]);
+      for (const sx of [-1, 1]) s.add(P.sphereLo, '#1a1a1a', [sx * 0.22, 4.7, 1.45], null, [0.14, 0.14, 0.06]);
+      s.add(P.box, '#a03a1a', [-4, 0.8, 3], null, [3.6, 1.0, 1.8]); s.add(P.box, '#a03a1a', [-4, 1.6, 3.2], null, [2, 0.8, 1.4]);
+      for (const x of [-5.3, -2.7]) for (const z of [2.2, 3.8]) s.add(P.cyl, '#1a1a1a', [x, 0.5, z], [0, 0, Math.PI / 2], [0.5, 0.4, 0.5]);
+    },
+    lm_unitycore(s) {
+      s.add(P.cyl, '#d8e0e8', [0, 0.4, 0], null, [5.5, 0.8, 5.5]);
+      s.add(P.cone, '#e8eef4', [0, 7, 0], null, [3.4, 12, 3.4]);
+      for (let i = 0; i < 3; i++) s.add(P.torus, '#5fd6b0', [0, 3 + i * 3.4, 0], [Math.PI / 2, 0, 0], [3.2 - i * 0.8, 3.2 - i * 0.8, 0.5], true);
+      s.add(P.sphere, '#5fd6b0', [0, 13.4, 0], null, [0.8, 0.8, 0.8], true);
+    },
+    lm_formsoffice(s) {
+      s.add(P.box, '#e8ecf0', [0, 4.2, -0.5], null, [15, 8.4, 11]);
+      s.add(P.box, '#e2483d', [0, 8.6, -0.5], null, [15.4, 0.4, 11.4]);
+      for (let i = -3; i <= 3; i++) s.add(P.box, '#8ab8d8', [i * 2, 4, 5.02], null, [1.2, 5, 0.06]);
+      s.add(P.box, '#3a4a6a', [0, 1.4, 5.04], null, [2.4, 2.8, 0.06]);
+      s.add(P.box, '#f4f0e0', [0, 7.4, 5.05], null, [6, 0.9, 0.05]);
+      for (let i = 0; i < 6; i++) s.add(P.box, '#f8f4e8', [5 + (i % 2) * 0.3, 0.3 + i * 0.25, 6.4], [0, i * 0.4, 0], [0.6, 0.22, 0.8]);   // a pile of forms
+    },
+    lm_geartemple(s) {
+      s.add(P.box, '#8a7a5a', [0, 0.6, 0], null, [14, 1.2, 12]);
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) s.add(P.cyl, '#a8946a', [sx * 5, 4.5, sz * 4], null, [0.7, 7, 0.7]);
+      s.add(P.box, '#9a8a6a', [0, 8.4, 0], null, [12, 0.8, 10]);
+      const n = 14;
+      s.add(P.cyl, '#ffd84d', [0, 6, -4.8], [Math.PI / 2, 0, 0], [3.4, 0.5, 3.4]);
+      for (let i = 0; i < n; i++) { const a = i / n * Math.PI * 2; s.add(P.box, '#ffd84d', [Math.cos(a) * 3.8, 6 + Math.sin(a) * 3.8, -4.8], [0, 0, a], [0.8, 0.9, 0.5]); }
+      s.add(P.cyl, '#6a5a3a', [0, 6, -4.5], [Math.PI / 2, 0, 0], [1.0, 0.6, 1.0]);
+    },
+    lm_hamstertube(s) {
+      const tube = (a, b) => C.capsuleAt(s, '#bfe8ff', 0.7, Math.hypot(b[0] - a[0], b[1] - a[1], b[2] - a[2]), a, [Math.atan2(b[2] - a[2], b[1] - a[1]), 0, -Math.atan2(b[0] - a[0], Math.hypot(b[1] - a[1], b[2] - a[2]))], true);
+      tube([-5, 0.7, 0], [-1, 3, 0]); tube([-1, 3, 0], [3, 3, 2]); tube([3, 3, 2], [5, 0.7, -2]); tube([-1, 3, 0], [0, 5.5, -2]);
+      for (const p of [[-1, 3, 0], [3, 3, 2], [0, 5.5, -2]]) s.add(P.sphere, '#e8f6ff', p, null, [1.1, 1.1, 1.1], true);
+      s.add(P.sphere, '#d8a870', [3, 3.1, 2], null, [0.45, 0.4, 0.55]);
+    },
+    lm_storyengine(s) {
+      s.add(P.box, '#3a2a5a', [0, 2.4, 0], null, [3.4, 3.6, 10]);
+      s.add(P.cyl, '#2a1e48', [0, 3.0, 2.5], [Math.PI / 2, 0, 0], [1.6, 6, 1.6]);
+      s.add(P.cyl, '#ffd84d', [0, 3.0, 5.6], [Math.PI / 2, 0, 0], [1.2, 0.2, 1.2], true);
+      s.add(P.cyl, '#1a1430', [0, 5.6, 4], null, [0.5, 2, 0.5]);
+      s.add(P.box, '#4a3a6a', [0, 4.6, -3.2], null, [3.2, 2.4, 3.4]);
+      for (const z of [-3.5, -0.5, 2.5]) for (const sx of [-1, 1]) s.add(P.cyl, '#1a1a1a', [sx * 1.8, 0.8, z], [0, 0, Math.PI / 2], [0.8, 0.3, 0.8]);
+      for (const sx of [-1, 1]) s.add(P.box, '#8a8a92', [sx * 1.4, 0.08, 0], null, [0.2, 0.16, 18]);
+      for (let i = 0; i < 4; i++) s.add(P.sphereLo, '#e8e0f0', [0.2, 7 + i * 1.1, 4 - i * 0.5], null, [0.7 + i * 0.3, 0.5 + i * 0.2, 0.7 + i * 0.3]);
+    },
+    lm_detoxpod(s) {
+      s.add(P.cyl, '#7a828a', [0, 0.3, 0], null, [3.2, 0.6, 3.2]);
+      for (const sx of [-1, 1]) { s.add(P.cyl, '#a8ff3a', [sx * 1.3, 2.6, 0], null, [0.9, 4, 0.9], true); s.add(P.sphere, '#c8d0d8', [sx * 1.3, 4.7, 0], null, [0.95, 0.4, 0.95]); }
+      s.add(P.box, '#59606e', [0, 1.6, -1.6], null, [4, 2.4, 1]);
+      for (let i = 0; i < 3; i++) s.add(P.sphereLo, ['#ff4d4d', '#ffd84d', '#39ff6a'][i], [-1 + i, 2.2, -1.08], null, [0.15, 0.15, 0.06], true);
+      s.add(P.cylLo, '#3a3f4a', [0, 0.2, 2.6], [Math.PI / 2, 0, 0], [0.3, 3, 0.3]);
+    },
+    storybook(s) {
+      s.add(P.box, '#7a3a2a', [0, 1.6, 0], [0, 0, 0.1], [2.4, 3.2, 0.4]);
+      s.add(P.box, '#f4ecd8', [0.05, 1.6, 0], [0, 0, 0.1], [2.2, 3.0, 0.36]);
+      s.add(P.box, '#ffd84d', [0, 2.2, 0.21], [0, 0, 0.1], [1.4, 0.3, 0.02], true);
+    },
+    traincar(s) {
+      s.add(P.box, '#4a3a6a', [0, 2.4, 0], null, [3.0, 3.0, 16]);
+      s.add(P.box, '#ffd84d', [0, 2.6, 0], null, [3.04, 0.2, 16.02]);
+      for (let i = -3; i <= 3; i++) for (const sx of [-1, 1]) s.add(P.box, '#ffe9a0', [sx * 1.52, 3.0, i * 2.2], null, [0.04, 0.9, 1.4], true);
+      s.add(P.box, '#2a1e3a', [0, 4.0, 0], null, [3.2, 0.3, 16.2]);
+      for (const z of [-6, 6]) for (const sx of [-1, 1]) s.add(P.cyl, '#1a1a1a', [sx * 1.2, 0.7, z], [0, 0, Math.PI / 2], [0.6, 0.25, 0.6]);
+      for (const sx of [-1, 1]) s.add(P.box, '#8a8a92', [sx * 1.4, 0.08, 0], null, [0.2, 0.16, 18]);
+      for (let z = -8; z <= 8; z += 1.5) s.add(P.box, '#5a3a20', [0, 0.04, z], null, [3.6, 0.08, 0.5]);
+    },
+    toxicbarrel(s) {
+      s.add(P.cyl, '#d8c030', [0, 0.7, 0], null, [0.55, 1.4, 0.55]);
+      for (const y of [0.3, 1.1]) s.add(P.cyl, '#a89020', [0, y, 0], null, [0.57, 0.08, 0.57]);
+      s.add(P.cyl, '#a8ff3a', [0, 1.41, 0], null, [0.45, 0.03, 0.45], true);
+      s.add(P.box, '#1a1a1a', [0, 0.75, 0.56], null, [0.4, 0.35, 0.02]);
+    },
+    sludgepool(s) {
+      s.add(P.cyl, '#7ae02a', [0, 0.05, 0], null, [3, 0.1, 3], true);
+      for (let i = 0; i < 5; i++) s.add(P.sphereLo, '#a8ff3a', [Math.sin(i * 2.1) * 1.8, 0.15, Math.cos(i * 1.7) * 1.8], null, [0.3, 0.12, 0.3], true);
+    },
     lm_marker(s) {
       const ring = new T.TorusGeometry(0.55, 0.05, 6, 32);
       s.add(ring, '#ffd84d', [0, 0.03, 0], [Math.PI / 2, 0, 0], null, true);
@@ -1974,6 +2117,62 @@
     return new T.Points(g, new T.PointsMaterial({ color, size, sizeAttenuation: false, fog: false, map: C.dotTexture, transparent: true, depthWrite: false }));
   }
 
+  // ---------- Space ----------
+  // Black sky full of stars, the sun, and the planets of this universe as real globes: their
+  // own ground colours (Earth gets oceans), a glowing rim of their sky, and their name.
+  function makeSpace(dim, group) {
+    const all = new T.Group();
+    const sky = new T.Group();   // follows the camera
+    const st = (n, color, size) => {
+      const pos = new Float32Array(n * 3);
+      for (let i = 0; i < n; i++) {
+        const u = Math.random() * 2 - 1, a = Math.random() * Math.PI * 2, s = Math.sqrt(1 - u * u);
+        pos[i * 3] = Math.cos(a) * s * 1300; pos[i * 3 + 1] = u * 1300; pos[i * 3 + 2] = Math.sin(a) * s * 1300;
+      }
+      const g = new T.BufferGeometry(); g.setAttribute('position', new T.BufferAttribute(pos, 3));
+      return new T.Points(g, new T.PointsMaterial({ color, size, sizeAttenuation: false, fog: false, map: C.dotTexture, transparent: true, depthWrite: false }));
+    };
+    sky.add(st(1400, '#ffffff', 2), st(300, '#bcd4ff', 3), st(120, '#ffe0b0', 3.5));
+    const sun = new T.Mesh(new T.SphereGeometry(70, 24, 16), new T.MeshBasicMaterial({ color: '#fff4d0', fog: false }));
+    sun.position.set(-900, 500, -700); sky.add(sun);
+    const glow = new T.Mesh(new T.SphereGeometry(120, 24, 16), new T.MeshBasicMaterial({ color: '#ffd890', transparent: true, opacity: 0.25, fog: false, depthWrite: false }));
+    glow.position.copy(sun.position); sky.add(glow);
+    all.add(sky);
+    for (const P of dim.planets) {
+      const D = MM.DIM_BY_ID[P.dim];
+      const g = new T.SphereGeometry(P.r, 64, 40), pos = g.attributes.position, cols = new Float32Array(pos.count * 3);
+      const c = D.ground.map(x => new T.Color(x)), sea = new T.Color('#2f6fd6'), ice = new T.Color('#f4f8ff'), tmp = new T.Color();
+      const earth = P.dim === 'suburbia' || D.variantOf === 'suburbia';
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i) / P.r, y = pos.getY(i) / P.r, z = pos.getZ(i) / P.r;
+        const n = MM.fbm(x * 2.2 + 7, z * 2.2 + y * 1.7, D.seed || 1, 4);
+        tmp.copy(c[0]).lerp(c[1], Math.min(1, Math.max(0, (n - 0.4) * 3)));
+        if (n < 0.42) tmp.lerp(c[2], Math.min(1, (0.42 - n) * 6));
+        if (earth && n < 0.47) tmp.copy(sea).multiplyScalar(0.8 + n * 0.4);
+        if (earth && Math.abs(y) > 0.86) tmp.copy(ice);
+        if (P.dim === 'moon') tmp.multiplyScalar(0.8 + MM.fbm(x * 9, z * 9 + y * 5, 3, 2) * 0.5);
+        cols[i * 3] = tmp.r; cols[i * 3 + 1] = tmp.g; cols[i * 3 + 2] = tmp.b;
+      }
+      g.setAttribute('color', new T.BufferAttribute(cols, 3));
+      const m = new T.Mesh(g, terrainMat);
+      m.position.set(P.x, P.y, P.z);
+      all.add(m);
+      // Its atmosphere: a soft rim in the colour of its sky.
+      if (P.dim !== 'moon') {
+        const a = new T.Mesh(new T.SphereGeometry(P.r * 1.07, 48, 32), new T.MeshBasicMaterial({ color: D.sky[1], transparent: true, opacity: 0.22, side: T.BackSide, depthWrite: false, fog: false }));
+        a.position.copy(m.position); all.add(a);
+      }
+      const tag = C.makeTag(D.name, '', '', '#ffd84d');
+      tag.draw(-1);
+      tag.sprite.scale.set(110, 27, 1);
+      tag.sprite.position.set(P.x, P.y + P.r + 30, P.z);
+      tag.sprite.material.fog = false;
+      all.add(tag.sprite);
+    }
+    group.userData.spaceSky = sky;
+    return all;
+  }
+
   // Big things in the sky that make each dimension recognisable.
   function skyDecor(dim, group) {
     const add = (shape, pos) => { const m = C.meshOf(shape.build(), 0); m.position.set(pos[0], pos[1], pos[2]); m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } }); group.add(m); return m; };
@@ -2093,45 +2292,109 @@
     return t;
   })();
   const terrainMat = new T.MeshToonMaterial({ vertexColors: true, gradientMap: C.gradientMap, map: grain });
-  function makeTerrain(dim) {
-    const size = MM.WORLD_HALF * 2 + 120, seg = 170;
+  const smooth = (a, b, x) => { const t = Math.max(0, Math.min(1, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  // The ground's colour at a point: the world's palette in noisy patches, painted floors and
+  // tiles where a world has them, paving around landmarks. In a composite world each town
+  // keeps its own ground (Area 51's desert), fading into the countryside at its edge.
+  function groundColor(dim, x, z, y, tmp, P) {
+    let pal = P.base;
+    const n = MM.fbm(x * 0.05, z * 0.05, dim.seed + 99, 3);
+    const paint = (c0, c1, c2, out) => { out.copy(c0).lerp(c1, Math.min(1, Math.max(0, (n - 0.35) * 3))); if (n < 0.38) out.lerp(c2, Math.min(1, (0.38 - n) * 6)); return out; };
+    paint(pal[0], pal[1], pal[2], tmp);
+    if (dim.regions) {
+      const at = MM.regionAt(dim.id, x, z);
+      if (at.R) {
+        const k = 1 - smooth(150, 196, Math.max(Math.abs(at.lx), Math.abs(at.lz)));
+        const rp = P.regions[at.R.dim];
+        if (k > 0) tmp.lerp(paint(rp[0], rp[1], rp[2], P.t2), k);
+      }
+    }
+    if (dim.id === 'meatlands') {
+      const v = Math.abs(Math.sin(x * 0.11 + Math.sin(z * 0.07) * 3) * Math.cos(z * 0.09 + Math.sin(x * 0.05) * 2));
+      if (v < 0.05) tmp.set('#7c1e34');
+    }
+    if (dim.tiles) {
+      const gx = Math.abs(((x % 12) + 12) % 12 - 6), gz = Math.abs(((z % 12) + 12) % 12 - 6);
+      if (gx > 5.8 || gz > 5.8) tmp.set('#5ff8ff');
+    }
+    if (dim.id === 'bazaar') {
+      const gx = Math.abs(((x % 8) + 8) % 8 - 4), gz = Math.abs(((z % 8) + 8) % 8 - 4);
+      if ((gx > 3.85 || gz > 3.85) && Math.hypot(x, z) < 60) tmp.set('#5ff8ff');
+    }
+    if (dim.id === 'moon') { const d = y / 10; tmp.multiplyScalar(1 + Math.max(-0.35, Math.min(0.15, d * 0.3))); }
+    if (dim.id === 'featherhold') { const sl = Math.abs(MM.heightAt(dim.id, x + 1.5, z) - y) + Math.abs(MM.heightAt(dim.id, x, z + 1.5) - y); if (sl > 1.4) tmp.set(sl > 2.4 ? '#a27a42' : '#b98c4e'); else if (y > 6) tmp.lerp(new T.Color('#8fae4a'), 0.6); }
+    for (const l of P.lms) { if (Math.abs(x - l.x) > l.r + 3.5 || Math.abs(z - l.z) > l.r + 3.5) continue; const d = Math.hypot(x - l.x, z - l.z); if (d < l.r + 3.5) tmp.copy(P.side).lerp(P.base[1], 0.35); }
+    return tmp;
+  }
+  function terrainPalette(dim) {
+    const pal = g => g.map(c => new T.Color(c));
+    const regions = {};
+    for (const R of dim.regions || []) regions[R.dim] = pal(MM.DIM_BY_ID[R.dim].ground);
+    return { base: pal(dim.ground), regions, side: new T.Color('#c9c4b6'), t2: new T.Color(), lms: MM.LANDMARKS.filter(l => l.dim === dim.id) };
+  }
+  // One square of ground, centred on (cx, cz).
+  function terrainPiece(dim, P, cx, cz, size, seg, exactNormals) {
     const g = new T.PlaneGeometry(size, size, seg, seg);
     g.rotateX(-Math.PI / 2);
+    g.translate(cx, 0, cz);
     const pos = g.attributes.position;
-    const cols = new Float32Array(pos.count * 3);
-    const c0 = new T.Color(dim.ground[0]), c1 = new T.Color(dim.ground[1]), c2 = new T.Color(dim.ground[2]);
-    const road = new T.Color('#55595e'), side = new T.Color('#c9c4b6'), tmp = new T.Color();
+    const cols = new Float32Array(pos.count * 3), tmp = new T.Color();
+    // Heights on the grid plus a one-cell border, so normals can come from neighbours
+    // (pieces then shade the same on both sides of a seam).
+    const N = seg + 3, step = size / seg, x0 = cx - size / 2 - step, z0 = cz - size / 2 - step, Hs = new Float32Array(N * N);
+    for (let j = 0; j < N; j++) for (let i = 0; i < N; i++) Hs[j * N + i] = MM.heightAt(dim.id, x0 + i * step, z0 + j * step);
+    const hAt = (x, z) => Hs[Math.round((z - z0) / step) * N + Math.round((x - x0) / step)];
     for (let i = 0; i < pos.count; i++) {
       const x = pos.getX(i), z = pos.getZ(i);
-      const y = MM.heightAt(dim.id, x, z);
+      const y = hAt(x, z);
       pos.setY(i, y);
-      const n = MM.fbm(x * 0.05, z * 0.05, dim.seed + 99, 3);
-      tmp.copy(c0).lerp(c1, Math.min(1, Math.max(0, (n - 0.35) * 3)));
-      if (n < 0.38) tmp.lerp(c2, Math.min(1, (0.38 - n) * 6));
-      if (dim.id === 'meatlands') {
-        const v = Math.abs(Math.sin(x * 0.11 + Math.sin(z * 0.07) * 3) * Math.cos(z * 0.09 + Math.sin(x * 0.05) * 2));
-        if (v < 0.05) tmp.set('#7c1e34');
-      }
-      if (dim.tiles) {
-        const gx = Math.abs(((x % 12) + 12) % 12 - 6), gz = Math.abs(((z % 12) + 12) % 12 - 6);
-        if (gx > 5.8 || gz > 5.8) tmp.set('#5ff8ff');
-      }
-      if (dim.id === 'bazaar') {
-        const gx = Math.abs(((x % 8) + 8) % 8 - 4), gz = Math.abs(((z % 8) + 8) % 8 - 4);
-        if ((gx > 3.85 || gz > 3.85) && Math.hypot(x, z) < 60) tmp.set('#5ff8ff');
-      }
-      if (dim.id === 'moon') { const d = y / 10; tmp.multiplyScalar(1 + Math.max(-0.35, Math.min(0.15, d * 0.3))); }
-      if (dim.id === 'featherhold') { const sl = Math.abs(MM.heightAt(dim.id, x + 1.5, z) - y) + Math.abs(MM.heightAt(dim.id, x, z + 1.5) - y); if (sl > 1.4) tmp.set(sl > 2.4 ? '#a27a42' : '#b98c4e'); else if (y > 6) tmp.lerp(new T.Color('#8fae4a'), 0.6); }
-      for (const l of MM.LANDMARKS) if (l.dim === dim.id) { const d = Math.hypot(x - l.x, z - l.z); if (d < l.r + 3.5) tmp.copy(side).lerp(new T.Color(dim.ground[1]), 0.35); }
+      groundColor(dim, x, z, y, tmp, P);
       cols[i * 3] = tmp.r; cols[i * 3 + 1] = tmp.g; cols[i * 3 + 2] = tmp.b;
     }
     g.setAttribute('color', new T.BufferAttribute(cols, 3));
-    g.computeVertexNormals();
-    // Tile the grain about every 5 m.
-    const uv = g.attributes.uv, rep = size / 5;
-    for (let i = 0; i < uv.count; i++) uv.setXY(i, uv.getX(i) * rep, uv.getY(i) * rep);
-    const m = new T.Mesh(g, terrainMat);
-    return m;
+    if (exactNormals) {
+      // Normals from the height field itself, so neighbouring pieces shade without seams.
+      const nor = g.attributes.normal;
+      for (let i = 0; i < pos.count; i++) {
+        const x = pos.getX(i), z = pos.getZ(i), hx = hAt(x + step, z) - hAt(x - step, z), hz = hAt(x, z + step) - hAt(x, z - step), l = Math.hypot(hx, 2 * step, hz);
+        nor.setXYZ(i, -hx / l, 2 * step / l, -hz / l);
+      }
+      nor.needsUpdate = true;
+    } else g.computeVertexNormals();
+    // Tile the grain about every 5 m (in world space, so pieces line up).
+    const uv = g.attributes.uv;
+    for (let i = 0; i < uv.count; i++) uv.setXY(i, pos.getX(i) / 5, -pos.getZ(i) / 5);
+    return new T.Mesh(g, terrainMat);
+  }
+  function makeTerrain(dim) {
+    const B = MM.boundOf(dim.id), P = terrainPalette(dim);
+    if (B <= 260) return terrainPiece(dim, P, 0, 0, MM.WORLD_HALF * 2 + 120, 170, false);
+    // A big world (one Earth is 1.2 km across): ground in 160 m pieces, built around you as
+    // you go and dropped when far behind, so a phone never holds the whole planet.
+    const TILE = 160, SEG = 64, group = new T.Group(), tiles = new Map();
+    const lim = Math.ceil((B + 60) / TILE);
+    let checkT = 0;
+    group.userData.update = (dt, cam, force) => {
+      if (!force && (checkT -= dt) > 0) return;
+      checkT = 0.4;
+      const reach = force ? (dim.fogFar || 230) : (dim.fogFar || 230) + TILE, ci = Math.round(cam.x / TILE), cj = Math.round(cam.z / TILE);
+      let built = 0;
+      const want = [];
+      for (let i = -lim; i <= lim; i++) for (let j = -lim; j <= lim; j++) {
+        const cx = i * TILE, cz = j * TILE, d = Math.max(Math.abs(cx - cam.x), Math.abs(cz - cam.z)) - TILE / 2;
+        const k = i + ',' + j;
+        if (d < reach) { if (!tiles.has(k)) want.push([Math.abs(i - ci) + Math.abs(j - cj), k, cx, cz]); }
+        else if (d > reach + TILE * 1.5 && tiles.has(k)) { const m = tiles.get(k); group.remove(m); m.geometry.dispose(); tiles.delete(k); }
+      }
+      want.sort((a, b) => a[0] - b[0]);
+      for (const [, k, cx, cz] of want) {
+        if (!force && built >= 1) break;
+        const m = terrainPiece(dim, P, cx, cz, TILE, SEG, true);
+        tiles.set(k, m); group.add(m); built++;
+      }
+    };
+    group.userData.dispose = () => { for (const m of tiles.values()) m.geometry.dispose(); tiles.clear(); };
+    return group;
   }
 
   // ---------- Streets (Earth C-137) ----------
@@ -2344,21 +2607,26 @@
 
   // ---------- Portals ----------
   const portalGeo = new T.CircleGeometry(1, 48);
-  C.portalMesh = function (color, size) {
+  C.PORTAL_STYLES = { swirl: 0, ring: 1, spiral: 2, storm: 3 };
+  C.portalMesh = function (color, size, style) {
     const m = new T.ShaderMaterial({
       transparent: true, side: T.DoubleSide, depthWrite: false,
-      uniforms: { col: { value: new T.Color(color) }, t: { value: Math.random() * 10 }, open: { value: 1 } },
+      uniforms: { col: { value: new T.Color(color) }, t: { value: Math.random() * 10 }, open: { value: 1 }, style: { value: C.PORTAL_STYLES[style] || 0 } },
       vertexShader: 'varying vec2 vUv; void main(){ vUv = uv; gl_Position = projectionMatrix * modelViewMatrix * vec4(position,1.0); }',
-      fragmentShader: `uniform vec3 col; uniform float t; uniform float open; varying vec2 vUv;
+      fragmentShader: `uniform vec3 col; uniform float t; uniform float open; uniform float style; varying vec2 vUv;
         void main(){
           vec2 p = (vUv - 0.5) * 2.0; float r = length(p); float a = atan(p.y, p.x);
-          float wob = 0.9 + 0.06 * sin(a * 7.0 + t * 4.0) + 0.04 * sin(a * 13.0 - t * 6.0);
+          float wob = style > 0.5 && style < 1.5 ? 0.92 : 0.9 + 0.06 * sin(a * 7.0 + t * 4.0) + 0.04 * sin(a * 13.0 - t * 6.0);
           float edge = wob * open;
           if (r > edge) discard;
-          float sw = sin(a * 3.0 + r * 14.0 - t * 6.0) * 0.5 + 0.5;
+          float sw;
+          if (style < 0.5) sw = sin(a * 3.0 + r * 14.0 - t * 6.0) * 0.5 + 0.5;                                  // swirl (the show)
+          else if (style < 1.5) sw = 0.25 + 0.15 * sin(a * 2.0 - t * 2.0 + r * 4.0);                             // ring: calm centre
+          else if (style < 2.5) sw = smoothstep(0.35, 0.65, fract(a / 6.2831 * 4.0 + r * 2.5 - t * 0.7));       // spiral arms
+          else sw = fract(sin(dot(floor(p * 16.0 + vec2(t * 7.0, -t * 5.0)), vec2(12.9898, 78.233))) * 43758.5453);   // static storm
           vec3 c = mix(col * 0.55, col, sw);
-          c = mix(c, vec3(1.0), smoothstep(0.35, 0.0, r) * 0.55);
-          float rim = smoothstep(edge - 0.16, edge, r);
+          c = mix(c, vec3(1.0), smoothstep(0.35, 0.0, r) * (style > 0.5 && style < 1.5 ? 0.15 : 0.55));
+          float rim = smoothstep(edge - (style > 0.5 && style < 1.5 ? 0.3 : 0.16), edge, r);
           c = mix(c, col * 1.4 + 0.2, rim);
           if (r > edge - 0.035) c = vec3(0.07);
           gl_FragColor = vec4(c, 1.0);
@@ -2747,7 +3015,9 @@
     const group = new T.Group();
     group.add(makeSky(dim));
     if (dim.interior) group.add(makeRoom(dim));
-    else { skyDecor(dim, group); group.add(makeTerrain(dim)); }
+    let terrain = null;
+    if (dim.planets) group.add(makeSpace(dim, group));
+    else if (!dim.interior) { skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain); }
     if (dim.streets) group.add(makeStreets(dim, MM.genProps(dimId)));
     const layout = MM.layoutOf(dimId);
     if (layout.roads.length || layout.plazas.length) group.add(makePaths(dim, layout));
@@ -2856,6 +3126,7 @@
       const tag = C.makeTag(l.name, '', '', '#ffd84d');
       tag.draw(-1);
       if (dim.room) { tag.sprite.scale.set(2.6, 0.65, 1); tag.sprite.position.set(l.x, Math.min(dim.room.h - 0.8, l.h + 0.7), l.z); }
+      else if (l.r < 2) { tag.sprite.scale.set(2.6, 0.65, 1); tag.sprite.position.set(l.x, MM.heightAt(dimId, l.x, l.z) + l.h + 0.8, l.z); }   // small things (inside Rick's garage)
       else { tag.sprite.scale.set(6, 1.5, 1); tag.sprite.position.set(l.x, MM.heightAt(dimId, l.x, l.z) + l.h + 2.2, l.z); }
       group.add(tag.sprite);
     }
@@ -2882,11 +3153,13 @@
         pack(s.set);
       },
       update(dt, t, camPos) {
+        if (camPos && terrain && terrain.userData.update) terrain.userData.update(dt, camPos, !terrain.children.length);
         if (camPos && (lodT -= dt) <= 0) { lodT = 0.1; updateLod(camPos); }
         kiosk.userData.ring.userData.tick(dt);
         kiosk.userData.ring.rotation.y = Math.sin(t * 0.5) * 0.3;
         if (group.userData.eye && camPos) group.userData.eye.lookAt(camPos);
         group.children[0].position.copy(camPos || v.set(0, 0, 0));
+        if (group.userData.spaceSky && camPos) group.userData.spaceSky.position.copy(camPos);
       },
       dispose() {
         group.traverse(o => {

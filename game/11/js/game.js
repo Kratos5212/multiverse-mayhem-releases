@@ -62,7 +62,7 @@
     return C.meshOf(s.build(), 0.04);
   })();
   menuScene.add(pedestal);
-  const menuPortal = C.portalMesh(profile.look.portalColor, 1.5);
+  const menuPortal = C.portalMesh(profile.look.portalColor, 1.5, profile.look.portalStyle);
   menuPortal.position.set(0, 1.3, -1.8);
   menuScene.add(menuPortal);
   const menuCam = new T.PerspectiveCamera(32, 1, 0.1, 100);
@@ -72,7 +72,11 @@
     preview = C.buildAvatar(profile.look, profile.arch, { thick: 0.025 });
     menuScene.add(preview.root);
     menuPortal.material.uniforms.col.value.set(profile.look.portalColor);
+    menuPortal.material.uniforms.style.value = C.PORTAL_STYLES[profile.look.portalStyle] || 0;
   }
+  // Sculpted characters (scripts/models/, built by scripts/sculpt.js) load in the background;
+  // every canon-looking Rick built after that uses the sculpt up close.
+  C.loadSculpt('genius', 'assets/characters/rick.mms').then(() => { previewDirty = true; }).catch(e => console.warn('No sculpted Rick:', e.message));
   function renderMenu(dt) {
     if (previewDirty && (previewT -= dt) <= 0) { previewDirty = false; rebuildPreview(); }
     renderer.setScissorTest(false);
@@ -143,6 +147,7 @@
   }
 
   // ---------- Game state ----------
+  const SPACE_BLACK = new T.Color('#02030a');
   const G = { baseFov: 62, pairs: new Map(),
     mode: 'menu', net: null, myId: 0, ep: 0, dimId: null, inst: 0, world: null, you: null,
     me: { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, yaw: 0, grounded: true, fly: 6, kbT: 0, aimT: 0, emoteT: 0, flying: false },
@@ -265,7 +270,7 @@
   function addPortal(po) {
     if (G.portals.has(po.id)) return;
     const g = new T.Group();
-    const mesh = C.portalMesh(po.col, 1.25);
+    const mesh = C.portalMesh(po.col, 1.25, po.st);
     mesh.position.y = 1.7;
     g.add(mesh);
     const d = MM.DIM_BY_ID[po.d];
@@ -292,23 +297,26 @@
     removePair(key);
     const P = { x: e.x, y: e.y, z: e.z, nx: e.nx, ny: e.ny, nz: e.nz };
     const g = new T.Group();
-    const mesh = C.portalMesh(MM.PAIR_COLORS[e.c], 0.85);
+    const look = lookOf(e.o), col = MM.pairColors(look)[e.c];
+    const mesh = C.portalMesh(col, 0.85, look && look.portalStyle);
     mesh.renderOrder = 3;
     // Valve-style: a hard, glowing oval rim around the swirl.
-    const rim = new T.Mesh(pairRimGeo || (pairRimGeo = new T.RingGeometry(0.86, 1.0, 48)), new T.MeshBasicMaterial({ color: MM.PAIR_COLORS[e.c], side: T.DoubleSide, fog: false }));
+    const rim = new T.Mesh(pairRimGeo || (pairRimGeo = new T.RingGeometry(0.86, 1.0, 48)), new T.MeshBasicMaterial({ color: e.c ? '#ffffff' : col, side: T.DoubleSide, fog: false }));
     rim.scale.set(0.85, 0.85 * 1.35, 1); rim.position.z = 0.01;
     g.add(mesh, rim);
     mesh.userData.rim = rim;
     g.position.set(P.x, P.y, P.z);
     g.lookAt(P.x + P.nx, P.y + P.ny, P.z + P.nz);
     scene.add(g);
-    G.pairs.set(key, { o: e.o, c: e.c, P, g, mesh, born: now() });
+    G.pairs.set(key, { o: e.o, c: e.c, P, g, mesh, col, born: now() });
   }
   let pairRimGeo = null;
+  const lookOf = id => id === G.myId ? profile.look : G.players.get(id) && G.players.get(id).info.look;
   function removePair(key) { const q = G.pairs.get(key); if (q) { scene.remove(q.g); q.mesh.material.dispose(); q.mesh.userData.rim.material.dispose(); G.pairs.delete(key); } }
   function removePairsOf(o) { removePair(o + ':0'); removePair(o + ':1'); }
   // Aim with the crosshair and shoot the next portal of your pair (R, right click, or the
-  // touch button): blue, then orange, then blue again (which moves the old blue one).
+  // touch button): the first end, then its partner, then the first again (which moves it). Both
+  // ends take your portal colours: green for a Rick unless you change them.
   function shootPair() {
     if (!canAct() || pickled()) return;
     if (G.you.ship) { UI.toast('Land first (B) to shoot portals.'); return; }
@@ -325,6 +333,7 @@
     G.pairNext = 1 - c; G.pairCd = now() + 0.35;
     send({ t: 'pp', c, x: r2(S.x), y: r2(S.y), z: r2(S.z), nx: r2(S.nx), ny: r2(S.ny), nz: r2(S.nz) });
     // The shot: a streak of the portal's colour from the gun to the portal position.
+    const pc = MM.pairColors(profile.look)[c];
     const gx = G.me.x, gy = G.me.y + 1.4, gz = G.me.z;
     // Create a more visible, longer beam effect
     const n = Math.min(60, Math.ceil(hit.t * 0.8)); // Longer beam
@@ -332,10 +341,10 @@
       const k = i / n;
       // Make the beam pulse slightly and be more visible
       const alpha = 0.5 + Math.sin(i * 0.2) * 0.2;
-      fx.glow.emit(gx + (S.x - gx) * k, gy + (S.y - gy) * k, gz + (S.z - gz) * k, 0, 0, 0, MM.PAIR_COLORS[c], alpha, 0.4, 0);
+      fx.glow.emit(gx + (S.x - gx) * k, gy + (S.y - gy) * k, gz + (S.z - gz) * k, 0, 0, 0, pc, alpha, 0.4, 0);
     }
     // Add a burst effect at the portal placement point for better visibility
-    fx.burst(S.x, S.y, S.z, MM.PAIR_COLORS[c], 20, 8, 0.8, 0.7, 2);
+    fx.burst(S.x, S.y, S.z, pc, 20, 8, 0.8, 0.7, 2);
     G.me.aimT = 1; G.me.yaw = G.camYaw;
     if (G.meAv) G.meAv.attackT = 0.2;
     C.sfx('plasma', 0.8); // Slightly louder sound for feedback
@@ -352,13 +361,13 @@
       if (MM.pairKind(A) === 'wall' && MM.pairKind(B) === 'wall') G.camYaw += Math.atan2(B.nx, B.nz) - Math.atan2(-A.nx, -A.nz);
       else if (MM.pairKind(B) === 'wall') G.camYaw = Math.atan2(B.nx, B.nz);
       // More impressive entry effect
-      fx.burst(me.x, me.y + 1, me.z, MM.PAIR_COLORS[q.c], 25, 8, 0.8, 0.7, 3);
+      fx.burst(me.x, me.y + 1, me.z, q.col, 25, 8, 0.8, 0.7, 3);
       me.x = ex.x; me.y = ex.y; me.z = ex.z; me.vx = ex.vx; me.vy = ex.vy; me.vz = ex.vz;
       me.grounded = false; me.kbT = 1.1;
       G.transitCool = now() + 0.35;
       send({ t: 'pt', o: q.o, c: q.c });
       // More impressive exit effect
-      fx.burst(ex.x, ex.y + 1, ex.z, MM.PAIR_COLORS[1 - q.c], 25, 8, 0.8, 0.7, 3);
+      fx.burst(ex.x, ex.y + 1, ex.z, other.col, 25, 8, 0.8, 0.7, 3);
       // Warp sound with more intensity
       C.sfx('warp', 0.8);
       return;
@@ -400,9 +409,12 @@
       scene.add(G.world.group);
       const dim = MM.DIM_BY_ID[w.dim];
       scene.fog = new T.Fog(dim.fog, 40, dim.fogFar);
+      const skyU = G.world.group.children[0].material.uniforms;
+      G.atmo = { fog: new T.Color(dim.fog), far: dim.fogFar, top: skyU.top.value.clone(), bot: skyU.bot.value.clone(), k: -1 };
       renderer.setClearColor(dim.fog);
     }
     G.dimId = w.dim; G.inst = w.inst; G.ep = w.ep;
+    noteVisit(w.dim);
     G.alive = MM.genProps(w.dim).map(() => true);
     for (const [i, hp] of w.props) { G.alive[i] = hp > 0; if (hp <= 0) G.world.setAlive(i, false); }
     if (!changed) for (let i = 0; i < G.alive.length; i++) G.world.setAlive(i, G.alive[i]);
@@ -421,6 +433,7 @@
     if (G.prog) C.setGear(G.meAv, myGear());
     C.setShip(G.meAv, !!w.ship, myGear());
     if (w.event) { UI.banner(w.event.name, w.event.text); }
+    else if (changed && MM.QUIRKS[MM.DIM_BY_ID[w.dim].quirk]) UI.banner(MM.DIM_BY_ID[w.dim].name, MM.QUIRKS[MM.DIM_BY_ID[w.dim].quirk]);
     G.offset = null;
     const dim = MM.DIM_BY_ID[w.dim];
     $('dimName').textContent = dim.name;
@@ -662,7 +675,7 @@
       case 'pp': {
         addPair(e);
         if (e.o !== G.myId) sfxAt('plasma', e.x, e.z, 0.5);
-        fx.burst(e.x, e.y, e.z, MM.PAIR_COLORS[e.c], 16, 4, 0.5, 0.5, 0);
+        fx.burst(e.x, e.y, e.z, MM.pairColors(lookOf(e.o))[e.c], 16, 4, 0.5, 0.5, 0);
         break;
       }
       case 'pt': {
@@ -990,8 +1003,9 @@
     slots.scan.hidden = !(G.st && G.st.scanner);
     const canPair = !!(G.prog && MM.canPair(profile.arch, G.prog.up));
     slots.pair.hidden = !canPair; $('tPair').hidden = !canPair;
-    slots.pair.style.setProperty('--pc', MM.PAIR_COLORS[G.pairNext || 0]);
-    $('tPair').style.setProperty('--pc', MM.PAIR_COLORS[G.pairNext || 0]);
+    const pcs = MM.pairColors(profile.look);
+    slots.pair.style.setProperty('--pc', pcs[G.pairNext || 0]);
+    $('tPair').style.setProperty('--pc', pcs[G.pairNext || 0]);
     // Only Ricks and Evil Morty know how to make a Time Crystal: no slot for everyone else.
     slots.timecrystal.hidden = !(y.inv.timecrystal > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'timecrystal'));
     const st = G.st;
@@ -1207,7 +1221,18 @@
     draw(); caption();
     return wrap;
   }
-  function openDims(mode) {
+  // Where to go: search, tabs (recent, Earths, worlds, other times, outside the Curve, the
+  // map) and a card per world in its own sky colours, with who is there and, if you can't go
+  // this way, why not.
+  const recentDims = UI.load('recentDims', []);
+  function noteVisit(id) {
+    const D = MM.DIM_BY_ID[id];
+    if (!D || D.hidden || D.interior || D.planets) return;
+    const i = recentDims.indexOf(id); if (i >= 0) recentDims.splice(i, 1);
+    recentDims.unshift(id); recentDims.length = Math.min(recentDims.length, 8);
+    UI.save('recentDims', recentDims);
+  }
+  function openDims(mode, tabWas, queryWas) {
     G.modalMode = mode;
     const why = id => MM.travelWhy(mode === 'gun' ? 'portal' : mode, G.dimId, id, travelOpts(mode));
     const go = id => {
@@ -1220,33 +1245,63 @@
     };
     const S = MM.DIM_BY_ID[G.dimId].station;
     const title = mode === 'station' ? S.name : mode === 'ship' ? 'Fly your ship' : G.you.chMax && G.you.ch > 0 ? 'Portal gun' : 'Borrowed portal gun';
+    const homes = [MM.homeDimId(profile.home), 'suburbia'].concat(MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].variantOf === 'suburbia' && !MM.DIM_BY_ID[id].timeline))
+      .concat(G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : []);
+    const TABS = {
+      Recent: () => recentDims.filter(id => MM.DIM_BY_ID[id]),
+      Earths: () => homes,
+      Worlds: () => MM.WORLD_IDS.filter(id => { const D = MM.DIM_BY_ID[id]; return !D.timeline && !D.outsideCurve && !D.pocket && D.variantOf !== 'suburbia' && id !== 'suburbia'; }),
+      'Other times': () => MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].timeline),
+      'Outside the Curve': () => MM.WORLD_IDS.filter(id => MM.DIM_BY_ID[id].outsideCurve && !MM.DIM_BY_ID[id].timeline),
+      Map: null,
+    };
+    let tab = tabWas || (recentDims.length > 1 ? 'Recent' : 'Worlds'), query = queryWas || '';
     openModal('dims', title, box => {
+      box.classList.add('travel');
       const others = travelModes().filter(x => x !== mode);
       if (others.length) {
-        const tabs = el('div', { class: 'chips' });
-        for (const o of others) tabs.append(el('button', { class: 'btn', onclick: () => { UI.closeModal(); openDims(o); } }, o === 'station' ? 'Use the station' : o === 'ship' ? 'Fly the ship' : 'Use the portal gun'));
-        box.append(tabs);
+        const sw = el('div', { class: 'chips' });
+        for (const o of others) sw.append(el('button', { class: 'btn', onclick: () => { UI.closeModal(); openDims(o); } }, o === 'station' ? 'Use the station' : o === 'ship' ? 'Fly the ship' : 'Use the portal gun'));
+        box.append(sw);
       }
-      box.append(curveMap(go));
-      // Home dimensions: yours, and those of everyone online (their Earth, their twist).
-      const homes = [MM.homeDimId(profile.home)].concat(G.pop ? Object.keys(G.pop.d).filter(id => MM.HOME_RE.test(id) && G.pop.d[id] > 0) : [])
-        .filter((id, i, a) => id !== 'suburbia' && id !== G.dimId && a.indexOf(id) === i);
-      for (const outside of ['home', false, 'time', true]) {
-        const ids = outside === 'home' ? homes : MM.WORLD_IDS.filter(id => { const D = MM.DIM_BY_ID[id]; return (outside === 'time' ? !!D.timeline : !D.timeline && !!D.outsideCurve === outside) && id !== G.dimId && !D.pocket; });
-        if (!ids.length) continue;
-        const list = el('div', { class: 'list' });
-        for (const id of ids) {
-          const d = MM.DIM_BY_ID[id], n = G.pop ? G.pop.d[id] || 0 : 0, w = why(id);
-          list.append(el('div', { class: 'row dim' + (w ? ' locked' : '') },
-            el('div', { class: 't' }, el('b', { text: d.name + '  ' + d.code }), el('small', { text: w || d.blurb + ' · ' + n + ' here' })),
-            el('button', { class: 'btn go', disabled: w ? 'disabled' : null, onclick: () => go(id) }, mode === 'gun' ? 'Open' : mode === 'ship' ? 'Fly' : 'Go')));
-        }
-        box.append(el('h3', { text: outside === 'home' ? 'Home dimensions' : outside === 'time' ? 'Other times' : outside ? 'Outside the Central Finite Curve' : 'Inside the Central Finite Curve' }), list);
-      }
+      const search = el('input', { type: 'search', class: 'tsearch', placeholder: 'Search worlds (name or code)…', value: query, 'aria-label': 'Search worlds' });
+      const tabs = el('div', { class: 'ttabs', role: 'tablist' }), body = el('div', { class: 'tbody' });
+      box.append(search, tabs, body);
+      const card = id => {
+        const d = MM.DIM_BY_ID[id];
+        if (!d) return null;
+        const n = G.pop ? G.pop.d[id] || 0 : 0, w = id === G.dimId ? 'You are here.' : why(id), mine = id === MM.homeDimId(profile.home);
+        const c = el('button', { class: 'tcard' + (w ? ' locked' : ''), style: 'background: linear-gradient(160deg, ' + d.sky[0] + ', ' + d.sky[1] + ' 70%, ' + d.ground[1] + ')', onclick: () => go(id), title: w || d.blurb, 'aria-label': d.name + (w ? ': ' + w : '') },
+          el('span', { class: 'tname', text: (mine ? '★ ' : '') + d.name }),
+          el('span', { class: 'tcode', text: d.code + (n ? ' · ' + n + ' here' : '') }),
+          el('span', { class: 'tblurb', text: w || d.blurb }));
+        return c;
+      };
+      const render = () => {
+        tabs.textContent = ''; body.textContent = '';
+        for (const t in TABS) tabs.append(el('button', { role: 'tab', 'aria-selected': String(!query && t === tab), onclick: () => { tab = t; query = ''; search.value = ''; render(); } }, t));
+        if (!query && tab === 'Map') { body.append(curveMap(go)); return; }
+        let ids;
+        if (query) {
+          const q = query.toLowerCase();
+          ids = MM.WORLD_IDS.concat(homes).filter((id, i, a) => a.indexOf(id) === i && MM.DIM_BY_ID[id] && !MM.DIM_BY_ID[id].pocket)
+            .filter(id => (MM.DIM_BY_ID[id].name + ' ' + MM.DIM_BY_ID[id].code).toLowerCase().includes(q));
+        } else ids = TABS[tab]();
+        ids = ids.filter((id, i, a) => a.indexOf(id) === i);
+        // Where you can go first, then the rest; busy worlds before quiet ones.
+        const pop = id => G.pop ? G.pop.d[id] || 0 : 0;
+        if (tab !== 'Recent' || query) ids.sort((a, b) => (!!why(a) - !!why(b)) || (pop(b) - pop(a)));
+        const grid = el('div', { class: 'tgrid' });
+        for (const id of ids) { const c = card(id); if (c) grid.append(c); }
+        body.append(ids.length ? grid : el('p', { class: 'note', text: query ? 'No world called that.' : 'Nowhere yet. Go somewhere and it shows up here.' }));
+      };
+      search.oninput = () => { query = search.value.trim(); render(); };
+      render();
       const fee = S && !S.free.includes(profile.arch) ? Object.keys(S.fee).map(k => S.fee[k] + ' ' + MM.MATERIALS[k].name).join(', ') : '';
       box.append(el('p', { class: 'note', text: mode === 'station' ? 'Step through the station portal' + (fee ? ' for ' + fee : ' (free for you)') + '.'
-        : mode === 'ship' ? 'The Moon is a short hop. Other planets need the Turbo Engine; other dimensions need the Dimension Drive (15 s cooldown).'
+        : mode === 'ship' ? 'Fly straight up to reach space and the planets nearby. Other dimensions need the Dimension Drive (15 s cooldown).'
         : 'Opens a portal in front of you for ' + MM.PORTAL_TTL + ' s. Anyone can walk through it, so your friends (and enemies) can follow.' }));
+      if (!isTouch) setTimeout(() => search.focus(), 50);
     });
   }
   // The workbench: everything you could ever build, and exactly why you can or can't yet.
@@ -1550,7 +1605,7 @@
   // Props: solid sideways, but you can stand on top of them.
   function groundAt(x, z, y) {
     let g = MM.heightAt(G.dimId, x, z);
-    const props = MM.genProps(G.dimId);
+    const props = MM.propsNear(G.dimId, x, z, 0.5);
     for (const p of props) {
       if (!G.alive[p.id] || MM.PROPS[p.type].arch) continue;
       const top = p.y + p.h * 0.92;
@@ -1559,7 +1614,7 @@
     return g;
   }
   function pushOut(x, z, y, rad) {
-    const props = MM.genProps(G.dimId);
+    const props = MM.propsNear(G.dimId, x, z, rad);
     for (const p of props) {
       if (!G.alive[p.id] || MM.PROPS[p.type].arch) continue;
       if (y >= p.y + p.h * 0.92 - 0.6) continue;
@@ -1602,7 +1657,7 @@
     me.vx += (wx - me.vx) * k; me.vz += (wz - me.vz) * k;
     me.kbT = Math.max(0, me.kbT - dt);
     const jumpHeld = !chatOpen() && !UI.modalOpen() && (keys.has('Space') || touch.jump) && !dead;
-    const downHeld = !chatOpen() && !UI.modalOpen() && (shift || keys.has('ControlLeft') || touch.down);
+    const downHeld = !chatOpen() && !UI.modalOpen() && (shift || touch.down);
     me.flying = false;
     if (inShip) {
       // Ship: fly where you look. Space climbs, Shift dives.
@@ -1610,7 +1665,7 @@
       me.vy += (climb * 12 - me.vy) * Math.min(1, dt * 4);
       me.grounded = false;
     } else if (jumpHeld && me.grounded) {
-      me.vy = st.jump;
+      me.vy = st.jump * (dim.quirk === 'bouncy' ? 1.6 : 1);
       me.grounded = false;
       me.jumpLock = 0.25;
       C.sfx('jump', 0.4);
@@ -1621,10 +1676,17 @@
       if (st.fly === 'jet' && Math.random() < 0.5) fx.glow.emit(me.x, me.y + 0.5, me.z, 0, -4, 0, '#ffb03a', 0.4, 0.3, 0);
     }
     if (me.grounded) me.fly = Math.min(st.flyTime || 6, me.fly + dt * 1.5);
+    // World rules: swim up underwater; in the dream, now and then you remember you can fly.
+    let quirkGrav = 1;
+    if (!inShip && dim.quirk === 'swim') { quirkGrav = 0.35; if (jumpHeld && !me.grounded && (me.jumpLock -= dt) <= 0) { me.vy += (5 - me.vy) * Math.min(1, dt * 4); me.flying = true; } }
+    if (!inShip && dim.quirk === 'dreamy') {
+      if (now() > (G.lucidNext || 0)) { G.lucidNext = now() + 18 + Math.random() * 20; G.lucidUntil = now() + 6; UI.toast('A lucid moment: you remember you can fly! (hold Jump)', 2500); }
+      if (now() < (G.lucidUntil || 0) && jumpHeld && !me.grounded) { me.vy += (6 - me.vy) * Math.min(1, dt * 5); me.flying = true; }
+    }
     // Reduced gravity when flying or in ship at high altitude
-    let gravityMult = 1.0;
+    let gravityMult = quirkGrav;
     if (me.flying) {
-      gravityMult = 0.2; // Personal jetpack/wings
+      gravityMult = 0.2 * quirkGrav; // Personal jetpack/wings
     } else if (inShip && me.y > 50) {
       // Reduce gravity for ships at high altitude (simulating space)
       gravityMult = Math.max(0.1, 1.0 - (me.y - 50) * 0.015); // Gradually reduce gravity above 50 units
@@ -1639,7 +1701,23 @@
     if (inShip) { if (ny < g) { ny = g; me.vy = Math.max(0, me.vy); }
       // Increased height limit for space travel - much higher for interplanetary travel
       const maxShipHeight = 1000; // Increased from 100 to 1000 for space travel
-      ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight); }
+      ny = Math.min(ny, MM.heightAt(G.dimId, nx, nz) + maxShipHeight);
+      if (dim.planets) {
+        // Space: fly between the planets; touch one to land on it (you can't fly through it).
+        ny = Math.min(ny, 880);
+        for (const P of dim.planets) {
+          const dx = nx - P.x, dy = ny + 1 - P.y, dz = nz - P.z, d = Math.hypot(dx, dy, dz), R = P.r + 4;
+          if (d < R + 6 && now() > (G.orbitT || 0)) { G.orbitT = now() + 2.5; send({ t: 'land', d: P.dim }); }
+          if (d < R) { nx = P.x + dx / d * R; ny = P.y - 1 + dy / d * R; nz = P.z + dz / d * R; }
+        }
+      } else if (!dim.interior) {
+        // Up out of the atmosphere: into space.
+        const alt = ny - MM.heightAt(G.dimId, nx, nz);
+        if (alt > MM.ORBIT_ALT - 70 && !G.orbitWarned) { G.orbitWarned = true; UI.toast('Leaving the atmosphere… keep climbing for space.', 2500); }
+        if (alt > MM.ORBIT_ALT && now() > (G.orbitT || 0)) { G.orbitT = now() + 3; send({ t: 'orbit' }); }
+        if (alt < MM.ORBIT_ALT - 120) G.orbitWarned = false;
+      }
+    }
     else if (ny <= g) {
       if (!me.grounded && me.vy < -14) fx.puff(nx, g, nz, '#ddd', 6, 1, 1, 0.5);
       if (!me.grounded && me.vy < -24 && !inShip) C.ragdoll(G.meAv, me.vx || Math.sin(me.yaw), me.vz || Math.cos(me.yaw), Math.min(0.8, -me.vy / 50));   // a hard landing: stumble over
@@ -1667,6 +1745,17 @@
     if (me.sprinting && me.grounded && hs > 3 && Math.random() < dt * 14) fx.puff(me.x - me.vx * 0.05, me.y + 0.1, me.z - me.vz * 0.05, '#e8e2d4', 1, 0.5, 0.6, 0.4);
     const fovT = G.baseFov + (me.sprinting && hs > 3 ? 6 : 0);
     if (Math.abs(camera.fov - fovT) > 0.05) { camera.fov += (fovT - camera.fov) * Math.min(1, dt * 6); camera.updateProjectionMatrix(); }
+    // Climbing towards space, the sky darkens and you see further.
+    if (G.atmo && !dim.interior && !dim.planets) {
+      const k = Math.max(0, Math.min(1, (me.y - MM.heightAt(G.dimId, me.x, me.z) - 70) / (MM.ORBIT_ALT - 70)));
+      if (Math.abs(k - G.atmo.k) > 0.01) {
+        G.atmo.k = k;
+        const black = SPACE_BLACK, skyU = G.world.group.children[0].material.uniforms;
+        scene.fog.color.copy(G.atmo.fog).lerp(black, k); renderer.setClearColor(scene.fog.color);
+        scene.fog.far = G.atmo.far + (1400 - G.atmo.far) * k;
+        skyU.top.value.copy(G.atmo.top).lerp(black, k); skyU.bot.value.copy(G.atmo.bot).lerp(black, k * 0.85);
+      }
+    }
     if (st.fly) $('flyFill').style.transform = 'scaleX(' + me.fly / (st.flyTime || 6) + ')';
     // Hold to fire.
     if ((mouseDown && document.pointerLockElement === canvas) || (mouseDown && !document.pointerLockElement) || touch.fire) fire();
@@ -1774,6 +1863,10 @@
       const root = n.m.root;
       root.position.set(n.x, n.y, n.z);
       root.rotation.y = n.r;
+      // Locals far away (Earth has dozens) are lost in the haze: not drawn, not animated.
+      const nd = Math.hypot(n.x - G.me.x, n.z - G.me.z), big = MM.NPCS[n.type].h > 4;
+      root.visible = nd < (big ? fogFar : settings.quality === 'low' ? 70 : 110);
+      if (!root.visible) continue;
       if (n.m.av) { n.m.av.animate(dt, { speed: n.speed, anim: (n.flags & 4) ? MM.ANIM.emote : n.speed > 0.4 ? 1 : 0 }); wantDetail(n.m.av, n.x, n.z); }
       else {
         const md = root.userData.model;
@@ -1795,7 +1888,7 @@
       q.mesh.userData.tick(dt);
       const op = Math.min(1, (t - q.born) * 4);
       q.mesh.material.uniforms.open.value = op; q.mesh.userData.rim.scale.set(0.85 * op, 0.85 * 1.35 * op, 1);
-      if (Math.random() < 0.15) fx.glow.emit(q.P.x + (Math.random() - 0.5) * 1.4, q.P.y + (Math.random() - 0.5) * 1.8, q.P.z + (Math.random() - 0.5) * 1.4, q.P.nx, q.P.ny, q.P.nz, MM.PAIR_COLORS[q.c], 0.25, 0.4, 0);
+      if (Math.random() < 0.15) fx.glow.emit(q.P.x + (Math.random() - 0.5) * 1.4, q.P.y + (Math.random() - 0.5) * 1.8, q.P.z + (Math.random() - 0.5) * 1.4, q.P.nx, q.P.ny, q.P.nz, q.col, 0.25, 0.4, 0);
     }
     for (const po of G.portals.values()) {
       po.mesh.userData.tick(dt);
@@ -1884,7 +1977,7 @@
     let d = dist;
     if ((G.camPropT -= dt) <= 0) {
       G.camPropT = 0.3;
-      G.camProps = MM.genProps(G.dimId).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (MM.propReach(p) + dist + 2) ** 2);
+      G.camProps = MM.propsNear(G.dimId, tx, tz, dist + 2).filter(p => (p.x - tx) ** 2 + (p.z - tz) ** 2 < (MM.propReach(p) + dist + 2) ** 2);
     }
     for (let s = 0.8; s <= dist; s += 0.4) {
       const px = tx - fx_ * s + rx * sh * s / dist, py = ty - fy * s, pz = tz - fz * s + rz * sh * s / dist;

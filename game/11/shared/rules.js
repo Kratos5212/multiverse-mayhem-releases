@@ -51,7 +51,16 @@
     { id: 'smithexit', dim: 'smithhouse', name: 'Front door', x: -4.69, z: -4.95, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'suburbia', x: -5.5, z: 25 } },
     { id: 'smithtv', dim: 'smithhouse', name: 'The couch (interdimensional cable)', x: -3.41, z: 1.6, r: 0.8, h: 1.2, model: 'lm_marker' },
     { id: 'smithtable', dim: 'smithhouse', name: 'Dining table', x: 3.84, z: 1.9, r: 0.8, h: 1.2, model: 'lm_marker' },
-    { id: 'garage', dim: 'suburbia', name: "Rick's Garage", x: -14.5, z: 12.5, r: 5.5, h: 6.5, model: 'lm_garage', rot: Math.PI / 2, door: { dim: 'rickgarage', x: -2, z: 4 } },
+    // Rick's garage stands open on the street: walk in through the big door. Inside, along
+    // the back wall, the workbench; the ship, the battery, the hatch to the lab and the door
+    // to the cellar. (Local garage coordinates turned to the street: front = +x.)
+    { id: 'garage', dim: 'suburbia', name: "Rick's Garage", x: -14.5, z: 12.5, r: 5.5, h: 6.5, model: 'lm_garage', rot: Math.PI / 2 },
+    { id: 'workbench', dim: 'suburbia', name: "Rick's Workbench", x: -18.0, z: 12.5, r: 1.6, h: 1.3, model: 'lm_workbench', alias: 'garage', rot: Math.PI / 2 },
+    { id: 'plumbus', dim: 'suburbia', name: 'Plumbus', x: -18.2, z: 15.2, r: 0.6, h: 1.6, model: 'lm_plumbus', rot: Math.PI / 2 },
+    { id: 'mbox', dim: 'suburbia', name: 'Meeseeks Box', x: -18.1, z: 9.1, r: 0.6, h: 1.4, model: 'lm_mbox', rot: Math.PI / 2 },
+    { id: 'battery', dim: 'suburbia', name: 'Microverse Battery', x: -11.6, z: 9.0, r: 0.8, h: 1.2, model: 'lm_battery', rot: 0, door: { dim: 'microverse', x: 0, z: 16 } },
+    { id: 'trapdoor', dim: 'suburbia', name: 'Hatch to the secret lab', x: -15.6, z: 9.6, r: 0.9, h: 0.3, model: 'lm_trapdoor', rot: Math.PI / 2, door: { dim: 'ricklab', x: 0, z: 6 } },
+    { id: 'cellardoor', dim: 'suburbia', name: 'Door to the wine cellar', x: -16.4, z: 16.75, r: 0.9, h: 3.4, model: 'lm_cellardoor', rot: Math.PI, door: { dim: 'cellar', x: 0, z: 6 } },
     { id: 'school', dim: 'suburbia', name: 'Harry Herpson High', x: 30, z: 22, r: 8.5, h: 8, model: 'lm_school', rot: Math.PI / 2, sign: { text: 'HARRY HERPSON HIGH SCHOOL', y: 6.95, z: 4.62, w: 9.5 } },
     { id: 'hospital', dim: 'suburbia', name: 'Horse Hospital', x: 30, z: -22, r: 7, h: 8, model: 'lm_hospital', rot: Math.PI / 2, sign: { text: 'HORSE HOSPITAL', y: 7.0, z: 5.1, w: 8 } },
     { id: 'office', dim: 'suburbia', name: 'Unemployment Office', x: -30, z: -22, r: 6.5, h: 7, model: 'lm_office', rot: -Math.PI / 2, sign: { text: 'UNEMPLOYMENT OFFICE', y: 6.4, z: 4.1, w: 8 } },
@@ -69,7 +78,7 @@
     // Ways into the pocket worlds, and back out.
     { id: 'anatomyentry', dim: 'suburbia', name: 'Anatomy Park (inside Ruben)', x: 66, z: -66, r: 5, h: 4, model: 'lm_anatomytent', door: { dim: 'anatomy', x: 0, z: 18 }, sign: { text: 'ANATOMY PARK', y: 4.4, z: 4.1, w: 6 } },
     { id: 'chalkdoor', dim: 'suburbia', name: "Rick's chalk door", x: -66, z: 66, r: 2.5, h: 3.5, model: 'lm_chalkdoor', door: { dim: 'froopy', x: 0, z: 16 } },
-    { id: 'microexit', dim: 'microverse', name: 'Out of the battery', x: 0, z: 10, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'rickgarage', x: 4.6, z: 5.4 } },
+    { id: 'microexit', dim: 'microverse', name: 'Out of the battery', x: 0, z: 10, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'suburbia', x: -12.6, z: 10.4 } },
     { id: 'anatomyexit', dim: 'anatomy', name: "Out of Ruben", x: 0, z: 12, r: 2.5, h: 4, model: 'lm_exitportal', door: { dim: 'suburbia', x: 66, z: -58 } },
     { id: 'froopyexit', dim: 'froopy', name: 'Back through the chalk door', x: 0, z: 10, r: 2.5, h: 3.5, model: 'lm_chalkdoor', door: { dim: 'suburbia', x: -66, z: 58 } },
     { id: 'curveedge', dim: 'beyond', name: 'Edge of the Curve', x: 0, z: 62, r: 8, h: 12, model: 'lm_curveedge' },
@@ -78,16 +87,9 @@
     { id: 'plumbusline', dim: 'plumbus', name: 'Plumbus Production Line', x: 0, z: 40, r: 8, h: 9, model: 'lm_plumbusline', sign: { text: 'PLUMBUS CO.', y: 8.2, z: 5.6, w: 7 } },
     { id: 'megatree', dim: 'megaseed', name: 'Mega Seed Tree', x: 0, z: 36, r: 6, h: 24, model: 'lm_megatree' },
     // Inside Rick's garage (its own little dimension). door: walking through takes you there.
-    { id: 'workbench', dim: 'rickgarage', name: "Rick's Workbench", x: 0, z: -6.6, r: 2.4, h: 1.3, model: 'lm_workbench', alias: 'garage' },
-    { id: 'plumbus', dim: 'rickgarage', name: 'Plumbus', x: -5.6, z: -6.4, r: 1.0, h: 1.6, model: 'lm_plumbus' },
-    { id: 'mbox', dim: 'rickgarage', name: 'Meeseeks Box', x: 5.6, z: -6.4, r: 0.9, h: 1.4, model: 'lm_mbox' },
-    { id: 'battery', dim: 'rickgarage', name: 'Microverse Battery', x: 6.4, z: 6.2, r: 1.1, h: 1.2, model: 'lm_battery', door: { dim: 'microverse', x: 0, z: 16 } },
-    { id: 'gdoor', dim: 'rickgarage', name: 'Garage door (outside)', x: 0, z: 8.2, r: 2.6, h: 4, model: 'lm_gdoor', door: { dim: 'suburbia', x: -7, z: 12.5 } },
-    { id: 'trapdoor', dim: 'rickgarage', name: 'Hatch to the secret lab', x: 6.3, z: -3.0, r: 1.2, h: 0.3, model: 'lm_trapdoor', door: { dim: 'ricklab', x: 0, z: 6 } },
-    { id: 'cellardoor', dim: 'rickgarage', name: 'Door to the wine cellar', x: -8.1, z: -3.4, r: 1.2, h: 3.4, model: 'lm_cellardoor', rot: Math.PI / 2, door: { dim: 'cellar', x: 0, z: 6 } },
-    { id: 'ladder', dim: 'ricklab', name: 'Ladder up to the garage', x: 0, z: 9.5, r: 1.2, h: 5, model: 'lm_ladder', door: { dim: 'rickgarage', x: 5, z: -1.4 } },
+    { id: 'ladder', dim: 'ricklab', name: 'Ladder up to the garage', x: 0, z: 9.5, r: 1.2, h: 5, model: 'lm_ladder', door: { dim: 'suburbia', x: -14.6, z: 9.8 } },
     { id: 'mindblowers', dim: 'ricklab', name: 'Mind Blowers', x: -8.5, z: -6, r: 1.4, h: 2.4, model: 'lm_mindblowers' },
-    { id: 'cellarexit', dim: 'cellar', name: 'Back to the garage', x: 0, z: 9.5, r: 1.4, h: 3.4, model: 'lm_cellardoor', door: { dim: 'rickgarage', x: -6, z: -3.4 } },
+    { id: 'cellarexit', dim: 'cellar', name: 'Back to the garage', x: 0, z: 9.5, r: 1.4, h: 3.4, model: 'lm_cellardoor', door: { dim: 'suburbia', x: -16.4, z: 15.4 } },
     { id: 'winerack', dim: 'cellar', name: "Rick's private stash", x: 0, z: -8.5, r: 2.0, h: 3, model: 'lm_winerack' },
     // ----- Downtown (just outside Seattle) -----
     { id: 'mall', dim: 'downtown', name: "Merpal's Mall", x: -66, z: -22, r: 12, h: 9, model: 'lm_mall', rot: Math.PI / 2, sign: { text: "MERPAL'S MALL", y: 7.4, z: 8.1, w: 10 } },
@@ -109,18 +111,21 @@
     { id: 'nimbuspalace', dim: 'atlantis', name: "Mr. Nimbus's Palace", x: 0, z: -45, r: 12, h: 16, model: 'lm_nimbuspalace', rot: 0 },
     { id: 'dreamschool', dim: 'dreamworld', name: 'Dream High School (it never ends)', x: 0, z: -40, r: 10, h: 9, model: 'lm_dreamschool', rot: 0 },
     { id: 'timerift', dim: 'splitearth', name: 'The Time Rift', x: 22, z: 0, r: 4, h: 9, model: 'lm_timerift' },
+    // ----- Something to do in every world -----
+    { id: 'purgestage', dim: 'purge', name: 'The Festival Stage', x: 0, z: -34, r: 7, h: 7, model: 'lm_purgestage', rot: 0 },
+    { id: 'squanchclub', dim: 'squanch', name: "Squanchy's Party Hut", x: 0, z: -30, r: 7, h: 7, model: 'lm_squanchclub', rot: 0 },
+    { id: 'gazorpthrone', dim: 'gazorp', name: 'The Gazorpian Throne', x: 0, z: -32, r: 7, h: 9, model: 'lm_gazorpthrone', rot: 0 },
+    { id: 'froopyslide', dim: 'froopy', name: 'The Big Froopy Slide', x: 26, z: -26, r: 6, h: 10, model: 'lm_froopyslide' },
+    { id: 'pizzacounter', dim: 'pizzaworld', name: 'Pizza-Phone-Chair Exchange', x: 0, z: -30, r: 6, h: 6, model: 'lm_pizzacounter', rot: 0 },
+    { id: 'raidergarage', dim: 'wasteland', name: "The Raiders' Garage", x: 0, z: -34, r: 8, h: 7, model: 'lm_raidergarage', rot: 0 },
+    { id: 'unitycore', dim: 'unityworld', name: 'The Hive Core', x: 0, z: -34, r: 6, h: 14, model: 'lm_unitycore' },
+    { id: 'formsoffice', dim: 'federation', name: 'Bureau of Forms', x: 0, z: -40, r: 8, h: 9, model: 'lm_formsoffice', rot: 0 },
+    { id: 'geartemple', dim: 'gearworld', name: 'Temple of the Great Gear', x: 0, z: -36, r: 8, h: 12, model: 'lm_geartemple', rot: 0 },
+    { id: 'hamstertube', dim: 'hamsterworld', name: 'The Hamster Tubes', x: 24, z: -24, r: 6, h: 6, model: 'lm_hamstertube' },
+    { id: 'storyengine', dim: 'storytrain', name: 'The Story Engine', x: 0, z: -24, r: 7, h: 8, model: 'lm_storyengine', rot: 0 },
+    { id: 'detoxpod', dim: 'toxicworld', name: "Rick's Detox Machine", x: 0, z: -30, r: 5, h: 6, model: 'lm_detoxpod', rot: 0 },
     { id: 'hangar51', dim: 'area51', name: 'Hangar 18', x: 60, z: 10, r: 13, h: 10, model: 'lm_hangar', rot: -Math.PI / 2, sign: { text: 'HANGAR 18', y: 8.2, z: 9.6, w: 6 } },
   ];
-  // Highways between the parts of Earth. Each part has an on-ramp to every other part,
-  // in a row on its north edge; you come out at the matching ramp at the other end.
-  const EARTH = [['suburbia', 'the Smith neighbourhood'], ['downtown', 'Downtown'], ['dc', 'Washington, D.C.'], ['area51', 'Area 51']];
-  const rampAt = (from, to) => { const others = EARTH.filter(e => e[0] !== from).map(e => e[0]); return { x: -64 + 64 * others.indexOf(to), z: -160 }; };
-  for (const [from] of EARTH) for (const [to, name] of EARTH) {
-    if (from === to) continue;
-    const a = rampAt(from, to), b = rampAt(to, from);
-    MM.LANDMARKS.push({ id: 'hw_' + from + '_' + to, dim: from, name: 'Highway to ' + name, x: a.x, z: a.z, r: 4.5, h: 7, model: 'lm_highway', rot: 0,
-      sign: { text: name.toUpperCase().replace(/^THE /, ''), y: 6.1, z: 0.4, w: 7 }, door: { dim: to, x: b.x, z: b.z + 10 } });
-  }
   MM.LANDMARK_BY_ID = {};
   for (const l of MM.LANDMARKS) MM.LANDMARK_BY_ID[l.id] = l;
   MM.USE_RADIUS = 4;   // how close to a landmark's wall you must be to use it
@@ -148,6 +153,18 @@
     tour:    { at: 'monument', any: true, name: 'Ride up the Washington Monument', cd: 120, give: { s: 1 }, text: 'A very tall view of a very flat city. You spot three portals and a Secret Service agent pretending not to.' },
     congress:{ at: 'capitol', any: true, name: 'Sit in on Congress', cd: 200, give: { k: 2 }, text: 'Four hours of shouting. One bill passed. It was about portals, and it was confusing.' },
     warroom: { at: 'pentagon', any: true, name: 'Sit in the war room', cd: 240, give: { p: 2, k: 1 }, text: 'Generals pointing at a big screen. The big screen is pointing at your house.' },
+    festival:   { at: 'purgestage', any: true, name: 'Watch the Festival poetry', cd: 150, give: { s: 3 }, text: 'A farmer read a poem about murdering his neighbours. Everyone clapped. It was a really good poem.' },
+    squanchit:  { at: 'squanchclub', any: true, name: 'Squanch at the party', cd: 150, heal: 1, give: { p: 3 }, text: 'You squanched. They squanched. Somebody squanched on the ceiling. Best party in the galaxy.' },
+    tribute:    { at: 'gazorpthrone', any: true, name: 'Bring a tribute to the throne', cd: 200, give: { g: 3, s: 2 }, text: 'The Gazorpian matriarchs accepted your gift and did not eat you. A good day.' },
+    slide:      { at: 'froopyslide', any: true, name: 'Go down the Big Froopy Slide', cd: 100, heal: 1, give: { f: 2 }, text: 'Wheeee! It is so soft at the bottom. You do not ask what it is made of.' },
+    exchange:   { at: 'pizzacounter', any: true, name: 'Trade a pizza for a phone for a chair', cd: 150, give: { s: 2, p: 1 }, text: 'You traded a pizza for a phone, the phone for a chair, and sat on the chair. It complained.' },
+    raidercar:  { at: 'raidergarage', any: true, name: 'Soup up a raider car', cd: 200, give: { s: 5 }, text: 'Spikes on the hood, a skull on the grille, flames on the exhaust. The raiders nodded. Respect.' },
+    joinhive:   { at: 'unitycore', any: true, name: 'Join Unity for a minute', cd: 200, heal: 1, give: { c: 3 }, text: 'For one minute you were a whole planet. It was very peaceful, and a little bit creepy.' },
+    paperwork:  { at: 'formsoffice', any: true, name: 'File interdimensional paperwork', cd: 180, give: { k: 4 }, text: 'Form 27-B/6, stamped in triplicate by a bug-headed clerk. You got a refund. Nobody gets a refund.' },
+    gearprayer: { at: 'geartemple', any: true, name: 'Pray to the Great Gear', cd: 150, give: { s: 4 }, text: 'Clank clank. Clank. (You did not understand the sermon, but you liked the rhythm.)' },
+    tubes:      { at: 'hamstertube', any: true, name: 'Run through the hamster tubes', cd: 100, give: { f: 2, g: 1 }, text: 'You came out of the other end a little sweaty and the hamsters cheered.' },
+    storyride:  { at: 'storyengine', any: true, name: 'Ride the Story Train to the next act', cd: 200, give: { m: 1, p: 2 }, text: 'Act two: a twist you saw coming a mile away. The Story Lord was furious. Good.' },
+    detox:      { at: 'detoxpod', any: true, name: 'Run the detox', cd: 200, heal: 1, give: { g: 3, c: 1 }, text: 'Everything toxic in you went somewhere. Somewhere is here. Do not look at the puddle.' },
     snakejazz:  { at: 'snakeclub', any: true, name: 'Listen to snake jazz', cd: 150, heal: 1, give: { g: 2, s: 1 }, text: 'Ssss-ss-ss-sssss. Ss-ss. You do not understand it, and that is the point.' },
     dinotalk:   { at: 'dinocouncil', any: true, name: 'Ask the Dinosaur Council for wisdom', cd: 240, give: { m: 1, c: 2 }, text: 'They explained universal healthcare, then gave you a seed "for later". They are very patient with mammals.' },
     giantcourt: { at: 'giantcastle', any: true, name: "Sit in on the giants' court", cd: 200, give: { k: 3, s: 3 }, text: 'The case: a tiny man pushed a giant down the stairs. The jury has questions. You kept your head down.' },
@@ -591,8 +608,10 @@
     face: ['round', 'long', 'wide'],
     top: ['labcoat', 'tshirt', 'tank', 'polo', 'sweater', 'armor', 'vest', 'none'],
     acc: ['none', 'goggles', 'antennae', 'tophat', 'headband', 'eyepatch', 'halo', 'crown', 'cap'],
+    // How your portals look: Rick's classic green swirl, a hard ring, spiral arms, or static.
+    portalStyle: ['swirl', 'ring', 'spiral', 'storm'],
     nums: { height: [0.8, 1.3], width: [0.75, 1.35], head: [0.8, 1.45] },
-    colors: ['skin', 'hairColor', 'topColor', 'shirtColor', 'pantsColor', 'shoeColor', 'accColor', 'portalColor'],
+    colors: ['skin', 'hairColor', 'topColor', 'shirtColor', 'pantsColor', 'shoeColor', 'accColor', 'portalColor', 'portalColor2'],
   };
 
   MM.defaultLook = function () {
@@ -600,7 +619,7 @@
       species: 'human', hair: 'rick', brow: 'uni', eyes: 'tired', mouth: 'flat', face: 'long', top: 'labcoat', acc: 'none',
       height: 1.15, width: 0.95, head: 1.1,
       skin: '#f2d2b6', hairColor: '#b9d4e0', topColor: '#f4f6f8', shirtColor: '#7fb2d6', pantsColor: '#6b4f2c',
-      shoeColor: '#3a2a1a', accColor: '#444444', portalColor: '#39ff6a',
+      shoeColor: '#3a2a1a', accColor: '#444444', portalColor: '#39ff6a', portalColor2: '', portalStyle: 'swirl',
     };
   };
 
@@ -645,7 +664,7 @@
   MM.sanitizeLook = function (raw) {
     const out = MM.defaultLook();
     if (!raw || typeof raw !== 'object') return out;
-    for (const k of ['species', 'hair', 'brow', 'eyes', 'mouth', 'face', 'top', 'acc']) {
+    for (const k of ['species', 'hair', 'brow', 'eyes', 'mouth', 'face', 'top', 'acc', 'portalStyle']) {
       if (typeof raw[k] === 'string' && MM.LOOK[k].includes(raw[k])) out[k] = raw[k];
     }
     for (const k in MM.LOOK.nums) {
@@ -656,6 +675,15 @@
       if (typeof raw[k] === 'string' && /^#[0-9a-fA-F]{6}$/.test(raw[k])) out[k] = raw[k].toLowerCase();
     }
     return out;
+  };
+
+  // The two ends of your portal pair: your portal colour, and the second colour if you picked
+  // one (otherwise a deeper shade of the same, so both ends stay yours: green for a Rick).
+  MM.pairColors = function (look) {
+    const a = (look && look.portalColor) || '#39ff6a';
+    let b = look && look.portalColor2;
+    if (!b) { const n = parseInt(a.slice(1), 16), f = v => Math.round(v * 0.62).toString(16).padStart(2, '0'); b = '#' + f(n >> 16 & 255) + f(n >> 8 & 255) + f(n & 255); }
+    return [a, b];
   };
 
   // Names: letters, digits, spaces and a little punctuation, 2-20 characters.

@@ -1,5 +1,5 @@
 // Multiverse Mayhem: the portal gun's short-range mode, played like Valve's Portal.
-// Shoot a blue portal and an orange one onto any floor, wall, roof or cliff in the same
+// Shoot one portal and then its partner onto any floor, wall, roof or cliff in the same
 // world; step into one and you come out of the other, keeping your speed ("speedy thing
 // goes in, speedy thing comes out"). Anyone can use anyone's pair. Shared by the client
 // (aiming, prediction) and the server (checks).
@@ -8,8 +8,8 @@
   const MM = root.MM || (root.MM = {});
 
   MM.PAIR_RANGE = 1000;       // how far the gun reaches in this mode
-  MM.PAIR_COLORS = ['#3a9aff', '#ff8a2a'];
-  MM.PAIR_NAMES = ['Blue', 'Orange'];
+  MM.PAIR_AIR = 120;          // how far out a portal shot at nothing hangs in mid-air
+  // Colours come from the owner's look (MM.pairColors): green for a Rick unless changed.
   MM.PAIR_MAX_SPEED = 32;     // fling speed cap
 
   // Who can shoot them: anyone carrying a real portal gun.
@@ -100,8 +100,14 @@
       }
     }
     if (!bn) {
-      // No blocking object hit - return a hit at max range for mid-air portal placement
-      return { t: bt, x: o.x + d.x * bt, y: o.y + d.y * bt, z: o.z + d.z * bt, nx: d.x, ny: d.y, nz: d.z };
+      // Nothing in the way: a portal hanging in mid-air, a little way out (inside the world and
+      // within what the server accepts), facing the way you shot it.
+      const lim = MM.boundOf(dimId) - 2, limZ = MM.boundZOf(dimId) - 2;
+      let t = Math.min(bt, MM.PAIR_AIR);
+      if (Math.abs(d.x) > 1e-6) t = Math.min(t, ((d.x > 0 ? lim : -lim) - o.x) / d.x);
+      if (Math.abs(d.z) > 1e-6) t = Math.min(t, ((d.z > 0 ? limZ : -limZ) - o.z) / d.z);
+      t = Math.max(2, t);
+      return { t, x: o.x + d.x * t, y: o.y + d.y * t, z: o.z + d.z * t, nx: d.x, ny: d.y, nz: d.z };
     }
     return { t: bt, x: o.x + d.x * bt, y: o.y + d.y * bt, z: o.z + d.z * bt, nx: bn[0], ny: bn[1], nz: bn[2] };
   };

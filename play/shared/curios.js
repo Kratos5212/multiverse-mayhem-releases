@@ -52,6 +52,9 @@
     terryhat:  { name: "Scary Terry's hat", icon: '🎩', color: '#5a3a2a', dims: ['dreamworld'], w: 1, desc: 'You can run, but you cannot hide.', text: 'You put it on. Somewhere, someone wakes up screaming.' },
     dreamkey:  { name: 'Key to a floating door', icon: '🗝️', color: '#ffe066', dims: ['dreamworld'], w: 2, use: 'vision', desc: 'Opens one of the doors in the dream. They all lead to other lives.', text: '' },
     timeshard: { name: 'Shard of a split timeline', icon: '⌛', color: '#8fd8ff', dims: ['splitearth'], w: 2, use: 'truth', desc: 'A sliver of the moment Summer and Morty froze time.', text: '' },
+    storyticket: { name: 'Story Train ticket', icon: '🎫', color: '#d8a8ff', dims: ['storytrain'], w: 2, use: 'vision', desc: 'Good for one story. Any story. Mostly predictable ones.', text: '' },
+    toxicvial: { name: "Rick's toxins, bottled", icon: '☣️', color: '#a8ff3a', dims: ['toxicworld'], w: 2, use: 'rage', eat: true, desc: 'All of Rick\'s worst parts in a vial. You probably should not drink it.', text: 'You drank it. You feel like a real jerk, and a fast one.' },
+    darkmatterfake: { name: 'Fake Dark Matter recipe', icon: '📜', color: '#5aff8a', dims: ['zigerion'], w: 2, desc: 'The recipe Rick gave the Zigerions. Step one: fold the paper into a swan.', text: 'Step two: give up.' },
     doofuspants: { name: "Doofus Rick's homemade pants", icon: '👖', color: '#6a8ad8', dims: ['doofusearth'], w: 2, desc: 'He made them himself. He is very proud. They are... pants.', text: 'They are a little crooked. You love them anyway.' },
   };
   MM.CURIO_IDS = Object.keys(MM.CURIOS);
@@ -60,10 +63,11 @@
   // The curios that turn up in a world (home dimensions share the show's Earth's).
   MM.curiosOf = dimId => {
     const D = MM.DIM_BY_ID[dimId], key = D && (D.home || D.variantOf) ? 'suburbia' : dimId;
-    return MM.CURIO_IDS.filter(id => MM.CURIOS[id].dims.includes(key) || MM.CURIOS[id].dims.includes(dimId));
+    const keys = [key, dimId].concat((D && D.regions || []).map(R => R.dim));   // Earth's towns are part of Earth
+    return MM.CURIO_IDS.filter(id => keys.some(k => MM.CURIOS[id].dims.includes(k)));
   };
   // How many lie around at once: a handful outside, one or two indoors.
-  MM.curioCount = dimId => { const D = MM.DIM_BY_ID[dimId]; return MM.curiosOf(dimId).length ? (D.interior ? 2 : 6) : 0; };
+  MM.curioCount = dimId => { const D = MM.DIM_BY_ID[dimId]; return MM.curiosOf(dimId).length ? (D.interior ? 2 : 6 * (1 + (D.regions ? D.regions.length : 0))) : 0; };
   MM.pickCurio = (dimId, rand) => {
     const ids = MM.curiosOf(dimId);
     let t = 0; for (const id of ids) t += MM.CURIOS[id].w;
