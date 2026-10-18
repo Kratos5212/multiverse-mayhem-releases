@@ -1,8 +1,8 @@
 {
- "build": 29,
- "date": "2026-10-18T15:10:30.799Z",
+ "build": 30,
+ "date": "2026-10-18T19:57:02.452Z",
  "game": {
-  "base": "game/29/",
+  "base": "game/30/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "eab28634d8c18f3a322350481aac1b6918cdda59f31c25fcded207b95043c3b9",
-    "s": 204976
+    "h": "2f20d758ab279be247d8860b3c684a2df7e0edc488ce99a657df1228333e8609",
+    "s": 205097
    },
    {
     "p": "js/life.js",
@@ -236,8 +236,8 @@
    },
    {
     "p": "js/voice.js",
-    "h": "529e4d4e677344ad75cfac93347536688dc6c9357c173287083e11ad5face8d8",
-    "s": 13702
+    "h": "d1c01a0675b162f9b72173ba781533f7b1af3ddd9c988fe352192a18875a229f",
+    "s": 15808
    },
    {
     "p": "js/vr.js",
@@ -321,7 +321,7 @@
    },
    {
     "p": "version.json",
-    "h": "be19f8467b573d350585485b76348ef0ee23152acc6d7ab7444328db140b5e65",
+    "h": "95ee8b6838d45fe2b1d1f94187b43ba8134140d637dfaffcf1276138588ce5a1",
     "s": 13
    }
   ]

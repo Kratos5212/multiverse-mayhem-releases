@@ -202,6 +202,7 @@
       if (this.gal) this.host.tickGalleries(this, now);
       this.tickPortals(now);
       if (this.players.size) this.tickEvents(now);
+      if (this.dim.planets && this.host.tickN % 15 === 0) this.tickBaby(now);
       // Props grow back a minute after they are destroyed.
       this.props.forEach((p, i) => {
         if (p.hp <= 0 && p.deadUntil && now >= p.deadUntil) {
@@ -240,7 +241,11 @@
       const ev = this.event;
       this.ev({ k: 'world', end: 1, name: ev.E.name, text: text || '' });
       // Events that took over the locals (or the house) put everything back at once.
-      if (ev.E.house || ev.E.patient || ev.E.boss || ev.E.squad) for (const id of ev.mine || []) { if (this.npcs.delete(id)) this.ev({ k: 'npc-', id }); }
+      if (ev.E.house || ev.E.patient || ev.E.boss || ev.E.squad) for (const id of ev.mine || []) {
+        const n = this.npcs.get(id);
+        if (n && n.keep) { n.dormant = true; n.angry = 0; continue; }   // the Giant Baby goes back to sleep
+        if (this.npcs.delete(id)) this.ev({ k: 'npc-', id });
+      }
       this.event = null;
       this.nextEvent = now + 150 + Math.random() * 150;
     }
@@ -251,6 +256,31 @@
       const m = this.spawnNpc(type, true, Object.assign({ at: { x: n.x, z: n.z } }, opts || {}));
       m.home = n.home;
       return m;
+    }
+    // The Giant Baby: always somewhere in space, asleep. Anyone who comes near (or shoots it)
+    // wakes it, and that is the Giant Baby event. Put it down and it is back in 10 minutes.
+    tickBaby(now) {
+      let b = this.baby && this.npcs.get(this.baby);
+      if (!b) {
+        if (this.baby) { this.baby = 0; this.babyAt = now + MM.BABY.respawn; }
+        if (now < (this.babyAt || 0)) return;
+        const A = MM.BABY.at;
+        b = this.spawnNpc('giantbaby', false, { at: { x: A.x, z: A.z } });
+        b.y = A.y; b.home = { x: A.x, z: A.z, y: A.y }; b.keep = true; b.dormant = true; b.temp = 0;
+        this.ev({ k: 'npc+', n: this.npcRow(b) });
+        this.baby = b.id;
+      }
+      if (!b.dormant) return;
+      const W = MM.BABY.wake;
+      for (const p of this.players.values()) if (!p.dead && Math.hypot(p.x - b.x, p.y - (b.y + b.T.h / 2), p.z - b.z) < W) { this.wakeBaby(b, p, now); return; }
+    }
+    wakeBaby(b, p, now) {
+      if (!b.dormant) return;
+      b.dormant = false;
+      if (p) { b.angry = p.id; b.angryUntil = now + 8; }
+      const E = (MM.EVENTS.space || []).find(e => e.id === 'giantbaby');
+      if (this.event) this.endEvent(now);
+      if (E) this.beginEvent(E, now, { boss: b });
     }
     tickEvents(now) {
       if (this.event) {
@@ -276,12 +306,15 @@
         return;
       }
       if (now < this.nextEvent) return;
-      const list = this.eventsHere();
-      if (!list) return;
-      const E = pick(list);
+      const list = (this.eventsHere() || []).filter(E => !E.manual);   // (some only start when someone starts them)
+      if (!list.length) return;
+      this.beginEvent(pick(list), now);
+    }
+    // Start a world event here now. opts.pz: who Patient Zero is (the love potion).
+    beginEvent(E, now, opts) {
       const players = [...this.players.values()];
-      if (!players.length) return;
-      const ev = this.event = { E, until: now + E.dur, booms: E.booms || 0, nextBoom: now + 2, start: now, mine: [] };
+      if (!players.length) return null;
+      const ev = this.event = { E, until: now + E.dur, booms: E.booms || 0, nextBoom: now + 2, start: now, mine: [], pzWant: opts && opts.pz };
       this.ev({ k: 'world', name: E.name, text: E.text, left: E.dur });
       const lim = MM.boundOf(this.dimId) - 25, clampXZ = v => Math.max(-lim, Math.min(lim, v));
       if (E.spawn) for (const [type, n] of E.spawn) for (let i = 0; i < n; i++) {
@@ -304,7 +337,8 @@
         ev.mine.push(this.spawnNpc(type, true, { at: { x, z }, until: now + E.dur + 5 }).id);
       } }
       // A boss turns up a way off and comes for you.
-      if (E.boss) for (const [type, n] of E.boss) for (let i = 0; i < n; i++) {
+      if (E.boss && opts && opts.boss) ev.mine.push(opts.boss.id);   // (one already here: the Giant Baby, woken up)
+      else if (E.boss) for (const [type, n] of E.boss) for (let i = 0; i < n; i++) {
         const p = pick(players), a = Math.random() * 6.28, d = 55 + Math.random() * 20;
         const m = this.spawnNpc(type, false, { at: { x: clampXZ(p.x + Math.cos(a) * d * (this.dim.planets ? 3 : 1)), z: clampXZ(p.z + Math.sin(a) * d * (this.dim.planets ? 3 : 1)) }, until: now + E.dur + 5 });
         if (this.dim.planets) { m.y = p.y + 20; m.home = { x: m.x, z: m.z, y: m.y }; }
@@ -315,13 +349,14 @@
         const p = pick(players), a = Math.random() * 6.28, d = 4 + Math.random() * 26;
         this.spawnPickup(E.loot[0], true, { x: p.x + Math.cos(a) * d, z: p.z + Math.sin(a) * d }, ri(1, 2));
       }
+      return ev;
     }
     // "Rick Potion #9": the love potion catches. Everyone wants Patient Zero; a minute later
     // they are mantis people (who want everyone); a minute after that, Cronenbergs.
     pickPatient(ev) {
       const all = [...this.players.values()].filter(p => !p.dead);
-      const humans = all.filter(p => !p.bot);
-      const p = pick(humans.length ? humans : all);
+      const humans = all.filter(p => !p.bot), want = this.host.players.get(ev.pzWant);
+      const p = want && want.inst === this && !want.dead ? want : pick(humans.length ? humans : all);
       ev.pz = p ? p.id : 0;
       if (p) {
         this.ev({ k: 'world', name: 'Patient Zero', text: p.name + ' is Patient Zero. Everyone is in love with them. RUN.', left: Math.max(1, Math.round(ev.until - this.host.time)) });
@@ -467,7 +502,7 @@
           const a = Math.random() * 6.28;
           this.spawnPickup(k, true, { x: p.x + Math.cos(a) * (p.r + 1.2), z: p.z + Math.sin(a) * (p.r + 1.2) }, T.drop[k]);
         }
-        if (owner) { owner.prog.chaos += p.type === 'house' ? 5 : 1; this.host.progress(owner, 'smash'); }
+        if (owner) { owner.prog.chaos += p.type === 'house' ? 5 : 1; this.host.progress(owner, 'smash'); if (p.type === 'house' || p.type === 'car') this.host.sin(owner, 'mess'); }
       }
       this.ev({ k: 'prop', id: i, hp: st.hp });
     }
@@ -480,6 +515,7 @@
         n.target = owner.id;
         // Locals you hit hit back (if they are the fighting kind).
         if (!n.T.hostile && n.T.human && Math.random() < 0.5) { n.angry = owner.id; n.angryUntil = this.host.time + 15; }
+        if (!n.T.hostile && n.T.human && n.type !== 'wronged' && n.messedBy !== owner.id) { n.messedBy = owner.id; this.host.sin(owner, 'mess'); }
         if (n.T.hostile && !n.bout) { n.angry = owner.id; n.angryUntil = this.host.time + 12; }
         if (n.T.hostile && owner.form && owner.form.id === 'morph' && !owner.form.blown) { owner.form.blown = true; this.host.toast(owner, '🎭 They saw that. Your disguise is blown: the monsters know you now.'); }   // a Ring fighter keeps to the fighter
         // Police, Secret Service and Marines protect people (and each other).
@@ -488,6 +524,7 @@
         }
       }
       this.ev({ k: 'dmg', n: n.id, d: dmg });
+      if (n.dormant) this.wakeBaby(n, owner, this.host.time);
       if (n.hp > 0) return;
       // Inside an immortality field nothing dies: it just pulls itself back together.
       if (MM.inField(this.dimId, n.x, n.z)) { n.hp = n.T.hp; this.ev({ k: 'reform', n: n.id }); return; }
@@ -506,9 +543,9 @@
       if (n.type === 'feratu') this.host.feratuDown(this, owner);
       let i = 0;
       for (const k in n.T.drop) this.spawnPickup(k, true, { x: n.x + (i++ - 0.5) * 1.4, z: n.z }, n.T.drop[k]);
-      if (owner) { owner.prog.chaos += 2; this.host.progress(owner, 'kill', n.type); }
+      if (owner) { owner.prog.chaos += 2; this.host.progress(owner, 'kill', n.type); if (!n.T.hostile && n.type !== 'wronged') this.host.sin(owner, 'kill', n.name || n.T.name); }
       if (n.cast) { n.cast.npc = null; n.cast.downUntil = this.host.time + 90; n.cast.at = n.cast.origin; }
-      else if (!n.temp) {
+      else if (!n.temp && !n.keep) {   // (the Giant Baby comes back on its own schedule: tickBaby)
         const type = n.type;
         this.host.later(25, () => { if (this.host.instances.get(this.key) === this) this.spawnNpc(type, true); });
       }
@@ -563,6 +600,14 @@
         let goal = null, speed = T.speed;
         const owner = n.owner && now < n.ownerUntil ? this.host.players.get(n.owner) : null;
         if (n.owner && !owner) { n.owner = 0; this.ev({ k: 'nfree', n: n.id }); }
+        if (n.dormant) {   // the Giant Baby asleep: drifting home, bobbing, turning slowly
+          const H = n.home, dx = H.x - n.x, dz = H.z - n.z, dy = H.y - n.y, l = Math.hypot(dx, dy, dz), step = Math.min(l, T.speed * 0.5 * dt);
+          if (l > 1) { n.x += dx / l * step; n.y += dy / l * step; n.z += dz / l * step; }
+          else n.y = H.y + Math.sin(now * 0.25) * 3;
+          n.hp = Math.min(T.hp, n.hp + 25 * dt);   // and it heals while it sleeps
+          n.r += dt * 0.04;
+          continue;
+        }
         if (n.buoy) {   // the buoyancy ray: up it goes, helpless, then down again
           const g = MM.heightAt(this.dimId, n.x, n.z) + (T.fly || 0);
           if (now < n.buoy) { n.y = Math.min(g + MM.BUOY.top, Math.max(n.y, g) + MM.BUOY.rise * dt); continue; }
@@ -1319,6 +1364,7 @@
     canHurt(src, p) {
       if (!src || src === p || !src.A) return true;   // monsters, hazards, yourself
       if (src.team && src.team === p.team) return false;   // never your own team
+      if (p.wronged && p.wronged.by.has(src.id)) return true;   // a merged timeline: they remember what you did to them
       return !!(src.pvp && p.pvp);
     }
 
@@ -1354,6 +1400,7 @@
         const S = p.save; p.save = null;
         inst.ev({ k: 'kill', v: p.id, by: src ? src.id : 0, w: how || '', saved: 1 });
         this.loadSave(p, S);
+        this.splitTimeline(p, S);
         this.toast(p, '💾 You died. Or did you? The remote took you back to your save point. (Save again: K.)');
         this.dirty(p);
         return;
@@ -1370,6 +1417,7 @@
       const lost = Math.floor(p.inv.s / 2);
       if (lost > 0) { p.inv.s -= lost; inst.spawnPickup('s', true, { x: p.x, z: p.z }, lost); }
       if (src && src !== p) {
+        this.sin(src, 'player', p.name, p.id);
         src.kills++; src.prog.chaos += 5;
         this.progress(src, 'ko');
         // Knock out someone with a portal gun and you can grab a charge from it.
@@ -2101,12 +2149,20 @@
           else p.borrow = (p.borrow || 0) + 1;
           break;
         case 'love': {
-          let k = 0;
-          for (const n of inst.npcs.values()) if (n.T.human && !n.T.hostile && !n.T.guard && dist2(n.x, n.z, p.x, p.z) < 16 * 16 && k < 6) {
-            n.owner = p.id; n.ownerUntil = now + 30; n.angry = 0; k++;
-            inst.ev({ k: 'say', n: n.id, by: p.id, text: pick(['I would follow you anywhere.', 'You are... perfect.', 'Marry me. Or at least let me walk behind you.']) });
-          }
-          if (!k) text = 'Nobody is around to fall in love with you. Probably for the best.';
+          // "Rick Potion #9": only a Morty would, and only on Jessica. Then the flu season
+          // spreads it to everyone, and everyone wants him.
+          if (p.arch !== 'sidekick') { this.toast(p, 'Only a Morty would be desperate enough to use this. (On Jessica.)'); return null; }
+          let jess = null;
+          for (const n of inst.npcs.values()) if (n.type === 'jessica' && dist2(n.x, n.z, p.x, p.z) < MM.LOVE.reach ** 2) jess = n;
+          if (!jess) { this.toast(p, 'It\'s for Jessica. Find her first (on Earth, near the Smith house) and get close.'); return null; }
+          if (inst.event) { this.toast(p, 'Not now, something is already going on here.'); return null; }
+          if (now < (inst.loveCd || 0)) { this.toast(p, 'The flu season is over. Try again later (' + Math.ceil((inst.loveCd - now) / 60) + ' min).'); return null; }
+          const E = (MM.EVENTS.suburbia || []).find(e => e.patient);
+          inst.loveCd = now + MM.LOVE.cd;
+          jess.owner = p.id; jess.ownerUntil = now + E.dur; jess.angry = 0;
+          inst.ev({ k: 'say', n: jess.id, by: p.id, text: 'Morty... I never noticed how... Morty.' });
+          inst.beginEvent(E, now, { pz: p.id });
+          text = 'Jessica is in love with you. So is the flu. So, in about a second, is everyone.';
           break;
         }
         case 'vision': case 'truth': case 'channel': text = pick(MM.CURIO_LINES[Q.use]); break;
@@ -2840,6 +2896,7 @@
         if (first) found.push(q);
         this.priv(p, { k: 'found', id: q, first, n: found.length });
       }
+      if (T.effect === 'acid' && p.wronged) this.endWronged(p);
       if (T.effect === 'acid') { p.fx.cloak = this.time + 25; this.dirty(p); p.inst.ev({ k: 'boom', x: r2(p.x), y: r2(p.y + 0.5), z: r2(p.z), r: 1.2 }); }   // they think you're dead   // Rick's gun: two charges, no recharging
       let text = T.texts ? pick(T.texts) : T.text;
       // Earth TVs are normal until a Rick "fixes" them with Xanthenite (for this copy of the world).
@@ -2859,6 +2916,7 @@
       const now = this.time, inst = p.inst;
       if (!(p.inv['q:saveremote'] > 0) || p.dead || !inst) return false;
       if (p.ride || p.aboard || p.fusedTo || p.fuse || p.bout || p.race) { this.toast(p, 'Not now: you are busy.'); return false; }
+      if (op === 'merge') return this.mergeTimelines(p);
       if (op === 'save') {
         if (p.ship || p.car) { this.toast(p, 'Get out first, then save.'); return false; }
         p.save = { dim: inst.dimId, inst, x: p.x, y: p.y, z: p.z, hp: Math.max(1, p.hp), until: now + MM.SAVEPOINT.keep };
@@ -2874,8 +2932,76 @@
       if (p.car && !p.carMorty) { p.car = false; inst.ev({ k: 'car', id: p.id, on: false }); }
       p.cdLoad = now + MM.SAVEPOINT.cd;
       this.loadSave(p, S);
+      this.splitTimeline(p);
       if (!quiet) this.toast(p, '💾 Loaded. Same place, same you. (Nobody else went back.)');
       return true;
+    }
+    // What a Morty does while he has a save point (his "other timeline"): who he killed, which
+    // players, and how much else he messed up.
+    sin(p, kind, name, id) {
+      if (!p || !p.A || p.arch !== 'sidekick' || !p.save || this.time > p.save.until) return;
+      const S = p.save.sins || (p.save.sins = { people: [], players: {}, mess: 0 });
+      if (kind === 'kill' && S.people.length < 40) S.people.push(name || 'someone');
+      else if (kind === 'player') S.players[id] = name;
+      else if (kind === 'mess') S.mess++;
+    }
+    sinCount(A) { return A.people.length + Object.keys(A.players).length + Math.ceil(A.mess / 3); }
+    // Going back splits the timeline: what he did over there is kept aside, and he can merge it.
+    splitTimeline(p, S) {
+      const sins = (S || p.save || {}).sins;
+      if (p.save) p.save.sins = null;
+      if (!sins || !this.sinCount(sins)) return;
+      const A = p.alt && this.time < p.alt.until ? p.alt : (p.alt = { people: [], players: {}, mess: 0 });
+      A.people.push(...sins.people); Object.assign(A.players, sins.players); A.mess += sins.mess;
+      A.until = this.time + MM.MERGE.keep;
+      this.priv(p, { k: 'merge', n: this.sinCount(A), people: A.people.slice(-6), players: Object.values(A.players).slice(0, 6), mess: A.mess, chaos: this.sinCount(A) * MM.MERGE.chaosPer });
+    }
+    // Merge the timelines: keep what you did (chaos for all of it), and everyone you wronged
+    // remembers. They come for you, in every world, until you hide in the vat of acid.
+    mergeTimelines(p) {
+      const A = p.alt, now = this.time;
+      if (p.arch !== 'sidekick' || !A || now > A.until) { this.toast(p, 'There is no other timeline to merge.'); return false; }
+      p.alt = null;
+      const n = this.sinCount(A);
+      p.prog.chaos += n * MM.MERGE.chaosPer; p.progDirty = true;
+      const W = p.wronged || (p.wronged = { n: 0, names: [], by: new Set(), next: now + 3, here: [] });
+      W.n = Math.min(MM.MERGE.max, W.n + n);
+      W.names.push(...A.people.map(v => pick(['Brother of ', 'Mother of ', 'Best friend of ', 'Widow of ', 'Ghost of ']) + v));
+      if (A.mess) W.names.push('Guy whose house you wrecked', 'Witness you scared', 'Neighbour you messed with');
+      for (const id in A.players) {
+        W.by.add(+id);
+        const q = this.players.get(+id);
+        if (q) this.toast(q, '⏳ ' + p.name + ' merged two timelines. You remember him killing you in the other one. Until he hides in the vat of acid, you can hit him, fights on or off.');
+      }
+      if (p.inst) p.inst.ev({ k: 'merge', id: p.id });
+      this.toast(p, '⏳ Timelines merged. You keep everything (+' + n * MM.MERGE.chaosPer + ' chaos). And everyone you wronged over there remembers. They are coming. Only the vat of acid (Downtown) makes it stop.');
+      this.dirty(p);
+      return true;
+    }
+    // Every so often: the wronged find the Morty, wherever he is now.
+    tickWronged(p, now) {
+      const W = p.wronged;
+      W.here = W.here.filter(([inst, id]) => { const n = inst.npcs.get(id); if (n && inst === p.inst) return true; if (n) { inst.npcs.delete(id); inst.ev({ k: 'npc-', id }); } return false; });
+      if (p.dead || !p.inst || p.inst.dim.interior || W.here.length >= W.n || now < W.next) return;
+      W.next = now + MM.MERGE.gap;
+      const inst = p.inst, a = Math.random() * 6.28, lim = MM.boundOf(inst.dimId) - 10;
+      let x = Math.max(-lim, Math.min(lim, p.x + Math.cos(a) * 30)), z = Math.max(-lim, Math.min(lim, p.z + Math.sin(a) * 30));
+      [x, z] = MM.collideProps(inst.dimId, x, z, 1, null);
+      const m = inst.spawnNpc('wronged', false, { at: { x, z }, until: now + 99999 });
+      m.name = W.names.length ? pick(W.names) : 'Someone you wronged';
+      m.angry = p.id; m.angryUntil = now + 99999; m.hunts = p.id;
+      inst.ev({ k: 'npc+', n: inst.npcRow(m) });
+      inst.ev({ k: 'say', n: m.id, by: p.id, text: pick(MM.NPCS.wronged.talk) });
+      W.here.push([inst, m.id]);
+    }
+    // The vat of acid: everyone thinks you're dead. The other timeline stops looking for you.
+    endWronged(p) {
+      const W = p.wronged; if (!W) return;
+      for (const [inst, id] of W.here) if (inst.npcs.delete(id)) inst.ev({ k: 'npc-', id });
+      for (const id of W.by) { const q = this.players.get(id); if (q) this.toast(q, p.name + ' fell in the vat of acid. He is dead. (He is not dead.)'); }
+      p.wronged = null;
+      this.toast(p, 'They saw you go into the vat of acid. As far as both timelines know, you are dead. Nobody is coming any more.');
+      this.dirty(p);
     }
     loadSave(p, S) {
       p.hp = Math.min(p.maxHp, S.hp); p.dp = null;
@@ -3246,6 +3372,7 @@
         rsIn: p.dead ? r2(Math.max(0, p.respawnAt - now)) : 0, fx: this.fxBits(p, now), ship: p.ship, car: !!p.car,
         fm: this.formTag(p), fz: p.fusedTo || 0, fu: p.fuse ? [p.fuse.partner, p.fuse.kind] : 0,
         abd: p.aboard ? [p.aboard.owner, p.aboard.crew.get(p.id) || 1, p.aboard.parked ? p.aboard.id : 0, p.aboard.kind] : 0, pk: p.vessel && p.vessel.parked ? [p.vessel.id, p.vessel.inst.dimId] : 0,
+        wr: p.wronged ? p.wronged.n : 0, alt: p.alt && now < p.alt.until ? 1 : 0,
         sv: p.save && now < p.save.until ? [p.save.dim, r2(p.save.x), r2(p.save.y), r2(p.save.z), Math.round(p.save.until - now)] : 0 };
     }
 
@@ -3276,6 +3403,7 @@
         if (p.ride) this.tickRide(p);
         if (p.aboard) this.tickAboard(p);
         if (p.form) this.tickForm(p, now);
+        if (p.wronged && this.tickN % 15 === 0) this.tickWronged(p, now);
         if (p.fusedTo) this.tickFused(p);
         if (p.fuse && now > p.fuse.until) this.unfuse(p, 'The fusion wore off. You are two people again.');
         if (p.bout) this.tickBout(p, dt);

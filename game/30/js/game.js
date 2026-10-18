@@ -984,6 +984,7 @@
       }
       case 'guilsnap': { fx.burst(e.x, e.y + 0.9, e.z, '#ffffff', 26, 9, 0.5, 0.35, 0); fx.shockwave(e.x, e.y + 0.9, e.z, '#39ff6a', e.r * 1.6, 0.35, 0.12); sfxAt('bite', e.x, e.z); break; }
       case 'save': { const p = posOf(e.id); if (p) { fx.pillar(e.x, e.y, e.z, '#5ad8a8', 3, 0.7, 0.8); } if (e.id === G.myId) C.sfx('craft', 0.6); break; }
+      case 'merge': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#c49bff', 50, 7, 0.7, 0.9, 0); fx.dome(p.x, p.y + 1, p.z, '#c49bff', 3, 0.8, 0.3); } if (e.id === G.myId) { UI.banner('Timelines merged', 'Everyone you wronged remembers. Run. The vat of acid in Downtown is the only way out.'); C.sfx('ability'); } break; }
       case 'load': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1, p.z, '#5ad8a8', 40, 6, 0.6, 0.7, 0); if (e.id === G.myId) C.sfx('ability'); break; }
       case 'shrunk': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#b48aff', 20, 4, 0.5, 0.6, 0); sfxAt('shrink', p.x, p.z); } break; }
       case 'say': {
@@ -1186,6 +1187,18 @@
       return;
     }
     if (e.k === 'armsay') { UI.toast('🦾 ' + e.text, 3500); return; }
+    if (e.k === 'merge') {
+      // The save-point remote split the timeline: merge it (keep it all, face everyone)?
+      const what = [].concat(e.people.length ? ['killed ' + e.people.join(', ') + (e.n > e.people.length + e.players.length ? '...' : '')] : [], e.players.length ? ['took out ' + e.players.join(', ')] : [], e.mess ? ['messed with ' + e.mess + ' more'] : []).join('; ');
+      openModal('offer', 'Two timelines', box => {
+        box.append(el('p', { text: 'That remote doesn\'t save, Morty. It splits timelines. In the one you just left, you ' + what + '.' }),
+          el('p', { class: 'note', text: 'Merge them and you keep everything (+' + e.chaos + ' chaos). But everyone you wronged over there remembers, and they come for you, in every world. Only hiding in the vat of acid (Downtown) makes it stop. You have 10 minutes to decide (M).' }),
+          el('div', { class: 'chips' },
+            el('button', { class: 'btn go', onclick: () => { send({ t: 'sv', op: 'merge' }); UI.closeModal(); } }, '⏳ Merge timelines'),
+            el('button', { class: 'btn', onclick: () => UI.closeModal() }, 'Leave it')));
+      });
+      return;
+    }
     if (e.k === 'sbask') {
       C.sfx('chat', 0.6);
       openModal('offer', e.name + ' wants a ride', box => {
@@ -1524,12 +1537,13 @@
     mk('guillotine', '-', 'Guillotine', () => useGadget('guillotine'));
     mk('save', 'K', 'Save', () => savePoint('save'));
     mk('load', 'N', 'Load', () => savePoint('load'));
+    mk('merge', 'M', 'Merge', () => savePoint('merge'));
     // Voice: hold to talk, hold to give a command.
     mk('mic', 'Z', 'Talk', () => {});
     mk('vcmd', 'Y', 'Command', () => {});
     const hold = (b, on, off) => { b.onpointerdown = e => { e.preventDefault(); on(); }; b.onpointerup = b.onpointerleave = b.onpointercancel = () => off(); };
     hold(slots.mic, () => C.voice.pushToTalk(true), () => C.voice.pushToTalk(false));
-    hold(slots.vcmd, () => { C.voice.holdCommand(true); UI.toast('🎙 Listening for a command...', 1500); }, () => setTimeout(() => C.voice.holdCommand(false), 1200));
+    hold(slots.vcmd, () => { C.voice.holdCommand(true); UI.toast('🎙 Listening for a command...', 1500); }, () => C.voice.holdCommand(false));
     mk('items', 'I', 'Items', () => openInventory());
     mk('pair', 'R', 'Portals', () => shootPair());
     mk('scan', 'X', 'Scan', () => scan());
@@ -1553,9 +1567,10 @@
     }
     slots.scan.hidden = !(G.st && G.st.scanner);
     slots.dpunch.hidden = !(G.prog && G.prog.dpunch);
-    slots.guillotine.hidden = !(y.inv.guillotine > 0) && !(G.prog && MM.canKnow(profile.arch, G.prog, 'guillotine'));
+    slots.guillotine.hidden = !(y.inv.guillotine > 0) && !!(G.prog && MM.canKnow(profile.arch, G.prog, 'guillotine'));   // (canKnow gives the reason you can't)
     slots.save.hidden = slots.load.hidden = !(y.inv['q:saveremote'] > 0);
     slots.load.classList.toggle('off', !y.sv);
+    slots.merge.hidden = !y.alt;
     slots.mic.hidden = C.voice.mode() !== 'ptt';
     slots.vcmd.hidden = !settings.vcmd;
     const canPair = !!(G.prog && MM.canPair(profile.arch, G.prog.up));
@@ -1644,7 +1659,7 @@
   // The save-point remote: K saves, N goes back.
   function savePoint(op) {
     if (!canAct()) return;
-    if (!(G.you.inv['q:saveremote'] > 0)) { UI.toast('You need a Save-Point Remote (Rick\'s workbench).'); return; }
+    if (op !== 'merge' && !(G.you.inv['q:saveremote'] > 0)) { UI.toast('You need a Save-Point Remote (Rick\'s workbench).'); return; }
     send({ t: 'sv', op });
   }
   // The Five-Step Death Punch (learned from Liu Sin in Downtown): a strike right up close.
@@ -2331,7 +2346,7 @@
   // Something you said: if it is a command, do it (the same as pressing the button would).
   function runVoiceCommand(text, held) {
     const c = C.voice.parse(text, held);
-    if (!c) { if (held) UI.toast('🎙 "' + text + '": not a command I know.', 2500); return; }
+    if (!c) { if (held || C.voice.hasWake(text)) UI.toast('🎙 "' + text.trim() + '": not a command I know.', 2500); return; }
     if (!canAct()) return;
     UI.toast('🎙 "' + text.trim() + '" → ' + c.label, 2500);
     if (c.house) send(c.d !== undefined ? { t: 'hd', o: c.house, d: c.d } : { t: 'hd', o: c.house });
@@ -2383,6 +2398,7 @@
       if (p.vcIcon) { p.vcIcon.visible = on; p.vcIcon.position.y = p.av.headY + 1.05; }
     }
     if (slots.mic) slots.mic.classList.toggle('on', C.voice.isTalking());
+    if (slots.vcmd) slots.vcmd.classList.toggle('on', C.voice.isListening());
   }
 
   function openMenu() {
@@ -2478,8 +2494,9 @@
       case 'Minus': useGadget('guillotine'); break;
       case 'KeyK': savePoint('save'); break;
       case 'KeyN': savePoint('load'); break;
+      case 'KeyM': if (G.you && G.you.alt) savePoint('merge'); break;
       case 'KeyZ': if (C.voice.mode() === 'ptt') C.voice.pushToTalk(true); break;
-      case 'KeyY': if (settings.vcmd) { C.voice.holdCommand(true); UI.toast('🎙 Listening for a command...', 1500); } break;
+      case 'KeyY': if (settings.vcmd && !e.repeat) { C.voice.holdCommand(true); UI.toast('🎙 Listening for a command...', 1500); } break;
       case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emoteBar(); break;
@@ -2489,7 +2506,7 @@
   window.addEventListener('keyup', e => {
     keys.delete(e.code);
     if (e.code === 'KeyZ') C.voice.pushToTalk(false);
-    if (e.code === 'KeyY') setTimeout(() => C.voice.holdCommand(false), 1200);   // (let the last words in)
+    if (e.code === 'KeyY') C.voice.holdCommand(false);   // (what you said still counts for a few seconds: the words arrive late)
   });
   window.addEventListener('blur', () => { keys.clear(); mouseDown = false; touch.fire = false; touch.jump = false; C.voice.pushToTalk(false); });
 
@@ -2994,6 +3011,7 @@
         if (n.type === 'meatblob') { const s = 1 + Math.sin(n.t * (3 + n.speed)) * 0.08; md.scale.set(1 / s, s, 1 / s); }
         else if (n.type === 'jelly') { const s = 1 + Math.sin(n.t * 2) * 0.1; md.scale.set(s, 1 / s, s); }
         else if (n.type === 'mooncrab') md.position.y = Math.abs(Math.sin(n.t * 12)) * 0.08 * Math.min(1, n.speed);
+        else if (n.type === 'giantbaby') { md.rotation.z = Math.sin(n.t * 0.5) * 0.08; md.rotation.x = Math.sin(n.t * 0.37) * 0.07; md.position.y = Math.sin(n.t * 0.6) * 1.5; }   // floating: a slow bob and sway
         else if (n.type === 'skyserpent') { md.rotation.z = Math.sin(n.t * 4) * 0.25; md.rotation.x = Math.sin(n.t * 2) * 0.15; }
       }
       // Following you: green sparkles. Angry: red. Stunned: yellow. Dancing: pink.
