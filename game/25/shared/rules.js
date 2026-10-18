@@ -223,6 +223,40 @@
   MM.SHIP_BOOST = 1.6;   // Shift in a ship: the afterburner
   // Tiny (the Miniaturizer): how small, and how slow it makes you.
   MM.TINY = { scale: 0.15, speed: 0.5, dmg: 0.25 };
+  // ----- Ships: everyone who has one flies their own -----
+  // seats: [x, y, z] from the pilot (the pilot is seat 0, at the ship's middle, facing +z).
+  // A ship holds that many; get out and it stays parked where you left it.
+  MM.SHIPS = {
+    cruiser:   { name: "Rick's Space Cruiser", seats: [[0, 0, 0], [0.9, 0, 0], [-0.45, 0.25, -1.25], [0.45, 0.25, -1.25]] },
+    gunship:   { name: "Space Beth's gunship", seats: [[0, 0, 0], [0, 0.3, -1.4]] },
+    fedship:   { name: 'Federation cruiser', seats: [[0, 0, 0], [-1.0, 0, -0.7], [1.0, 0, -0.7], [0, 0, -1.4]] },
+    blackship: { name: "Evil Morty's ship", seats: [[0, 0, 0], [0.9, 0, 0]] },
+    minivan:   { name: "Jerry's rocket minivan", seats: [[0, 0, 0], [0.95, 0, 0], [0, 0, -1.2], [0.95, 0, -1.2], [0, 0, -2.3], [0.95, 0, -2.3]] },
+    pinkship:  { name: "Summer's hover-coupe", seats: [[0, 0, 0], [0.9, 0, 0]] },
+    mortyship: { name: "Morty's starter pod", seats: [[0, 0, 0], [0, 0.2, -1.15]] },
+    bethship:  { name: "Beth's flying horse ambulance", seats: [[0, 0, 0], [0.95, 0, 0], [0.45, 0.1, -1.8]] },
+    saucer:    { name: 'Flying saucer', seats: [[0, 0, 0], [-1.15, 0, -0.45], [1.15, 0, -0.45]] },
+  };
+  MM.shipKind = arch => ({ genius: 'cruiser', picklerick: 'cruiser', spacebeth: 'gunship', trooper: 'fedship', evilmorty: 'blackship', joe: 'minivan', teen: 'pinkship', sidekick: 'mortyship', surgeon: 'bethship' })[arch] || 'saucer';
+  // Where a seat is, for a ship at (x, y, z) facing r.
+  MM.seatAt = (kind, seat, x, y, z, r) => {
+    const S = (MM.SHIPS[kind] || MM.SHIPS.saucer).seats[seat] || [0, 0, 0], c = Math.cos(r), s = Math.sin(r);
+    return { x: x + S[0] * c + S[2] * s, y: y + S[1], z: z - S[0] * s + S[2] * c };
+  };
+  // "Keep Summer safe": a Rick's ship with a Summer in it, left parked while he goes off.
+  MM.KSS = { leave: 12, reach: 18, every: 0.6, lines: {
+    kill: ['Keep Summer safe.', 'Threat neutralised. Summer is safe.', 'Keeping Summer safe.'],
+    stun: ['Understood. Non-lethal. Summer is safe.', 'Paralysis is not killing. Summer is safe.', 'He will walk again. Eventually.'],
+    peace: ['Psychological warfare engaged. Summer is safe.', 'I have negotiated a lasting peace. Summer is safe.', 'Nobody was hurt. Some were deeply moved.'],
+  } };
+  // ----- Transformations (batch 3) -----
+  // A form changes how you move, your size and what you can do, for a while.
+  MM.FORMS = {
+    turkey: { name: 'Turkey', speed: 1.3, scale: 0.6, weapon: 'peck', noGadgets: true, dur: 180 },
+    carrot: { name: 'Carrot', speed: 0.4, scale: 0.55, jump: 0.6, noWeapon: true, noGadgets: true, dur: 25 },
+    ferro: { name: 'Ferrofluid', speed: 1.35, armour: 0.5, dur: 150 },
+  };
+  MM.FUSE = { dur: 90 };   // Jerricky (the Fusion Device) and Kuato (the pool)
   // Tiny Rick: a Rick in a teenage clone body. Smaller, quicker, bouncier. Inside, the old one wants out.
   MM.TINYRICK = { scale: 0.62, speed: 1.2, jump: 1.25 };
   MM.TINYRICK_WHISPERS = ['(a whisper, from somewhere deep inside you) ...let me out...', '(deep inside) ...this is not a party... let me out...', 'TINY RICK! (...let me out...)', '(you hum a song. Inside, someone is screaming LET ME OUT.)'];
@@ -377,6 +411,11 @@
     souvenir: { at: 'giftshop', any: true, name: 'Buy a souvenir', cd: 240, effect: 'curio', curios: ['parkticket', 'rubenkidney', 'plumbus'], give: { k: 1 }, text: 'A souvenir from Anatomy Park. Nobody asks where the gift shop gets its stock.' },
     marrow: { at: 'marrowburger', any: true, name: 'Eat a Bone Marrow Burger', cd: 150, heal: 1, give: { f: 2 }, text: 'Bone marrow, on a bun. Locally sourced. Very, very locally.' },
     plaque: { at: 'plaquecandy', any: true, name: 'Get some Plaque Candy Floss', cd: 150, effect: 'sugar', give: { f: 1 }, text: 'Pink, fluffy, scraped off something. You feel very fast for a little while.' },
+    standup:  { at: 'funnybone', any: true, name: 'Do five minutes at the Funny Bone', cd: 150, give: { k: 3 }, texts: ['"What do you call a park inside a dead guy? A wake-y wake-y theme park." Groans. One bacterium laughed.', '"I asked the liver for directions. It said: bile be right with you." A standing ovation from the gallbladder.', '"Anatomy Park: the only park where the rides are organ-ic." Someone threw a kidney stone.', 'You did a bit about Hepatitis C. Hepatitis C was in the audience. It went fine, actually.'] },
+    tastebud: { at: 'tastebuds', any: true, name: 'Eat at the Taste Bud Food Court', cd: 120, heal: true, give: { g: 1 }, texts: ['A bone marrow burger, enzyme fries and a plaque shake. You feel... healthier? Somehow.', 'The sweet taste buds served you dessert. The bitter ones judged you. All of it delicious.'] },
+    tapeworm: { at: 'tapewormzoo', any: true, name: 'Feed the tapeworm', cd: 150, give: { g: 2 }, text: 'It ate the snack, your sleeve and most of your patience. It is very cute about it.' },
+    braintour: { at: 'brainzone', any: true, name: 'Take the memory tour', cd: 200, effect: 'curio', curios: ['parkticket', 'rubenkidney', 'plumbus'], give: { c: 1 }, text: 'Ruben\'s memories: a lot of Christmases, a lot of beards, one weird night with a Rick. You took a souvenir.' },
+    deepbreath: { at: 'lungs', any: true, name: 'Take a really deep breath', cd: 100, effect: 'sugar', give: {}, text: 'You breathed in a whole lung. You feel unstoppable, and a bit dizzy. Run!' },
     heartbeat: { at: 'bigheart', any: true, name: 'Put your hand on the Heart', cd: 200, heal: 1, give: { c: 2 }, text: 'Ba-dum. Ba-dum. The whole park beats with it. Somewhere, Ruben is still a little bit alive. Maybe.' },
     borrowgun: { at: 'workbench', any: true, notFor: ['genius'], name: "Borrow Rick's portal gun", cd: 600, give: {}, effect: 'borrowgun', text: "You took Rick's portal gun off the bench. Two charges. Do not tell him. Seriously." },
     gaze:    { at: 'curveedge', any: true, name: 'Look back at the Curve', cd: 300, give: { m: 1, c: 2 }, text: 'From out here the Curve is just a golden spiral of little lights. Every one of them thinks it is the centre of everything.' },
@@ -403,6 +442,11 @@
     // Things you carry (they go in your inventory as curios): use them, give them, trade them,
     // or use them on someone (shared/curios.js, Host.onUseOn).
     miniaturizer: { cat: 'item', name: 'Miniaturizer', curio: 'miniaturizer', cost: { s: 6, c: 3 }, max: 1, at: 'workbench', desc: 'Shrinks you (or someone who lets you) to the size of a bug, and back. Tiny, you fit into the Mega Gargantuans\' land in Earth\'s woods.' },
+    turkeypill: { cat: 'item', name: 'Turkey Pill', curio: 'turkeypill', cost: { f: 3, g: 1 }, max: 3, at: 'workbench', desc: 'Become a turkey for three minutes (or slip one to a friend who agrees).' },
+    ferrofluid: { cat: 'item', name: 'Ferrofluid Injection', curio: 'ferrofluid', cost: { s: 6, c: 2 }, max: 2, at: 'workbench', desc: 'Liquid metal body for a while: silver, fast, hits do half damage.' },
+    carserum: { cat: 'item', name: 'Car-ification Serum', curio: 'carserum', cost: { s: 8, p: 2 }, max: 2, at: 'workbench', desc: 'Turns a Morty into a car he drives himself. B turns him back.' },
+    fusiondevice: { cat: 'item', name: 'Fusion Device', curio: 'fusiondevice', cost: { g: 4, c: 3, m: 1 }, max: 1, at: 'workbench', desc: 'Fuse with someone who agrees: one body, two heads, 90 seconds. You walk, they shoot.' },
+    carrot:   { cat: 'gadget', name: 'Carrot Ray Shot', cost: { s: 3, f: 1 }, max: 3, desc: 'Press 9: one shot that turns whoever it hits into a carrot for a while.' },
     armserum: { cat: 'item', name: 'Muscle Memory Serum', curio: 'armserum', cost: { g: 2, m: 2, c: 1 }, max: 3, at: 'workbench', onlyFor: ['genius'], desc: 'A dead warrior\'s arm, in a syringe. Give it to a Morty, or use it on one (they have to say yes).' },
     // Rick's own body upgrades (only Ricks know how): robot limbs and a built-in scanner.
     // Pickle Rick's rat suit, built from rat parts and scrap (in a sewer, anywhere really).
@@ -433,9 +477,9 @@
     quantum:  { cat: 'ship', name: 'Quantum Drive', cost: { c: 12, g: 8, p: 12, f: 8 }, at: 'shipyard', needs: 'drive', desc: 'Enable light speed travel for instant interstellar jumps.' },
   };
   MM.RECIPE_IDS = Object.keys(MM.RECIPES);
-  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal', 'freeze', 'chalk'];
+  MM.GADGET_IDS = ['grenade', 'turret', 'shrink', 'meeseeks', 'timecrystal', 'freeze', 'chalk', 'carrot'];
   // Recipes everyone knows, whoever they are.
-  MM.COMMON = ['meeseeks', 'megabrain', 'miniaturizer', 'armserum'];
+  MM.COMMON = ['meeseeks', 'megabrain', 'miniaturizer', 'armserum', 'turkeypill', 'ferrofluid', 'carserum', 'fusiondevice', 'carrot'];
   MM.CATS = { gadget: 'Gadgets', item: 'Things to carry, give and use', self: 'You', gun: 'Portal gun', ship: 'Ship' };
 
   // ---------- Who you are ----------
@@ -711,6 +755,7 @@
     talon:   { dmg: 24, cd: 0.55, melee: 3.6 },
     scalpel: { dmg: 15, cd: 0.45, melee: 2.9 },
     slap:    { dmg: 7,  cd: 0.4,  melee: 2.8 },
+    peck:    { dmg: 8,  cd: 0.35, melee: 2.2 },   // a turkey
     punch:   { dmg: 20, cd: 0.75, melee: 3.4, knock: 9 },
     claws:   { dmg: 16, cd: 0.4,  melee: 3.0 },
   };
