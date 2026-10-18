@@ -18,6 +18,7 @@
     }
     return list;
   };
+  MM.GRAVE_EARTHS = ['suburbia', 'splitearth', 'fedearth', 'zigerion'];
   MM.TEAM_MAX = 8; MM.TEAM_REACH = 14;
   MM.AGGRO_RANGE = 9;
   MM.LEASH = 26;               // protocol version; client and server must match
@@ -53,7 +54,11 @@
     { id: 'backdoor', dim: 'suburbia', name: 'Back door (into the kitchen)', x: -19.7, z: 12.05, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'smithhouse', x: 5.97, z: 5.6 } },
     { id: 'sidedoor', dim: 'suburbia', name: "Door from the garage into the house (Rick's room)", x: -16.3, z: 24.5, r: 0.8, h: 2.2, model: 'lm_marker', door: { dim: 'smithhouse', x: -8.2, z: 3.84 } },
     { id: 'backyard', dim: 'suburbia', name: 'The back yard', x: -28.5, z: 21.5, r: 8.5, h: 3, model: 'lm_backyard', rot: Math.PI / 2 },
-    { id: 'graves', dim: 'suburbia', name: 'Two graves by the shed', x: -33.9, z: 25.8, r: 1.4, h: 1, model: 'lm_marker' },
+    // The graves are only where Rick and Morty took the dead ones' places ("Rick Potion #9"):
+    // Earth C-137 and the C-137s that came after it (the split timeline, the Federation's, the
+    // Zigerions' copy). Not on other Earths, nor where it never happened (Cronenberged Earth
+    // and its cure, 65 million years ago, everyone's home Earth). See MM.GRAVE_EARTHS.
+    { id: 'graves', dim: 'suburbia', name: 'Two graves by the shed', x: -33.9, z: 25.8, r: 1.4, h: 1, model: 'lm_graves', rot: Math.PI / 2 },
     // Inside the Smith house: two floors, each a Mojulo floor plan (shared/interiors.js has the
     // plans). fy: the floor a spot is on (4.3 = upstairs). Spots are marked with a ring.
     { id: 'smithexit', dim: 'smithhouse', name: 'Front door', x: 0, z: -6.3, r: 0.8, h: 2.2, fy: 0, model: 'lm_marker', door: { dim: 'suburbia', x: -6.3, z: 17.1 } },
@@ -191,6 +196,12 @@
     { id: 'froopyslide', dim: 'froopy', name: 'The Big Froopy Slide', x: 26, z: -26, r: 6, h: 10, model: 'lm_froopyslide' },
     { id: 'pizzacounter', dim: 'pizzaworld', name: 'Pizza-Phone-Chair Exchange', x: 0, z: -30, r: 6, h: 6, model: 'lm_pizzacounter', rot: 0 },
     { id: 'raidergarage', dim: 'wasteland', name: "The Raiders' Garage", x: 0, z: -34, r: 8, h: 7, model: 'lm_raidergarage', rot: 0 },
+    // The Ring of Death, in the middle of the Death Stalker camp ("Rickmancing the Stone"): a
+    // ring of spiked scrap walls with a gate on each side and the crowd up on the stands. Step
+    // in and fight three rounds, the champion last (Host.startBout). Strong-arm Morty lives here.
+    { id: 'deathring', dim: 'wasteland', name: 'The Ring of Death', x: 0, z: 0, r: 12.5, h: 4, model: 'lm_deathring', rot: 0, bout: true, sign: { text: 'RING OF DEATH', y: 6.15, z: 14.15, w: 6.6 } },
+    // Death Stalker cars, parked by the garage with the keys in. Take one (F) and drive.
+    { id: 'carlot', dim: 'wasteland', name: 'Death Stalker cars', x: 18, z: -30, r: 3.2, h: 1.8, model: 'lm_carlot', rot: -Math.PI / 2, car: true, sign: { text: 'TAKE A CAR', y: 2.6, z: -2.62, w: 3.2 } },
     { id: 'unitycore', dim: 'unityworld', name: 'The Hive Core', x: 0, z: -34, r: 6, h: 14, model: 'lm_unitycore' },
     { id: 'formsoffice', dim: 'federation', name: 'Bureau of Forms', x: 0, z: -40, r: 8, h: 9, model: 'lm_formsoffice', rot: 0 },
     { id: 'geartemple', dim: 'gearworld', name: 'Temple of the Great Gear', x: 0, z: -36, r: 8, h: 12, model: 'lm_geartemple', rot: 0 },
@@ -202,6 +213,12 @@
   MM.LANDMARK_BY_ID = {};
   for (const l of MM.LANDMARKS) MM.LANDMARK_BY_ID[l.id] = l;
   MM.SHIP_BOOST = 1.6;   // Shift in a ship: the afterburner
+  // A Death Stalker car (Post-Apocalyptic Earth): top speed, Shift for the nitro, reversing,
+  // how hard a ram hits (damage per m/s, at 8 m/s and up), and armour (the share of hits that
+  // gets through to you). It stays in its world: travel and it is parked.
+  MM.CAR = { speed: 22, boost: 1.45, rev: 8, ram: 1.5, ramMin: 8, armour: 0.5, dims: ['wasteland'] };
+  // The Ring of Death: three rounds, the champion last. A round's fighters, and what winning gives.
+  MM.BOUT = { r: 11.5, rounds: [['gladiator', 2], ['gladiator', 3], ['ringchamp', 1]], give: { s: 12, c: 3, k: 4 }, leave: 3 };
   MM.USE_RADIUS = 4;   // how close to a landmark's wall you must be to use it
   // A landmark counts as a recipe's station if it is that station or stands in for it.
   MM.isAt = (l, at) => l.id === at || l.alias === at;
@@ -626,6 +643,8 @@
     rifle:   { dmg: 11, cd: 0.24, speed: 85, range: 85, color: '#ff5a5a' },
     toy:     { dmg: 5,  cd: 0.45, speed: 45, range: 45, color: '#ff8fd0' },
     lasers:  { dmg: 18, cd: 0.2,  speed: 95, range: 90, color: '#5ff8ff' },
+    carguns: { dmg: 9,  cd: 0.13, speed: 95, range: 70, color: '#ffb03a' },   // the twin guns on a Death Stalker car's hood
+    stalkergun: { dmg: 6, cd: 0.7, speed: 70, range: 34, color: '#ff7a3a' },  // a Death Stalker shooting from his car
     talon:   { dmg: 24, cd: 0.55, melee: 3.6 },
     scalpel: { dmg: 15, cd: 0.45, melee: 2.9 },
     slap:    { dmg: 7,  cd: 0.4,  melee: 2.8 },
