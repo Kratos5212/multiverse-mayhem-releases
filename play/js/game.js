@@ -882,7 +882,7 @@
         break;
       }
       case 'world':
-        if (e.end) { UI.toast(e.name + ' is over'); break; }
+        if (e.end) { if (e.text) UI.banner(e.name + ' is over', e.text); else UI.toast(e.name + ' is over'); if (G.patient) G.patient = false; break; }
         UI.banner(e.name, e.text);
         UI.chatLine('', '', e.name + ' ' + e.text, true);
         C.sfx('portal', 0.6);
@@ -910,6 +910,33 @@
         break;
       }
       case 'car': { const p = posOf(e.id); if (p) sfxAt(e.on ? 'craft' : 'jump', p.x, p.z); break; }
+      case 'tiny': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 0.4, p.z, '#7ad8ff', 24, 4, 0.5, 0.5, 1); sfxAt('shrink', p.x, p.z); } break; }
+      case 'gift': { const p = posOf(e.id); if (p) fx.burst(p.x, p.y + 1.4, p.z, '#ffd84d', 12, 3, 0.4, 0.4, 1); break; }
+      case 'tinyrick': {
+        const p = posOf(e.id);
+        if (p) { fx.burst(p.x, p.y + 1, p.z, '#5dff8a', 30, 5, 0.6, 0.6, 1); sfxAt(e.on ? 'shrink' : 'jump', p.x, p.z); }
+        if (e.on && e.id !== G.myId) UI.feed([{ t: nameOf(e.id), c: '#a9cbd6' }, ' is ', { t: 'TINY RICK!', c: '#5dff8a' }]);
+        break;
+      }
+      // A lovestruck local hugs someone (hearts), a field puts someone back together.
+      case 'hug': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1.6, p.z, '#ff6fb0', 10, 2.5, 0.5, 0.3, 1); sfxAt('chat', p.x, p.z); } break; }
+      case 'reform': {
+        const p = e.n ? G.npcs.get(e.n) : posOf(e.id);
+        if (p) { fx.burst(p.x, p.y + 1, p.z, '#bfe4ff', 36, 6, 0.7, 0.6, 1); sfxAt('warp', p.x, p.z); }
+        break;
+      }
+      case 'dpunch': {
+        const p = posOf(e.id);
+        if (p) { fx.burst(p.x + Math.sin(p.r || 0) * 1.2, p.y + 1.3, p.z + Math.cos(p.r || 0) * 1.2, '#ff3a3a', 20, 5, 0.4, 0.4, 1); sfxAt('bite', p.x, p.z); }
+        if (e.id === G.myId || e.v === G.myId) G.shake = 0.35;
+        break;
+      }
+      case 'dpstep': {
+        const p = e.n ? G.npcs.get(e.n) : posOf(e.id);
+        if (p) numAt(p.x, p.y + 2.4, p.z, e.s > 0 ? String(e.s) : '☠', '#ff3a3a', e.s <= 1);
+        if (e.id === G.myId) { G.dpSteps = e.s; if (e.s > 0) { UI.toast('☠ ' + e.s + (e.s === 1 ? ' step' : ' steps') + ' left. Stand still!', 1500); C.sfx('bite', 0.6); } else G.dpSteps = 0; }
+        break;
+      }
       case 'warp': { const p = posOf(e.id); if (p) { fx.burst(p.x, p.y + 1, p.z, '#5ff8ff', 40, 10, 0.8, 0.6, 0); sfxAt('warp', p.x, p.z); } break; }
     }
   }
@@ -987,6 +1014,20 @@
     const me = G.me;
     if (e.k === 'race') { onRace(e); return; }
     if (e.k === 'hmenu') { openDefenses(e.own); return; }
+    if (e.k === 'trask') {
+      C.sfx('chat', 0.6);
+      openModal('offer', e.name + ' wants to trade', box => {
+        box.append(el('p', { text: 'Swap materials, Schmeckles, gadgets or curios. Nothing changes hands until you both say OK.' }),
+          el('div', { class: 'chips' }, el('button', { class: 'btn go', onclick: () => { send({ t: 'tr', op: 'join', id: e.id }); UI.closeModal(); } }, 'Trade'),
+            el('button', { class: 'btn', onclick: () => UI.closeModal() }, 'No thanks')));
+      });
+      return;
+    }
+    if (e.k === 'trade') {
+      if (e.end) { G.trade = null; if (G.modal === 'trade') UI.closeModal(); if (e.done) { UI.banner('Trade done', 'Check your inventory (I).'); C.sfx('cheer', 0.6); } else if (e.why) UI.toast(e.why, 3000); return; }
+      openTrade(e);
+      return;
+    }
     if (e.k === 'arm') {
       if (e.on) { UI.banner('Your arm is not your arm any more', 'She is huge, she punches, and she wants revenge. Take her to Post-Apocalyptic Earth: she has bounties.'); G.shake = 0.5; C.sfx('shrink'); }
       else { UI.banner('She got what she wanted', e.name + ' is dead. The arm goes quiet, then shrinks back. It is just your arm again. ' + Object.keys(e.give).map(k => e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ')); G.bounty = null; C.sfx('cheer'); }
@@ -998,6 +1039,9 @@
       return;
     }
     if (e.k === 'armsay') { UI.toast('🦾 ' + e.text, 3500); return; }
+    if (e.k === 'patient') { G.patient = true; UI.banner('You are Patient Zero', 'The love potion got loose, and everyone is in love with you. Run! Their hugs slow you down.'); C.sfx('cheer', 0.6); return; }
+    if (e.k === 'dp') { G.dpSteps = e.s; UI.banner('Five-Step Death Punch!', e.by + ' hit you with it. Five more steps and you drop. Stand still until it wears off (a minute)... or make them count.'); G.shake = 0.5; return; }
+    if (e.k === 'dpcd') { G.dpReadyAt = now() + e.t; return; }
     if (e.k === 'bout') {
       if (e.won) { UI.banner('You won in the Ring of Death!', 'The crowd chants your name. ' + Object.keys(e.give).map(k => e.give[k] + ' ' + MM.MATERIALS[k].icon).join(' ') + (e.won > 1 ? ' · ' + e.won + ' wins' : '')); C.sfx('cheer'); }
       else if (e.lost) { UI.banner('Out of the Ring', e.why || 'You lost.'); }
@@ -1163,7 +1207,90 @@
     n.bubble = b; n.bubbleT = 5;
   }
 
+  // ----- Between players: a menu, giving, trading, using something on someone -----
+  const itemRows = () => {
+    const y = G.you, keys = [];
+    for (const k of MM.MAT_IDS) if (y.inv[k] > 0) keys.push(k);
+    for (const g of MM.GADGET_IDS) if (y.inv[g] > 0) keys.push(g);
+    for (const q of MM.CURIO_IDS) if (y.inv['q:' + q] > 0) keys.push('q:' + q);
+    return keys;
+  };
+  // Pick amounts of what you have: a row per thing, - and + (shift: 10 at a time).
+  function itemPicker(sel, onChange) {
+    const list = el('div', { class: 'list' }), keys = itemRows();
+    if (!keys.length) list.append(el('p', { class: 'note', text: 'You have nothing to hand over.' }));
+    for (const k of keys) {
+      const have = G.you.inv[k] || 0, num = el('b', { text: String(sel[k] || 0) });
+      const step = (d, e) => { sel[k] = Math.max(0, Math.min(have, (sel[k] || 0) + d * (e && e.shiftKey ? 10 : 1))); if (!sel[k]) delete sel[k]; num.textContent = String(sel[k] || 0); if (onChange) onChange(); };
+      list.append(el('div', { class: 'row' }, el('div', { class: 't' }, el('b', { text: MM.itemName(k) }), el('small', { text: 'You have ' + have })),
+        el('div', { class: 'chips' }, el('button', { class: 'btn', onclick: e => step(-1, e) }, '−'), num, el('button', { class: 'btn', onclick: e => step(1, e) }, '+'))));
+    }
+    return list;
+  }
+  const bagText = g => Object.keys(g || {}).map(k => g[k] + ' ' + MM.itemName(k)).join(', ') || 'nothing';
+  function openPlayerMenu(q) {
+    openModal('player', q.info.name, box => {
+      box.append(el('p', { class: 'note', text: (MM.ARCHETYPES[q.info.arch] ? MM.ARCHETYPES[q.info.arch].name : '') + ' from ' + (q.info.home || '?') + '. Stay close (' + MM.TRADE_RANGE + ' m).' }));
+      const usable = MM.CURIO_IDS.filter(c => MM.CURIOS[c].on && G.you.inv['q:' + c] > 0);
+      box.append(el('div', { class: 'chips' },
+        el('button', { class: 'btn go', onclick: () => { send({ t: 'tr', op: 'ask', id: q.info.id }); UI.closeModal(); } }, '🤝 Trade'),
+        el('button', { class: 'btn go', onclick: () => openGive(q) }, '🎁 Give'),
+        el('button', { class: 'btn', onclick: () => { send({ t: 'tm', op: 'inv', id: q.info.id }); UI.closeModal(); } }, 'Invite to team')));
+      box.append(el('h3', { text: 'Use something on ' + q.info.name }));
+      const list = el('div', { class: 'list' });
+      for (const c of usable) {
+        const Q = MM.CURIOS[c];
+        list.append(el('div', { class: 'row' }, el('span', { class: 'emo', text: Q.icon }), el('div', { class: 't' }, el('b', { text: Q.name }), el('small', { text: Q.on === 'ask' ? 'They have to say yes. ' + Q.desc : Q.on === 'hurt' ? 'Only if you both have fights on. ' + Q.desc : Q.desc })),
+          el('button', { class: 'btn go', onclick: () => { send({ t: 'uo', id: q.info.id, q: c }); UI.closeModal(); } }, 'Use on them')));
+      }
+      if (!usable.length) list.append(el('p', { class: 'note', text: 'Nothing you carry can be used on someone. Snacks, potions, the Miniaturizer and the Muscle Memory Serum can.' }));
+      box.append(list);
+    });
+  }
+  function openGive(q) {
+    const sel = {};
+    openModal('give', 'Give to ' + q.info.name, box => {
+      box.append(itemPicker(sel), el('div', { class: 'chips' }, el('button', { class: 'btn go', onclick: () => { if (Object.keys(sel).length) send({ t: 'gv', id: q.info.id, items: sel }); UI.closeModal(); } }, 'Give')));
+    });
+  }
+  // A trade: your side (pick it), their side (see it), both OK. Any change un-OKs both.
+  function openTrade(e) {
+    const me = G.myId, mine = e.a === me ? e.ga : e.gb, theirs = e.a === me ? e.gb : e.ga, them = e.a === me ? e.bn : e.an, other = e.a === me ? e.b : e.a;
+    G.trade = { sel: Object.assign({}, mine) };
+    const sel = G.trade.sel;
+    openModal('trade', 'Trading with ' + them, box => {
+      const okMe = e.ok.includes(me), okThem = e.ok.includes(other);
+      box.append(el('p', { text: them + ' gives: ' + bagText(theirs) + (okThem ? ' ✓ (ready)' : '') }));
+      box.append(el('h3', { text: 'You give: ' + bagText(mine) + (okMe ? ' ✓' : '') }));
+      let t = null;
+      box.append(itemPicker(sel, () => { clearTimeout(t); t = setTimeout(() => send({ t: 'tr', op: 'set', items: sel }), 250); }));
+      box.append(el('p', { class: 'note', text: 'Nothing changes hands until you both press OK. Changing your side takes both OKs back.' }),
+        el('div', { class: 'chips' }, el('button', { class: 'btn go', disabled: okMe ? '' : null, onclick: () => send({ t: 'tr', op: 'ok' }) }, okMe ? 'Waiting for ' + them : 'OK, trade'),
+          el('button', { class: 'btn', onclick: () => UI.closeModal() }, 'Call it off')));
+    }, () => { if (G.trade) { G.trade = null; send({ t: 'tr', op: 'cancel' }); } });
+  }
   function openOffer(e) {
+    if (e.ask) {
+      const Q = MM.CURIOS[e.ask];
+      openModal('offer', e.name + ' wants to use something on you', box => {
+        box.append(el('p', null, el('b', { text: Q.icon + ' ' + Q.name + ': ' }), Q.desc));
+        box.append(el('div', { class: 'chips' },
+          el('button', { class: 'btn go', onclick: () => { send({ t: 'ans', a: 1 }); UI.closeModal(); } }, 'Let them'),
+          el('button', { class: 'btn', onclick: () => { send({ t: 'ans', a: 0 }); UI.closeModal(); } }, 'No way')));
+      });
+      return;
+    }
+    if (e.dpunch) {
+      const fmt = m => Object.keys(m).map(k => m[k] + ' ' + MM.MATERIALS[k].icon + ' ' + MM.MATERIALS[k].name).join(', ');
+      openModal('offer', e.name + ': the Five-Step Death Punch', box => {
+        box.append(el('p', { text: 'One strike, right up close (8, or the fist button). Whoever you hit drops dead after five more steps. If they stand still for a minute, it wears off. Players only if you both have fights on.' }),
+          el('p', { text: 'Price: ' + fmt(e.want) }),
+          el('div', { class: 'chips' },
+            el('button', { class: 'btn go', onclick: () => { send({ t: 'ans', a: 1 }); UI.closeModal(); } }, 'Teach me'),
+            el('button', { class: 'btn', onclick: () => { send({ t: 'ans', a: 0 }); UI.closeModal(); } }, 'Maybe later')));
+      });
+      return;
+    }
     if (e.serum) {
       openModal('offer', e.name + ' has a syringe for you', box => {
         box.append(el('p', { text: 'Muscle Memory Serum: a dead warrior\'s arm, in a syringe. Your right arm becomes hers: huge, and with a mind of her own. She does the punching (no gun), drags you after whoever she wants to hit, and hunts bounties in Post-Apocalyptic Earth. She has someone she wants dead. Once she gets him, she lets go.' }),
@@ -1209,6 +1336,7 @@
     mk('timecrystal', '5', 'Time', () => useGadget('timecrystal'));
     mk('freeze', '6', 'Freeze', () => useGadget('freeze'));
     mk('chalk', '7', 'Chalk', () => useGadget('chalk'));
+    mk('dpunch', '8', 'Death Punch', () => deathPunch());
     mk('items', 'I', 'Items', () => openInventory());
     mk('pair', 'R', 'Portals', () => shootPair());
     mk('scan', 'X', 'Scan', () => scan());
@@ -1231,6 +1359,7 @@
       slots[g].classList.toggle('empty', !(y.inv[g] > 0));
     }
     slots.scan.hidden = !(G.st && G.st.scanner);
+    slots.dpunch.hidden = !(G.prog && G.prog.dpunch);
     const canPair = !!(G.prog && MM.canPair(profile.arch, G.prog.up));
     slots.pair.hidden = !canPair; $('tPair').hidden = !canPair;
     const pcs = MM.pairColors(profile.look);
@@ -1284,7 +1413,7 @@
     for (const p of G.players.values()) test(p.x, p.y + 1, p.z, 1.0);
     for (const n of G.npcs.values()) test(n.x, n.y + 0.8, n.z, 1.1);
     for (let t = 3; t < best; t += 1.5) { if (o.y + d.y * t < MM.heightAt(G.dimId, o.x + d.x * t, o.z + d.z * t)) { best = t; break; } }
-    const sc = (G.you && (G.you.fx & 8)) ? 0.5 : 1;
+    const sc = (G.you && (G.you.fx & 16384)) ? MM.TINY.scale : ((G.you && (G.you.fx & 8)) ? 0.5 : 1) * ((G.you && (G.you.fx & 32768)) ? MM.TINYRICK.scale : 1);
     const tx = o.x + d.x * best - G.me.x, ty = o.y + d.y * best - (G.me.y + 1.35 * sc), tz = o.z + d.z * best - G.me.z;
     const l = Math.hypot(tx, ty, tz) || 1;
     return { dx: tx / l, dy: ty / l, dz: tz / l };
@@ -1312,6 +1441,16 @@
     if (g === 'grenade') { const l = Math.hypot(a.dx, a.dz) || 1; a.dx /= l; a.dz /= l; a.dy = 0; }
     G.me.yaw = G.camYaw; G.me.aimT = 1;
     send(Object.assign({ t: 'g', g }, a));
+  }
+  // The Five-Step Death Punch (learned from Liu Sin in Downtown): a strike right up close.
+  function deathPunch() {
+    if (!canAct() || !(G.prog && G.prog.dpunch)) return;
+    if (G.you.ship || G.you.car) { UI.toast('Get out first.'); return; }
+    if (now() < (G.dpReadyAt || 0)) { UI.toast('Breathe. The punch is ready in ' + Math.ceil(G.dpReadyAt - now()) + ' s.'); return; }
+    G.me.yaw = G.camYaw; G.me.aimT = 1;
+    send({ t: 'dp', r: Math.atan2(Math.sin(G.camYaw), Math.cos(G.camYaw)) });
+    G.dpReadyAt = now() + 1.5;
+    C.sfx('ability');
   }
   function ability() {
     if (!canAct()) return;
@@ -1355,6 +1494,16 @@
     send({ t: 'ship', on: !G.you.ship });
   }
   // What F does here: talk to a local, then a landmark, then the kiosk.
+  // Another player close enough to trade with, give to or use something on.
+  function nearestPlayer(range) {
+    let best = null, bd = (range || 2.8) ** 2;
+    for (const q of G.players.values()) {
+      if (!q.av.root.visible || q.info.bot) continue;
+      const d = (q.x - G.me.x) ** 2 + (q.z - G.me.z) ** 2;
+      if (d < bd) { bd = d; best = q; }
+    }
+    return best;
+  }
   function nearestLocal() {
     let best = null, bd = 4.2 * 4.2;
     for (const n of G.npcs.values()) {
@@ -1386,6 +1535,8 @@
     if (G.riders && G.riders.has(G.myId)) { send({ t: 'fun', a: 'off' }); return; }
     if (G.me.sit) { G.me.sit = null; return; }
     if (G.you.car) { send({ t: 'car', on: false }); return; }   // out of the car
+    const pq = nearestPlayer();
+    if (pq) { openPlayerMenu(pq); return; }
     const lf = nearLandmark();
     if (lf && (lf.ride || lf.gallery || lf.game) && !tasksAt(lf).length) { funAt(lf); return; }
     const n = nearestLocal();
@@ -1589,10 +1740,10 @@
     houseFx.grid.visible = G.house.g > t;
   }
 
-  function openModal(kind, title, build) {
+  function openModal(kind, title, build, onClose) {
     if (document.pointerLockElement) document.exitPointerLock();
     G.modal = kind;
-    UI.modal(title, build, () => { G.modal = null; });
+    UI.modal(title, build, () => { G.modal = null; if (onClose) onClose(); });
   }
   // The Central Finite Curve: every reality where Rick is the smartest being, walled off
   // from the rest. Worlds sit inside the dome; the few outside it float beyond the wall.
@@ -1813,18 +1964,18 @@
           const afford = Object.keys(cost).every(k => (y.inv[k] || 0) >= cost[k]);
           const L = R.at ? MM.LANDMARK_BY_ID[R.at] : null;
           const atPlace = !L || (here && here.id === L.id);
-          const owned = cat === 'gadget' ? (id === 'fluid' ? 0 : y.inv[id] || 0) : pg.up[id] ? 1 : 0;
-          const full = cat === 'gadget' && (id === 'fluid' ? y.ch >= y.chMax : owned >= R.max);
+          const owned = cat === 'gadget' ? (id === 'fluid' ? 0 : y.inv[id] || 0) : cat === 'item' ? y.inv['q:' + R.curio] || 0 : pg.up[id] ? 1 : 0;
+          const full = (cat === 'gadget' || cat === 'item') && (id === 'fluid' ? y.ch >= y.chMax : owned >= R.max);
           const costText = Object.keys(cost).map(k => cost[k] + MM.MATERIALS[k].icon).join(' ');
           const where = L ? L.name + ', ' + MM.DIM_BY_ID[L.dim].name : 'anywhere';
           let label = 'Build', ok = !why && afford && atPlace && !full;
-          if (pg.up[id] && cat !== 'gadget') label = 'Owned';
+          if (pg.up[id] && cat !== 'gadget' && cat !== 'item') label = 'Owned';
           else if (full) label = 'Full';
           else if (why) label = 'Locked';
           else if (!atPlace) label = 'Go there';
           const sub = (why && !pg.up[id] ? why + ' · ' : '') + R.desc + ' · ' + costText + ' · ' + where;
           list.append(el('div', { class: 'row' + (why && !pg.up[id] ? ' locked' : '') },
-            el('div', { class: 't' }, el('b', { text: R.name + (cat === 'gadget' && owned ? ' (' + owned + ')' : '') }), el('small', { text: sub })),
+            el('div', { class: 't' }, el('b', { text: R.name + ((cat === 'gadget' || cat === 'item') && owned ? ' (' + owned + ')' : '') }), el('small', { text: sub })),
             el('button', { class: 'btn ' + (ok ? 'go' : ''), disabled: ok ? null : '', onclick: () => send({ t: 'cr', g: id }) }, label)));
         }
         box.append(list);
@@ -1902,7 +2053,8 @@
         const n = y.inv['q:' + q] || 0, Q = MM.CURIOS[q];
         if (!n) continue;
         cl.append(el('div', { class: 'row' }, el('span', { class: 'emo', text: Q.icon }), el('div', { class: 't' }, el('b', { text: Q.name + (n > 1 ? ' ×' + n : '') }), el('small', { text: Q.desc })),
-          el('button', { class: 'btn' + (Q.use ? ' go' : ''), onclick: () => { send({ t: 'uc', id: q }); } }, Q.use ? (Q.eat ? 'Use' : 'Try') : 'Look')));
+          el('div', { class: 'chips' }, el('button', { class: 'btn' + (Q.use ? ' go' : ''), onclick: () => { send({ t: 'uc', id: q }); } }, Q.use ? (Q.eat ? 'Use' : 'Try') : 'Look'),
+            Q.on ? el('button', { class: 'btn', onclick: () => { const pq = nearestPlayer(MM.TRADE_RANGE); if (pq) openPlayerMenu(pq); else UI.toast('Nobody close enough. Walk up to someone and press F.'); } }, 'On someone') : null)));
       }
       if (!cl.childNodes.length) cl.append(el('p', { class: 'note', text: 'Nothing yet. Curios glow in a column of light: walk into one to pick it up.' }));
       box.append(cl, el('h3', { text: 'Gadgets' }));
@@ -1921,7 +2073,7 @@
       const grid = el('div', { class: 'coll' });
       for (const q of MM.CURIO_IDS) {
         const Q = MM.CURIOS[q], have = found.includes(q);
-        const where = Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 3).join(', ');
+        const where = Q.how || Q.dims.map(d => MM.DIM_BY_ID[d].name).slice(0, 3).join(', ');
         grid.append(el('div', { class: 'cc' + (have ? '' : ' no'), title: have ? Q.name + ': ' + Q.desc : 'Somewhere in ' + where },
           el('span', { class: 'emo', text: have ? Q.icon : '?' }), el('small', { text: have ? Q.name : '???' }), el('i', { text: have ? '' : where })));
       }
@@ -2026,6 +2178,7 @@
       case 'Digit5': useGadget('timecrystal'); break;
       case 'Digit6': useGadget('freeze'); break;
       case 'Digit7': useGadget('chalk'); break;
+      case 'Digit8': deathPunch(); break;
       case 'KeyI': openInventory(); break;
       case 'KeyV': toggleView(); break;
       case 'KeyG': emoteBar(); break;
@@ -2209,7 +2362,7 @@
     const st = G.st || MM.statsOf(profile.arch, {});
     const inShip = !!(y && y.ship && st.ship), inCar = !!(y && y.car);
     // Same speed rules as the server (Host.speedOf), so you never get snapped back.
-    const mult = (fxb & 2 ? 1.8 : 1) * (fxb & 8 ? 0.75 : 1) * (fxb & 16 ? 0.6 : 1) * (fxb & 256 ? 0.5 : 1) * (fxb & 1024 ? 0.12 : 1);
+    const mult = (fxb & 16384 ? MM.TINY.speed : 1) * (fxb & 32768 && !inShip && !inCar ? MM.TINYRICK.speed : 1) * (fxb & 2 ? 1.8 : 1) * (fxb & 8 ? 0.75 : 1) * (fxb & 16 ? 0.6 : 1) * (fxb & 256 ? 0.5 : 1) * (fxb & 1024 ? 0.12 : 1);
     const shift = !chatOpen() && !UI.modalOpen() && (keys.has('ShiftLeft') || keys.has('ShiftRight'));
     me.sprinting = !inShip && !inCar && !dead && il > 0.3 && (shift || touch.sprint) && iz > -0.2;
     me.boosting = (inShip || inCar) && !dead && (shift || touch.sprint);   // Shift in the ship: afterburner; in a car: nitro
@@ -2260,7 +2413,7 @@
       me.vy += (climb * 12 - me.vy) * Math.min(1, dt * 4);
       me.grounded = false;
     } else if (jumpHeld && me.grounded && !inCar) {
-      me.vy = st.jump * (dim.quirk === 'bouncy' ? 1.6 : 1);
+      me.vy = st.jump * (dim.quirk === 'bouncy' ? 1.6 : 1) * (fxb & 32768 ? MM.TINYRICK.jump : 1);
       me.grounded = false;
       me.jumpLock = 0.25;
       C.sfx('jump', 0.4);
@@ -2391,15 +2544,16 @@
     // What F would do right here.
     if ((G.promptT -= dt) <= 0) {
       G.promptT = 0.2;
-      const n = nearestLocal(), l = n ? null : nearLandmark(), nk = !n && !l && nearKiosk();
-      const key = n ? 'n' + n.id : l ? 'l' + l.id : nk ? 'k' : '';
+      const pq = nearestPlayer(), n = pq ? null : nearestLocal(), l = n || pq ? null : nearLandmark(), nk = !n && !l && !pq && nearKiosk();
+      const key = pq ? 'p' + pq.id : n ? 'n' + n.id : l ? 'l' + l.id : nk ? 'k' : '';
       if (key !== G.promptKey) {
         G.promptKey = key;
         $('prompt').hidden = !key;
         $('tTalk').hidden = !key;
         $('prompt').textContent = '';
         const b = el('b', { text: isTouch ? 'TALK' : 'F' });
-        if (n) { $('prompt').append(b, ' Talk to ' + n.name); tLabel('tTalk', 'TALK'); }
+        if (pq) { $('prompt').append(b, ' ' + pq.info.name + ': trade, give, use something on them'); tLabel('tTalk', 'PLAYER'); }
+        else if (n) { $('prompt').append(b, ' Talk to ' + n.name); tLabel('tTalk', 'TALK'); }
         else if (l) {
           const dest = l.door ? MM.DIM_BY_ID[l.door.dim].name : '';
           $('prompt').append(b, ' ' + (l.door ? (dest === l.name ? 'Enter ' + dest : l.name + ' → ' + dest) : l.name));
@@ -2602,7 +2756,7 @@
     const tx = me.x, ty = me.y + 1.7 * sc + 0.2, tz = me.z;
     const cp = Math.cos(G.camPitch), sp = Math.sin(G.camPitch);
     const fx_ = Math.sin(G.camYaw) * cp, fy = -sp, fz = Math.cos(G.camYaw) * cp;
-    const dist = G.camDist * (0.7 + 0.3 * sc) * (MM.DIM_BY_ID[G.dimId].room ? 0.7 : 1) * (G.you && G.you.car ? 1.45 : 1);
+    const dist = G.camDist * (0.7 + 0.3 * sc) * (MM.DIM_BY_ID[G.dimId].room ? 0.7 : 1) * (G.you && G.you.car ? 1.45 : 1) * (G.you && (G.you.fx & 16384) ? 0.28 : 1);
     const rx = -Math.cos(G.camYaw), rz = Math.sin(G.camYaw);
     const sh = 0.55;
     // Pull the camera in when a prop is between it and the player.

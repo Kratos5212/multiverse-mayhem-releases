@@ -1,8 +1,8 @@
 {
- "build": 21,
- "date": "2026-10-18T09:08:51.699Z",
+ "build": 22,
+ "date": "2026-10-18T11:29:55.807Z",
  "game": {
-  "base": "game/21/",
+  "base": "game/22/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -181,13 +181,13 @@
    },
    {
     "p": "js/avatar.js",
-    "h": "0919c8165b425c034db75a976b8381908d7c00c702b59747173df9eb84dfb738",
-    "s": 67968
+    "h": "5a074708027df7f6c51c6b6c044e6354baf37f342ce368cd60bcef428de93fe8",
+    "s": 68230
    },
    {
     "p": "js/dims.js",
-    "h": "29ba2d511559e5fbdbbbddf89b3a7b281b8c5fc67333139ca386a2e212b51ae5",
-    "s": 296840
+    "h": "468546ef0f3248ed9b810da7b4d8ed0515584f3ef0899f856ccc020710efbb31",
+    "s": 304973
    },
    {
     "p": "js/fx.js",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "a94cef301d894c3b240bd50a0aa0f92ec805a938f5c1dfde8cec6f73c95d7b99",
-    "s": 167440
+    "h": "f7fde7dcf7fc197595fb7e5367d0fcba5018312f50e1880201ab3caf9212e4e1",
+    "s": 178754
    },
    {
     "p": "js/life.js",
@@ -231,8 +231,8 @@
    },
    {
     "p": "js/ui.js",
-    "h": "23a7d1a4708191094869035c35a8c3adcac48cad90528ebe52f8e28daa1abdec",
-    "s": 19767
+    "h": "47d8fd319186dddef145a67a25953271ceb006afd90d94b524bfb884c272f843",
+    "s": 19955
    },
    {
     "p": "js/vr.js",
@@ -241,18 +241,18 @@
    },
    {
     "p": "shared/cast.js",
-    "h": "580c5464021566ac16eb22cd086ed31f613906255dbfcd9d87bfd4bc4762803f",
-    "s": 8549
+    "h": "590f6132fb1f2f789faf18c524ab19be654570438d587bc12221f853179166b4",
+    "s": 8793
    },
    {
     "p": "shared/curios.js",
-    "h": "a931ad3024e71e48e48bece1e562b8bb2024b53c464cb0396526d861965f318a",
-    "s": 18117
+    "h": "885707e75a40b97719abc9cee0aaa9216f0320bebe274294622790b4f4566598",
+    "s": 20233
    },
    {
     "p": "shared/fun.js",
-    "h": "77be4bf3bc1c08f4203b967d78424e37e545affc8c3b616aca0e03421d845237",
-    "s": 23320
+    "h": "466fc8703062ff09e4d6e1737cf27fe6783cb9a4a2fa0f76b908b57091e3a75a",
+    "s": 23781
    },
    {
     "p": "shared/house.js",
@@ -261,13 +261,13 @@
    },
    {
     "p": "shared/interiors.js",
-    "h": "d3b6c8270185d4c4cb3953ca4f8af515f158d4cb2229259568907674df0a6b27",
-    "s": 32272
+    "h": "68f1fe38afc3b888d2d63038cbcafcb185f719072e615da30cacd180d6ddbafb",
+    "s": 32381
    },
    {
     "p": "shared/layouts.js",
-    "h": "e2820fc716550d11c5ed8671f85de719736fa1fe8b88ae582aa9953102a128ac",
-    "s": 30552
+    "h": "7bc9b4bbea595ac4eee01c4118273d88c19ea45099c2b1cb8e49c9e70eb37e99",
+    "s": 31566
    },
    {
     "p": "shared/portals.js",
@@ -276,8 +276,8 @@
    },
    {
     "p": "shared/protocol.js",
-    "h": "325c7c9e64337678bd1681451b1a699937260b2a4549755e98e38d196d379bba",
-    "s": 7421
+    "h": "3e967f9e67b14bc4f3de742e31bdabe94d97780f576f8bc077a1c6f5ac70a2aa",
+    "s": 8331
    },
    {
     "p": "shared/races.js",
@@ -286,13 +286,13 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "3fa941ed49b0f511921067edc8fa539a53e895c214e9783186dfd8f79151c786",
-    "s": 93843
+    "h": "e5c345b0e03f2a708b32d1f3cebb8eb3a6a9f91ff97ab6ed32692a426418d0f2",
+    "s": 99856
    },
    {
     "p": "shared/world.js",
-    "h": "de89101c7aa0e5a2de0379f69f9b988a6183b8352ad13f2ae5f9f8c919ff0c1c",
-    "s": 206382
+    "h": "f909c0fca3bbe21b5ed5f62d32531725e8017ab8a28bf444ca79800feb095c7a",
+    "s": 215313
    },
    {
     "p": "sim/bot.js",
@@ -301,8 +301,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "b0eb7ed17625d445d73e7570ac00a0f218d98397e0b06a6633e11ceac9c00b79",
-    "s": 142654
+    "h": "1775f6a33bc4aaf1f03a4590981028b9e39022ae8ca6fe49079213331d051230",
+    "s": 164884
    },
    {
     "p": "vendor/three.LICENSE",
@@ -316,7 +316,7 @@
    },
    {
     "p": "version.json",
-    "h": "7769a03b42c396f2a8f5b79d24226703c9dff6bfcc4e1791e17b86275da40802",
+    "h": "2adf0c9e0ca3a2e740bd51cc32edef3e9a9b038414f9ab7155fa6e9d6b909553",
     "s": 13
    }
   ]

@@ -2619,6 +2619,119 @@
       s.add(P.box, '#a03a1a', [-4, 0.8, 3], null, [3.6, 1.0, 1.8]); s.add(P.box, '#a03a1a', [-4, 1.6, 3.2], null, [2, 0.8, 1.4]);
       for (const x of [-5.3, -2.7]) for (const z of [2.2, 3.8]) s.add(P.cyl, '#1a1a1a', [x, 0.5, z], [0, 0, Math.PI / 2], [0.5, 0.4, 0.5]);
     },
+    // The Ring of Death: a sand floor (with stains), a wall of welded scrap with spikes along the
+    // top, three tiers of stands, a tall fence at the back, and a gate north and south under a
+    // beam with skulls (the sign hangs from the south one). The walls match MM.PROPS.lm_deathring.
+    lm_deathring(s) {
+      const n = 24, step = Math.PI * 2 / n, gate = a => Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.2 || Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI))) < 0.2;
+      s.add(P.cyl, '#b07e52', [0, 0.03, 0], null, [11.9, 0.06, 11.9]);
+      for (const [x, z, r] of [[3, 2, 1.4], [-4, -3, 1.1], [1, -6, 0.9], [-6, 4, 0.8], [6, -2, 0.7]]) s.add(P.cyl, '#7a2a1a', [x, 0.07, z], null, [r, 0.02, r * 0.7]);
+      const panel = ['#7a6a5a', '#8a5a3a', '#6a6e74', '#9a6a3a'];
+      for (let i = 0; i < n; i++) {
+        const a = (i + 0.5) * step;
+        if (gate(a)) continue;
+        const len = 2 * Math.sin(step / 2), sx = Math.sin(a), cz = Math.cos(a);
+        // The fighting wall, with spikes along its top.
+        s.add(P.box, panel[i % 4], [sx * 12, 1.3, cz * 12], [0, a, 0], [12 * len + 0.15, 2.6, 0.3]);
+        for (const t of [-0.3, 0.3]) s.add(P.cone, '#c8c8c8', [sx * 12 + cz * t * 2.5, 2.85, cz * 12 - sx * t * 2.5], null, [0.08, 0.5, 0.08]);
+        // Three tiers of stands behind it, then the back fence.
+        for (let k = 0; k < 3; k++) { const R = 12.75 + k * 0.95; s.add(P.box, k % 2 ? '#7a6250' : '#6a5444', [sx * R, 0.45 + k * 0.45, cz * R], [0, a, 0], [R * len + 0.1, 0.9 + k * 0.9, 0.95]); }
+        s.add(P.box, panel[(i + 2) % 4], [sx * 15.6, 2.2, cz * 15.6], [0, a, 0], [15.6 * len + 0.15, 4.4, 0.3]);
+        if (i % 3 === 0) { s.add(P.cylLo, '#3a3a3a', [sx * 15.6, 5.2, cz * 15.6], null, [0.05, 2.2, 0.05]); s.add(P.box, i % 2 ? '#c8402a' : '#2a2420', [sx * 15.6 + cz * 0.45, 5.9, cz * 15.6 - sx * 0.45], [0, a + Math.PI / 2, 0], [0.9, 0.6, 0.03]); }   // flags
+      }
+      // The gates: a post either side and a beam over the top with skulls on it.
+      for (const gz of [1, -1]) {
+        for (const x of [-3.3, 3.3]) { s.add(P.box, '#5a4a3a', [x, 3.6, gz * 13.8], null, [0.55, 7.2, 0.55]); s.add(P.cone, '#c8c8c8', [x, 7.6, gz * 13.8], null, [0.15, 0.8, 0.15]); }
+        s.add(P.box, '#4a3a2a', [0, 7.0, gz * 13.8], null, [7.3, 0.6, 0.6]);
+        for (const x of [-2.2, 0, 2.2]) { s.add(P.sphere, '#e8e0d0', [x, 7.55, gz * 14.1], null, [0.3, 0.28, 0.24]); for (const ex of [-0.1, 0.1]) s.add(P.sphereLo, '#111111', [x + ex, 7.6, gz * 14.32], null, [0.07, 0.07, 0.03]); }
+        for (const x of [-4.4, 4.4]) for (let k = 0; k < 3; k++) s.add(P.cyl, '#1e1e22', [x, 0.25 + k * 0.42, gz * 16.5], null, [0.55, 0.4, 0.55]);   // stacked tyres
+        for (const x of [-3.3, 3.3]) s.add(P.cone, '#ff8a2a', [x, 8.2, gz * 13.8], null, [0.2, 0.5, 0.2], true);   // torches
+      }
+    },
+    // A mossy rock in the woods with a whole city on it, a few millimetres tall: the Mega
+    // Gargantuans. Towers, domes, a flag and a little road down the side.
+    // A Tiny Rick vat: a teenage Rick clone floating in green, under a hood of pipes.
+    lm_tinyvat(s) {
+      s.add(P.cyl, '#59606e', [0, 0.2, 0], null, [1.2, 0.4, 1.2]);
+      s.add(P.cyl, '#5dff8a', [0, 1.4, 0], null, [1.05, 2.0, 1.05], true);
+      s.add(P.capsule, '#ddd7c9', [0, 1.15, 0], null, [0.2, 0.7, 0.16]);
+      s.add(P.sphere, '#ddd7c9', [0, 1.9, 0], null, [0.24, 0.28, 0.24]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.cone, '#6fd2df', [Math.cos(a) * 0.17, 2.12, Math.sin(a) * 0.17], [Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7], [0.07, 0.22, 0.07]); }
+      s.add(P.cyl, '#59606e', [0, 2.5, 0], null, [1.2, 0.3, 1.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.4, 2.9, 0], null, [0.12, 0.6, 0.12]);
+      s.add(P.box, '#3a3f4a', [0.75, 1.1, 0.5], null, [0.3, 0.6, 0.2]);
+      s.add(P.box, '#ff5a5a', [0.75, 1.25, 0.61], null, [0.12, 0.12, 0.02], true);
+    },
+    // The Immortality Hotel: a tall pink-and-white tower with a pool deck and a rooftop diving board.
+    lm_resorthotel(s) {
+      s.add(P.box, '#f4f0e8', [0, 0.4, 0], null, [15, 0.8, 13]);
+      s.add(P.box, '#f8e8f0', [0, 6, -1.5], null, [10, 11, 7]);
+      for (let f = 0; f < 5; f++) for (let i = -2; i <= 2; i++) s.add(P.box, '#7ad8ff', [i * 1.9, 2.4 + f * 2, 2.02], null, [1.2, 1.0, 0.05], true);
+      for (let f = 0; f < 5; f++) s.add(P.box, '#ff7ad0', [0, 1.6 + f * 2, 2.3], null, [10.2, 0.15, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 11.8, -1.5], null, [10.6, 0.6, 7.6]);
+      s.add(P.box, '#e8e4d8', [3.5, 11.9, 2.6], null, [0.8, 0.12, 3]);   // the diving board off the roof
+      s.add(P.box, '#4ab8ff', [0, 0.85, 5], null, [8, 0.1, 3.6], true);  // the pool
+      s.add(P.box, '#3a3f4a', [0, 1.6, 2.3], null, [2.4, 2.4, 0.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#f4f0e8', [sx * 6.2, 2.5, 5.6], null, [0.25, 5, 0.25]);
+    },
+    lm_tinyland(s) {
+      s.add(P.sphere, '#7a7a72', [0, 0.35, 0], null, [1.55, 0.6, 1.4]);
+      s.add(P.sphere, '#5a9a46', [0, 0.62, 0], null, [1.4, 0.32, 1.25]);
+      const tw = ['#e8ecf0', '#c8d8e8', '#f4e8c8'];
+      for (let i = 0; i < 14; i++) { const a = i * 2.4, r = 0.25 + (i % 4) * 0.22; s.add(P.box, tw[i % 3], [Math.cos(a) * r, 0.92 + (i % 3) * 0.04, Math.sin(a) * r * 0.85], [0, a, 0], [0.07, 0.12 + (i % 5) * 0.08, 0.07]); }
+      for (let i = 0; i < 6; i++) { const a = i * 1.1 + 0.4; s.add(P.hemi, '#a8e0ff', [Math.cos(a) * 0.75, 0.88, Math.sin(a) * 0.62], null, [0.07, 0.06, 0.07], true); }
+      s.add(P.cylLo, '#3a3a3a', [0.05, 1.2, 0.05], null, [0.006, 0.35, 0.006]);
+      s.add(P.box, '#ffd84d', [0.09, 1.33, 0.05], null, [0.08, 0.05, 0.004]);
+      s.add(P.box, '#c8b89a', [0.9, 0.5, 0.2], [0, 0, -0.6], [0.5, 0.02, 0.08]);   // the road down
+    },
+    // The Great Hall of the Mega Gargantuans: columns, a dome, banners, very proud.
+    lm_gargantuahall(s) {
+      s.add(P.box, '#e8e4d8', [0, 0.6, 0], null, [15, 1.2, 11]);
+      for (let i = -3; i <= 3; i++) s.add(P.cyl, '#f4f0e4', [i * 2.1, 4.4, 5], null, [0.5, 6.6, 0.5]);
+      s.add(P.box, '#e8e4d8', [0, 4.8, -1], null, [13, 7.2, 8]);
+      s.add(P.box, '#d8d2c2', [0, 8.1, 1.2], null, [15.2, 0.8, 9.6]);
+      s.add(P.hemi, '#ffd84d', [0, 8.5, -1], null, [4.4, 3.4, 4.4]);
+      for (const x of [-5.5, 5.5]) s.add(P.box, '#3a8a5a', [x, 5.2, 5.4], null, [1.4, 3.6, 0.06]);
+      s.add(P.box, '#3a4a6a', [0, 2.6, 3.05], null, [2.6, 3.8, 0.1]);
+    },
+    // The woods floor at the Mega Gargantuans' size.
+    bigleaf(s) {
+      s.add(P.sphere, '#4a8a2a', [0, 0.25, 0], [0, 0.4, 0], [3.2, 0.12, 1.6]);
+      s.add(P.box, '#5a7a2a', [0, 0.36, 0], [0, 0.4, 0], [6.0, 0.08, 0.14]);
+      for (let i = -2; i <= 2; i++) s.add(P.box, '#5a7a2a', [i * 0.9 * Math.cos(0.4), 0.34, -i * 0.9 * Math.sin(0.4)], [0, 0.4 + 0.9, 0], [2.2, 0.06, 0.08]);
+    },
+    bigpebble(s) { s.add(P.sphere, '#8a8a84', [0, 1.4, 0], null, [2.6, 1.7, 2.2]); s.add(P.sphere, '#9a9a92', [0.8, 2.2, 0.4], null, [1.2, 0.9, 1.1]); },
+    palm(s) {
+      for (let i = 0; i < 6; i++) s.add(P.cyl, i % 2 ? '#a07a4a' : '#8a6a3e', [Math.sin(i * 0.25) * 0.3, 0.6 + i * 1.05, 0], [0, 0, -0.08], [0.32 - i * 0.02, 1.1, 0.32 - i * 0.02]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.box, '#3aa04a', [0.4 + Math.cos(a) * 1.3, 6.6, Math.sin(a) * 1.3], [0, -a, -0.35], [2.6, 0.08, 0.6]); }
+      for (let i = 0; i < 3; i++) s.add(P.sphereLo, '#6a4a2a', [0.4 + Math.cos(i * 2) * 0.3, 6.3, Math.sin(i * 2) * 0.3], null, [0.22, 0.22, 0.22]);
+    },
+    sunlounger(s) {
+      s.add(P.box, '#f4f4f0', [0, 0.35, 0.2], null, [0.7, 0.1, 1.4]);
+      s.add(P.box, '#f4f4f0', [0, 0.6, -0.65], [-0.9, 0, 0], [0.7, 0.1, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 0.42, 0.2], null, [0.62, 0.05, 1.3]);
+      for (const sx of [-1, 1]) for (const z of [-0.4, 0.8]) s.add(P.cyl, '#c8c8c0', [sx * 0.3, 0.16, z], null, [0.05, 0.32, 0.05]);
+    },
+    bigmushroom(s) {
+      s.add(P.cyl, '#f0e8d8', [0, 2.8, 0], null, [0.7, 5.6, 0.7]);
+      s.add(P.hemi, '#d84a3a', [0, 5.4, 0], null, [2.4, 1.6, 2.4]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.sphereLo, '#fff4e8', [Math.cos(a) * 1.4, 6.2 + (i % 2) * 0.3, Math.sin(a) * 1.4], null, [0.28, 0.12, 0.28]); }
+    },
+    // Death Stalker cars, parked side by side with the keys in, and a board behind them.
+    lm_carlot(s) {
+      for (const [x, body] of [[-1.25, '#8a3a1e'], [1.25, '#6a5a2a']]) {
+        s.add(P.box, body, [x, 0.62, 0], null, [1.9, 0.5, 4.1]);
+        s.add(P.box, '#5a2a16', [x, 0.98, 1.2], null, [1.75, 0.26, 1.6]);
+        s.add(P.box, '#9aa0a6', [x, 1.22, 1.1], null, [0.62, 0.3, 0.6]);
+        for (const z of [1.3, -1.4]) for (const sx of [-1, 1]) s.add(P.cyl, '#1e1e22', [x + sx * 1.0, 0.45, z], [0, 0, Math.PI / 2], [0.45, 0.38, 0.45]);
+        s.add(P.box, '#9aa0a6', [x, 0.55, 2.1], null, [2.0, 0.22, 0.12]);
+        for (let i = 0; i < 4; i++) s.add(P.cone, '#c8c8c8', [x - 0.75 + i * 0.5, 0.55, 2.35], [Math.PI / 2, 0, 0], [0.07, 0.4, 0.07]);
+        s.add(P.sphere, '#e8e0d0', [x, 0.86, 2.1], null, [0.2, 0.18, 0.1]);
+        for (const sx of [-0.65, 0.65]) s.add(P.box, '#4a4a50', [x + sx, 1.5, -0.9], null, [0.09, 1.0, 0.09]);
+        s.add(P.box, '#4a4a50', [x, 2.0, -0.9], null, [1.4, 0.09, 0.09]);
+      }
+      for (const x of [-1.6, 1.6]) s.add(P.cylLo, '#5a4a3a', [x, 1.4, -2.7], null, [0.07, 2.8, 0.07]);
+    },
     lm_unitycore(s) {
       s.add(P.cyl, '#d8e0e8', [0, 0.4, 0], null, [5.5, 0.8, 5.5]);
       s.add(P.cone, '#e8eef4', [0, 7, 0], null, [3.4, 12, 3.4]);
@@ -3636,10 +3749,16 @@
     return look;
   };
   C.npcModel = function (type, seed) {
+    if (MM.NPCS[type].car) {
+      // A Death Stalker at the wheel of his car.
+      const av = C.buildAvatar(C.npcLook('raider', seed || 1), 'joe');
+      C.setCar(av, true);
+      return { root: av.root, av };
+    }
     if (MM.NPCS[type].human) {
       const look = C.npcLook(type, seed || 1);
       const H = MM.NPCS[type].human;
-      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.variant || 'joe');
+      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.unarmed ? 'hive' : H.variant || 'joe');   // (Unity's build: bare hands)
       if (H.scale) { av.baseScale = H.scale; av.root.scale.setScalar(H.scale); }   // giants
       return { root: av.root, av };
     }
@@ -3658,6 +3777,30 @@
         s.add(P.box, '#3a2a1a', [0, 1.85, -0.05], null, [0.95, 0.12, 0.8]);
         s.add(P.cone, '#ff9a2a', [0, 1.3, -1.05], [-2.3, 0, 0], [0.12, 0.7, 0.12], true);
         void d;
+      } else if (type === 'housebot') {
+        // A lawn turret from the Smith house, hacked: red eye, twin barrels, a lot of attitude.
+        s.add(P.cyl, '#59606e', [0, 0.4, 0], null, [0.9, 0.8, 0.9]);
+        s.add(P.cyl, '#7a8290', [0, 1.0, 0], null, [0.25, 0.6, 0.25]);
+        s.add(P.sphere, '#9aa3ab', [0, 1.35, 0], null, [0.55, 0.42, 0.55]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 1.42, 0.45], null, [0.16, 0.16, 0.1], true);
+        for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.18, 1.32, 0.75], [Math.PI / 2, 0, 0], [0.08, 0.6, 0.08]);
+      } else if (type === 'housedrone') {
+        s.add(P.sphere, '#9aa3ab', [0, 0.3, 0], null, [0.45, 0.25, 0.45]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 0.28, 0.38], null, [0.12, 0.12, 0.08], true);
+        for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; s.add(P.box, '#59606e', [Math.cos(a) * 0.45, 0.42, Math.sin(a) * 0.45], [0, -a, 0], [0.5, 0.05, 0.08]); s.add(P.cyl, '#3a3f4a', [Math.cos(a) * 0.7, 0.48, Math.sin(a) * 0.7], null, [0.3, 0.03, 0.3]); }
+        s.add(P.cyl, '#3a3f4a', [0, 0.1, 0.3], [Math.PI / 2, 0, 0], [0.06, 0.4, 0.06]);
+      } else if (type === 'giantant') {
+        // An ant the size of a car (to someone a few millimetres tall).
+        const c = '#3a1e14';
+        s.add(P.sphere, c, [0, 0.7, -0.9], null, [0.55, 0.45, 0.75]);
+        s.add(P.sphere, c, [0, 0.65, 0], null, [0.32, 0.3, 0.42]);
+        s.add(P.sphere, c, [0, 0.8, 0.65], null, [0.38, 0.34, 0.36]);
+        for (const sx of [-1, 1]) {
+          for (const z of [-0.25, 0, 0.25]) C.capsuleAt(s, c, 0.04, 0.9, [sx * 0.25, 0.65, z], [0, 0, sx * 2.1]);
+          C.capsuleAt(s, c, 0.025, 0.6, [sx * 0.12, 1.05, 0.85], [-0.6, 0, sx * 0.4]);
+          s.add(P.sphereLo, '#111111', [sx * 0.2, 0.9, 0.9], null, [0.08, 0.08, 0.06]);
+          s.add(P.cone, c, [sx * 0.1, 0.62, 1.0], [Math.PI / 2, 0, sx * 0.4], [0.05, 0.22, 0.05]);
+        }
       } else if (type === 'meatblob') {
         s.add(P.sphere, '#d9677a', [0, 0.8, 0], null, [0.95, 0.8, 0.9]);
         for (let i = 0; i < 5; i++) s.add(P.sphereLo, '#c4505f', [Math.sin(i * 1.3) * 0.7, 0.5 + (i % 2) * 0.6, Math.cos(i * 1.3) * 0.6], null, [0.4, 0.35, 0.4]);
@@ -4045,6 +4188,18 @@
   };
 
   // ---------- A whole dimension ----------
+  // An immortality field: a faint glassy dome with a glowing ring where it meets the ground.
+  function makeField(dim) {
+    const F = dim.field, g = new T.Group(), y = MM.heightAt(dim.id, F.x, F.z) - 1;
+    const dome = new T.Mesh(new T.SphereGeometry(F.r, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#bfe4ff', transparent: true, opacity: 0.1, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(F.x, y, F.z);
+    const ring = new T.Mesh(new T.TorusGeometry(F.r, 0.35, 6, 96), new T.MeshBasicMaterial({ color: '#7ad8ff', transparent: true, opacity: 0.8 }));
+    ring.rotation.x = Math.PI / 2; ring.position.set(F.x, y + 1.2, F.z);
+    g.add(dome, ring);
+    g.userData.type = 'field';
+    return g;
+  }
   C.buildDimension = function (dimId, quality) {
     const dim = MM.DIM_BY_ID[dimId];
     const group = new T.Group();
@@ -4054,6 +4209,7 @@
     if (dim.planets) group.add(makeSpace(dim, group));
     else if (!dim.interior) {
       skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain);
+      if (dim.field) group.add(makeField(dim));
       if (dim.regions) group.add(makeSea(dim));
       if (dim.regions) group.add(makeWires(dimId));
     }

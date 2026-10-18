@@ -623,6 +623,7 @@
     meeseeks:   { slouch: -0.06, bounce: 1.6, swing: 1.0, stride: 1.0, jitter: 0, carry: 0.4 },
     evilmorty:  { slouch: 0.02, bounce: 0.7, swing: 0.35, stride: 0.9, jitter: 0, carry: 0.8 },
     picklerick: { slouch: 0, bounce: 1.4, swing: 1.0, stride: 1.2, jitter: 0, carry: 0.5 },
+    spacebeth:  { slouch: -0.04, bounce: 0.8, swing: 0.5, stride: 1.05, jitter: 0, carry: 0.9 },
     squanchy:   { slouch: 0.08, bounce: 1.1, swing: 0.7, stride: 1.0, jitter: 0.2, carry: 0.5 },
   };
   function mkRag(dx, dz, power, av) {
@@ -704,14 +705,22 @@
       lL = lR = -1.45; kL = kR = 1.45; tilt = 0.02; roll = 0; twist = 0;
       bob = -(av.legLen || 0.9) * 0.5;
       if (anim === MM.ANIM.ride) { const up = st.armsUp ? 1 : 0; aL = aR = up ? -2.8 : -0.9; eL = eR = up ? -0.2 : -0.8; aLz = 0.25; aRz = -0.25; }
+      else if (av.inCar) { aL = aR = -1.15; eL = eR = -0.45; aLz = 0.12; aRz = -0.12; }   // hands on the wheel
       else { aL = aR = -0.5; eL = eR = -0.7; aLz = 0.15; aRz = -0.15; }
+    }
+    // Strong-arm Morty: the arm leads and Morty is dragged along behind her, leaning after her;
+    // standing still, she hangs heavy and pulls him over to that side.
+    if (av.strongArm && !seated && !dead && !emote) {
+      if (k > 0.1) { aR = -1.5 + Math.sin(av.t * 9) * 0.07; aRz = -0.05; eR = -0.05; tilt += 0.3; twist = -0.32; headX -= 0.15; lL *= 0.7; lR *= 0.7; }
+      else { aR = 0.12; aRz = -0.22; eR = -0.12; roll += 0.1; tilt += 0.08; }
     }
     // Shooting: the gun arm snaps up to aim and kicks back. Melee: a big swing.
     if (av.attackT > 0) {
       av.attackT -= dt;
       const melee = MM.WEAPONS[MM.ARCHETYPES[av.arch] ? MM.ARCHETYPES[av.arch].weapon : 'blaster'].melee;
       const u = 1 - Math.max(0, av.attackT) / 0.3;
-      if (melee) { aR = lerp(-2.6, 0.7, u); eR = lerp(-1.2, -0.1, u); twist = lerp(0.5, -0.4, u); }
+      if (av.strongArm) { aR = -1.5; aRz = 0; eR = lerp(-1.9, 0, Math.min(1, u * 1.7)); twist = lerp(0.35, -0.5, u); }   // her punch: a straight jab
+      else if (melee) { aR = lerp(-2.6, 0.7, u); eR = lerp(-1.2, -0.1, u); twist = lerp(0.5, -0.4, u); }
       else { aR = -1.45 - Math.sin(u * Math.PI) * 0.25; eR = -0.05 - Math.sin(u * Math.PI) * 0.35; twist = -0.15; }
     }
     // Landing squash and take-off stretch.
@@ -766,6 +775,7 @@
     }
     p.head.rotation.y = lerp(p.head.rotation.y, headY - twist * 0.6, f);
     if (av.jet) { av.jet.flame.visible = fly; av.jet.flame.scale.y = 0.8 + Math.random() * 0.4; }
+    if (av.car && av.inCar) for (const w of av.car.userData.wheels) w.rotation.x += speed * dt / 0.45;
     if (av.inShip) { set(p.legL, 'x', 0); set(p.legR, 'x', 0); set(p.shinL, 'x', 0.1); set(p.shinR, 'x', 0.1); tilt = 0; roll = clamp(-av.turn * 0.05, -0.3, 0.3); bob = Math.sin(av.t * 3) * 0.05; if (av.ship) av.ship.rotation.y += 0.02; }
     if (dead) av.deadT = Math.min(1, av.deadT + dt * 3); else { av.deadT = Math.max(0, av.deadT - dt * 4); if (!av.deadT) av.deadRag = null; }
     const D = av.deadT;
@@ -809,7 +819,7 @@
     av.body.scale.set(1 + sq * 0.6, 1 - sq, 1 + sq * 0.6);
     // Effects
     const fx = st.fx || 0;
-    const sc = ((fx & 8) ? 0.5 : 1) * (av.baseScale || 1);
+    const sc = ((fx & 16384) ? MM.TINY.scale : ((fx & 8) ? 0.5 : 1) * ((fx & 32768) ? MM.TINYRICK.scale : 1)) * (av.baseScale || 1);   // tiny (the Miniaturizer), shrunk, or Tiny Rick   // tiny (the Miniaturizer), or shrunk
     av.root.scale.setScalar(lerp(av.root.scale.x, sc, Math.min(1, dt * 6)));
     av.root.visible = !(fx & 32) || Math.floor(av.t * 8) % 2 === 0 || dead;
     if (fx & 1) {
@@ -869,8 +879,87 @@
     };
     const L = av.look || {}, w = L.width || 1, h = L.height || 1;
     if (gear.cyberarm && !av.cyberArm) { av.cyberArm = true; shell(av.parts.armR, 0.68 * h * 0.5, 0.07 * w * 1.25); shell(av.parts.foreR, 0.68 * h * 0.5 * 0.9, 0.07 * w * 1.2); }
+    // Strong-arm Morty: a huge arm sewn on at the shoulder, from a dead fighter of the Ring of Death.
+    if (gear.strongarm && !av.strongArm && av.parts.armR && av.parts.foreR) {
+      av.strongArm = true;
+      const up = Math.abs(av.parts.foreR.position.y) || 0.3, skin = '#d39a6e', vein = '#b8785a';
+      const a = new C.Shape();
+      C.capsuleAt(a, skin, 0.105, up + 0.04, [0, -up - 0.02, 0]);
+      a.add(P.sphere, skin, [0.01, -up * 0.52, 0.06], null, [0.15, 0.2, 0.15]);             // the biceps
+      a.add(P.sphere, skin, [-0.02, -up * 0.4, -0.05], null, [0.13, 0.17, 0.12]);           // the triceps
+      a.add(P.sphere, skin, [0.04, -0.03, 0], null, [0.15, 0.13, 0.15]);                    // the shoulder
+      const fa = new C.Shape(), lo = up * 1.05;
+      C.capsuleAt(fa, skin, 0.11, lo, [0, -lo, 0]);
+      fa.add(P.sphere, skin, [0, -lo * 0.32, 0.02], null, [0.17, 0.22, 0.165]);             // forearm, Popeye-size
+      fa.add(P.capsule, vein, [0.06, -lo * 0.45, 0.1], [0.2, 0, 0.3], [0.02, 0.18, 0.02]);  // a vein
+      fa.add(P.sphere, skin, [0, -lo - 0.02, 0.02], null, [0.15, 0.14, 0.16]);              // the fist
+      for (let i = 0; i < 4; i++) fa.add(P.sphereLo, vein, [-0.075 + i * 0.05, -lo - 0.06, 0.12], null, [0.03, 0.03, 0.025]);   // knuckles
+      const joints = new Set(Object.values(av.parts));
+      // Her fist replaces Morty's hand, and his gun: his own forearm goes (until she lets go).
+      av.armHidden = av.parts.foreR.children.filter(m => !joints.has(m)).map(m => {
+        const near = av.lodNear.indexOf(m), far = av.lodFar.indexOf(m);
+        if (near >= 0) av.lodNear.splice(near, 1);
+        if (far >= 0) av.lodFar.splice(far, 1);
+        m.visible = false;
+        return [m, near >= 0 ? 1 : far >= 0 ? 2 : 0];
+      });
+      const ma = C.meshOf(a.build(), 0.03), mf = C.meshOf(fa.build(), 0.03);
+      av.parts.armR.add(ma); av.parts.foreR.add(mf);
+      av.strongArmMeshes = [ma, mf];
+    }
+    if (!gear.strongarm && av.strongArm && av.strongArmMeshes) {
+      av.strongArm = false;
+      for (const m of av.strongArmMeshes) m.parent.remove(m);
+      for (const [m, list] of av.armHidden) {
+        if (list === 1) av.lodNear.push(m); else if (list === 2) av.lodFar.push(m);
+        m.visible = list === 1 ? av.near !== false : list === 2 ? av.near === false : true;
+      }
+      av.strongArmMeshes = av.armHidden = null;
+    }
     if (gear.cyberlegs && !av.cyberLegs) { av.cyberLegs = true; for (const k of ['legL', 'legR']) shell(av.parts[k], 0.84 * h * 0.52, 0.1 * w * 1.15); for (const k of ['shinL', 'shinR']) shell(av.parts[k], 0.84 * h * 0.44, 0.1 * w * 1.1); }
     av.gear = gear;
+  };
+  // A Death Stalker car round the character, who sits in it (the seated pose): rusty, open-topped,
+  // spikes on the ram bar and the hubcaps, a skull on the grille, twin guns on the hood, a roll
+  // bar behind the driver and flaming exhaust pipes. Front = +z.
+  C.carModel = function () {
+    const s = new C.Shape(), rust = '#8a3a1e', dark = '#5a2a16', steel = '#9aa0a6', black = '#1e1e22';
+    s.add(P.box, rust, [0, 0.62, 0.45], null, [1.9, 0.5, 4.1]);                     // the body
+    s.add(P.box, dark, [0, 0.98, 1.65], null, [1.75, 0.26, 1.6]);                   // the hood
+    s.add(P.box, steel, [0, 1.22, 1.55], null, [0.62, 0.3, 0.6]);                   // the blower
+    for (const x of [-0.18, 0.18]) s.add(P.cyl, steel, [x, 1.5, 1.55], null, [0.09, 0.3, 0.09]);
+    s.add(P.box, dark, [0, 0.98, -1.05], null, [1.85, 0.28, 1.0]);                  // the rear deck
+    for (const x of [-0.92, 0.92]) s.add(P.box, rust, [x, 1.02, 0.25], null, [0.12, 0.36, 1.5]);   // the cockpit sides
+    for (const [x, z] of [[-1.0, 1.75], [1.0, 1.75], [-1.0, -0.95], [1.0, -0.95]]) {
+      s.add(P.cone, '#c8c8c8', [x * 1.18, 0.45, z], [0, 0, -Math.sign(x) * Math.PI / 2], [0.07, 0.35, 0.07]);   // hubcap spikes
+    }
+    s.add(P.box, steel, [0, 0.55, 2.55], null, [2.1, 0.24, 0.14]);                  // the ram bar
+    for (let i = 0; i < 6; i++) s.add(P.cone, '#c8c8c8', [-0.9 + i * 0.36, 0.55, 2.8], [Math.PI / 2, 0, 0], [0.07, 0.42, 0.07]);
+    s.add(P.sphere, '#e8e0d0', [0, 0.86, 2.55], null, [0.22, 0.2, 0.12]);           // the skull
+    for (const x of [-0.08, 0.08]) s.add(P.sphereLo, '#111111', [x, 0.9, 2.65], null, [0.05, 0.05, 0.03]);
+    for (const x of [-0.36, 0.36]) s.add(P.cyl, '#2a2a2e', [x, 1.28, 2.35], [Math.PI / 2, 0, 0], [0.07, 0.9, 0.07]);   // the guns
+    for (const x of [-0.8, 0.8]) s.add(P.box, '#4a4a50', [x, 1.55, -0.5], null, [0.09, 1.0, 0.09]);   // the roll bar
+    s.add(P.box, '#4a4a50', [0, 2.05, -0.5], null, [1.7, 0.09, 0.09]);
+    for (const x of [-0.65, 0.65]) s.add(P.cyl, '#59606e', [x, 1.05, -1.75], [Math.PI / 2, 0, 0], [0.1, 0.5, 0.1]);   // exhausts
+    for (const x of [-0.65, 0.65]) s.add(P.cone, '#ffb03a', [x, 1.05, -2.15], [-Math.PI / 2, 0, 0], [0.09, 0.4, 0.09], true);
+    const body = C.meshOf(s.build(), 0.04);
+    const root = new T.Group(); root.add(body);
+    const wheels = [];
+    for (const [x, z] of [[-1.0, 1.75], [1.0, 1.75], [-1.0, -0.95], [1.0, -0.95]]) {
+      const w = new C.Shape();
+      w.add(P.cyl, black, [0, 0, 0], [0, 0, Math.PI / 2], [0.45, 0.38, 0.45]);
+      w.add(P.box, '#7a7a7a', [0, 0, 0], null, [0.4, 0.5, 0.1]);   // a hub you can see turn
+      const m = C.meshOf(w.build(), 0.03);
+      m.position.set(x, 0.45, z);
+      root.add(m); wheels.push(m);
+    }
+    root.userData.wheels = wheels;
+    return root;
+  };
+  C.setCar = function (av, on) {
+    if (on && !av.car) { av.car = C.carModel(); av.root.add(av.car); }
+    if (av.car) av.car.visible = !!on;
+    av.inCar = !!on;
   };
   // A cartoon flying saucer around the character's legs.
   C.setShip = function (av, on, gear) {

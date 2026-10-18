@@ -13,6 +13,8 @@
   const B = 1300; // generous coordinate bound (Earth reaches 600 m, space 1250 m); the server clamps to the real world edge
   const own = (o, k) => Object.prototype.hasOwnProperty.call(o, k);
 
+  // A bag of things to hand over: at most 30 kinds, whole numbers (Host checks you have them).
+  const items = o => o && typeof o === 'object' && !Array.isArray(o) && Object.keys(o).length <= 30 && Object.keys(o).every(k => MM.tradeable(k) && int(o[k], 0, 1e6));
   // Client -> server. Each entry returns a clean copy of the message or null.
   MM.CLIENT_MSGS = {
     // First message: who I am.
@@ -27,6 +29,7 @@
     // Fire the main weapon along an aim direction (unit vector).
     f: m => aim(m) ? { dx: m.dx, dy: m.dy, dz: m.dz } : null,
     ab: () => ({}),                                     // archetype ability
+    dp: m => num(m.r, -10, 10) ? { r: m.r } : null,               // the Five-Step Death Punch, facing r
     po: m => (str(m.d, 16) && own(MM.DIM_BY_ID, m.d)) ? { d: m.d } : null,   // open a portal
     ki: m => (str(m.d, 16) && own(MM.DIM_BY_ID, m.d)) ? { d: m.d } : null,   // use the public kiosk
     cr: m => (str(m.g, 16) && own(MM.RECIPES, m.g)) ? { g: m.g } : null,     // build a recipe
@@ -36,6 +39,10 @@
     ans: m => int(m.a, 0, 1) ? { a: m.a } : null,      // accept (1) or refuse (0) a local's offer
     ship: m => typeof m.on === 'boolean' ? { on: m.on } : null,                // board or leave your ship
     car: m => typeof m.on === 'boolean' ? { on: m.on } : null,                 // get in (at the car lot) or out of a Death Stalker car
+    // Between players: trade (ask, join, set what you give, ok, cancel), give, use an item on them.
+    tr: m => (['ask', 'join', 'set', 'ok', 'cancel'].includes(m.op) && (m.id === undefined || int(m.id, 0, 1e12)) && (m.op !== 'set' || items(m.items))) ? { op: m.op, id: m.id, items: m.op === 'set' ? m.items : undefined } : null,
+    gv: m => (int(m.id, 0, 1e12) && items(m.items)) ? { id: m.id, items: m.items } : null,
+    uo: m => (int(m.id, 0, 1e12) && str(m.q, 20) && own(MM.CURIOS, m.q)) ? { id: m.id, q: m.q } : null,
     pvp: m => typeof m.on === 'boolean' ? { on: m.on } : null,                 // allow fights with other players who allow them too
     orbit: () => ({}),                                                          // fly out of the atmosphere
     land: m => (str(m.d, 24) && own(MM.DIM_BY_ID, m.d) && (m.h === undefined || int(m.h, 0, 20))) ? { d: m.d, h: m.h } : null,   // fly into a planet from space (h: which hole of Anatomy Park's body)
@@ -86,7 +93,7 @@
   MM.RATE = {
     all: [90, 45], st: [40, 20], f: [12, 6], c: [3, 0.5], cr: [6, 2], g: [6, 2],
     po: [3, 1], ki: [3, 1], ab: [4, 2], em: [4, 1], rs: [3, 1], pi: [5, 1], hello: [1, 0],
-    use: [4, 1], talk: [4, 1], ans: [4, 1], ship: [4, 1], drive: [3, 0.5], ls: [3, 0.5], orbit: [2, 0.5], land: [3, 1], door: [3, 1], pvp: [3, 0.5], tm: [4, 0.5], uc: [3, 1], pp: [8, 3], pt: [8, 4], hd: [4, 1], lk: [2, 0.2], fun: [4, 1], mg: [3, 0.5],
+    use: [4, 1], talk: [4, 1], ans: [4, 1], ship: [4, 1], drive: [3, 0.5], ls: [3, 0.5], orbit: [2, 0.5], land: [3, 1], door: [3, 1], pvp: [3, 0.5], tm: [4, 0.5], uc: [3, 1], pp: [8, 3], pt: [8, 4], hd: [4, 1], dp: [2, 0.5], lk: [2, 0.2], fun: [4, 1], mg: [3, 0.5],
   };
 
   // Animation states the client reports.
