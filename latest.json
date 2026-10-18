@@ -1,8 +1,8 @@
 {
- "build": 27,
- "date": "2026-10-18T14:48:00.473Z",
+ "build": 28,
+ "date": "2026-10-18T15:05:51.401Z",
  "game": {
-  "base": "game/27/",
+  "base": "game/28/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "b0f6c2d26f0ccf74288b1ce3caccb213b82cbc59a588f5b88c27daab6702e3da",
-    "s": 203040
+    "h": "972580a4d9aa7ad7ba2fa61489c9adfc2535fd0aa1b990d2610909bd3e28e603",
+    "s": 204764
    },
    {
     "p": "js/life.js",
@@ -231,13 +231,13 @@
    },
    {
     "p": "js/ui.js",
-    "h": "6bbffbab6793c4738bf36e70aa28df3d3670aececfe356327711d927354f6c90",
-    "s": 20609
+    "h": "4dda83563a3c28c3d96cbb19b655928e74ac78274b612217454342a5fb6666a2",
+    "s": 20693
    },
    {
     "p": "js/voice.js",
-    "h": "84d14d12a07b1f53c2ef3c0c7aa753e34c2e37d6f64958e4c67df4d3ebbba230",
-    "s": 13583
+    "h": "529e4d4e677344ad75cfac93347536688dc6c9357c173287083e11ad5face8d8",
+    "s": 13702
    },
    {
     "p": "js/vr.js",
@@ -251,8 +251,8 @@
    },
    {
     "p": "shared/curios.js",
-    "h": "47234bff1ec252cf73a24efd60177d57b3454c51756fb910662d626d15997c7c",
-    "s": 21963
+    "h": "9794af8a490e8a71dea1f748c27f890f5904efa7b3a703a480c0efd70225b2ca",
+    "s": 21953
    },
    {
     "p": "shared/fun.js",
@@ -281,8 +281,8 @@
    },
    {
     "p": "shared/protocol.js",
-    "h": "e4e5d18b6f66cc0adb9098fde5e21dddfc25899df67abc0fec4981aa7ef282ce",
-    "s": 9850
+    "h": "f949754a85ea6b5a87c45597f8b753d5cfc674f6f5fb78b4e82a696f10460b4f",
+    "s": 9859
    },
    {
     "p": "shared/races.js",
@@ -291,13 +291,13 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "d4f31a08cb414f528e038d18244433086dd9da413dbcf5f6118abf16996d6966",
-    "s": 106818
+    "h": "701eb85d0d674f8e65706676208d707d2f59b3529b04cc4e681c345cf31ff49b",
+    "s": 107539
    },
    {
     "p": "shared/world.js",
-    "h": "fa3524ac9f450f4ad0b38dd0e82f1cac8dbf570ce9bd57ccac2915f6e32f0d60",
-    "s": 216971
+    "h": "59695f491bcb536c9cf29218f7ba647ba3e77537dcc590545cce4bf7c4723edb",
+    "s": 217680
    },
    {
     "p": "sim/bot.js",
@@ -306,8 +306,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "e5c534464a44066a4f471715b33bfc90e9632baf23f0353db502ed5c4a49d3c8",
-    "s": 200197
+    "h": "dfb2c813b84720b11214d44dcea07e41099e0bf0caf764f4f29ba1ca220a5765",
+    "s": 206721
    },
    {
     "p": "vendor/three.LICENSE",
@@ -321,7 +321,7 @@
    },
    {
     "p": "version.json",
-    "h": "f439f44a46d1aec03a139209f9e7b2d5ca3d172d22191d5e56173e6d73dd5039",
+    "h": "da3b048a1dbb519d1b9ccc8c09dea7d08289fc416ed6ee92c5b241b859e6c1df",
     "s": 13
    }
   ]
