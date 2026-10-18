@@ -1,8 +1,8 @@
 {
- "build": 25,
- "date": "2026-10-18T13:51:32.909Z",
+ "build": 26,
+ "date": "2026-10-18T14:21:04.037Z",
  "game": {
-  "base": "game/25/",
+  "base": "game/26/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -171,13 +171,13 @@
    },
    {
     "p": "index.html",
-    "h": "0639e1dbdac9eee88d81b8baeabae6c28e98cb0ed437703f06398df93bc43ecf",
-    "s": 38941
+    "h": "54c0d66fc707523535603d56b7a253d4b93b8c77364784187384d94a02a18c25",
+    "s": 39075
    },
    {
     "p": "js/audio.js",
-    "h": "a2eb5f960151443d05d14effcf6a2bac75c97601b6f92aed23cccfe17d53a919",
-    "s": 4118
+    "h": "cb5fb41ce079d910a262cf3bfca13b8eb4263069b91a0b699e97ad340a859f68",
+    "s": 4223
    },
    {
     "p": "js/avatar.js",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "ad9e0af837f51406c8dd6aa5f7abc9c63125ea0916b737e86732acb4b9e533b8",
-    "s": 192796
+    "h": "46b2e957e8182b8f1d054cde38834784ed7d88f577cd8a427ae6e96ec41b7172",
+    "s": 199248
    },
    {
     "p": "js/life.js",
@@ -231,8 +231,13 @@
    },
    {
     "p": "js/ui.js",
-    "h": "52c37cfd22a397d05bfc7b4b772f8d6111e1e39d0afd18fea4846ab5375ab55a",
-    "s": 20045
+    "h": "5cd486b9403dba521b939e5aad6829ecb8f2ac59f5de5cc757529253bb3aef63",
+    "s": 20264
+   },
+   {
+    "p": "js/voice.js",
+    "h": "060d2a2dac4dcc39ef7ff806b6b61d184696b13ae409fd520b6537d61ef14f73",
+    "s": 13263
    },
    {
     "p": "js/vr.js",
@@ -276,8 +281,8 @@
    },
    {
     "p": "shared/protocol.js",
-    "h": "f6184794e3bef417ae4a54272fc09ddee5f47ea7cd036691a89e1e073b3d4dc0",
-    "s": 8901
+    "h": "1e2705e0376e42d19e3e1cbc1e7793072d2bc1c6a74433d2c59f426766e10e17",
+    "s": 9770
    },
    {
     "p": "shared/races.js",
@@ -301,8 +306,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "fd194a788e5790142af0a2d0701e5369592a1ceeda0798e0a4dea646608f8b2d",
-    "s": 190805
+    "h": "c74161611804c23e78256a2bca695593d51ab54fbfc0d16360fa0513b5a5408e",
+    "s": 192048
    },
    {
     "p": "vendor/three.LICENSE",
@@ -316,16 +321,16 @@
    },
    {
     "p": "version.json",
-    "h": "9e7df0455630f4e77075f07d28e7ae9cc20a1515910cf0b0b5b7c4b5eac7498a",
+    "h": "ed5fad15040ab3ea9b4ccd7d81d9d866a0362898e830a767fe7d8e9abcf92198",
     "s": 13
    }
   ]
  },
  "android": {
-  "versionCode": 1,
+  "versionCode": 2,
   "apk": "android/MultiverseMayhem.apk",
-  "sha256": "8c2dc5ae89003614864bd0fefaa713affd3347ab7badd858481e2c8cafabb502",
-  "size": 4492330
+  "sha256": "04eca32aa2203bbb138fcd1376bc101e27eb4f544a669745d4463e87a67a5749",
+  "size": 7954032
  },
  "windows": {
   "version": 1,
