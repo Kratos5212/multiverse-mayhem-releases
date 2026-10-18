@@ -366,10 +366,12 @@
       // The Heart in the middle of a fleshy plaza; paths out to each part of the park (the
       // pancreas north, Spleen Mountain east, Bladder Falls south, the Bone Zone west, the
       // food and the bandstand north-west, the gates south-west) and a vein ring around.
-      L.radial({ plaza: 18, plazaStyle: 'flesh', spokes: [0, 45, 90, 135, 180, 225, 270, 315].map(d => d * DEG), spokeTo: 82, ring: 60, w: 7, style: 'vein' });
+      L.radial({ plaza: 18, plazaStyle: 'flesh', spokes: [0, 45, 90, 135, 180, 225, 270, 315].map(d => d * DEG), spokeTo: 165, ring: 60, w: 7, style: 'vein' });
+      L.ringRoad(0, 0, 118, 6, 'vein', 40);   // the outer park: the Brain Zone, Liver Lake, the Lungs, the Intestine...
       for (const a of [135 * DEG, 225 * DEG, 315 * DEG]) for (let d = 28; d < 80; d += 22) L.place('artery', Math.cos(a) * d, Math.sin(a) * d, Math.atan2(Math.cos(a), Math.sin(a)), 1, { onRoad: true });
       L.ring(0, 0, 22, 12, 'bonepillar', { roadside: true, a0: 0.2 });
       L.scatter([['bloodcell', 3], ['bonepillar', 1]], 40, { minR: 30 });
+      L.scatter([['bloodcell', 3], ['artery', 1], ['bonepillar', 1]], 40, { minR: 140 });
     },
 
     // The Pizza-Phone-Chair dimension looks like ordinary Earth streets, except the things
@@ -397,6 +399,26 @@
 
     // The Microverse: a hopeful little retro town. Dome houses on a street grid, towers
     // along the main avenue to the gooble box power plant.
+    // Mega Gargantua: a proud little city in a clearing between giant leaves and pebbles, the
+    // Great Hall at the top of the square and the road out at the bottom.
+    gargantua(L) {
+      L.plaza(0, 0, 16, 'white');
+      L.road(0, 16, 0, 44, 7, 'white');
+      L.ringRoad(0, 0, 32, 6, 'white', 18);
+      L.ringStreet(32, { setback: 6, spacing: 9, gap: 0.15, types: [['microdome', 3], ['microtower', 1]] }, 18);
+      L.scatter([['bigleaf', 3], ['bigpebble', 2], ['bigmushroom', 2]], 30, { minR: 50 });
+    },
+
+    // The Immortality Field Resort: a hotel plaza under the dome, palms along a ring road,
+    // loungers everywhere, and the Whirly Dirly off to the east.
+    resort(L) {
+      L.plaza(0, 0, 18, 'white');
+      L.ringRoad(0, 0, 34, 6, 'white', 18);
+      L.road(0, 18, 0, 70, 6, 'white');
+      L.ringStreet(34, { setback: 6, spacing: 8, gap: 0.12, types: [['palm', 2], ['sunlounger', 2], ['flowerbed', 1]] }, 18);
+      L.scatter([['palm', 3], ['sunlounger', 2]], 20, { minR: 50 });
+    },
+
     microverse(L) {
       L.plaza(0, 0, 18, 'white');
       L.road(0, 18, 0, 30, 9, 'white');

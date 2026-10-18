@@ -154,11 +154,11 @@
       props: [['cottontree', 30], ['lollipop', 30], ['rainbow', 6], ['candyrock', 20]], npc: [['froopy', 14]], pickups: { f: 6, p: 6, s: 4 }, mat: 'f',
     },
     {
-      id: 'anatomy', flat: 100, name: 'Anatomy Park', code: 'AP-1', seed: 1441, gravity: 24, amp: 4, scale: 0.02,
-      blurb: 'A theme park inside a giant corpse floating in space, from "Anatomy Park". Fly in through any hole you like. Rides, attractions, food, and a disease problem.',
-      sky: ['#5a0a1a', '#c84a5a'], fog: '#7a2a3a', fogFar: 180, sun: '#ffd0d0', ambient: '#d06070',
+      id: 'anatomy', flat: 190, bound: 260, name: 'Anatomy Park', code: 'AP-1', seed: 1441, gravity: 24, amp: 4, scale: 0.02,
+      blurb: 'A theme park inside Ruben, a giant Santa-looking corpse floating over Earth, from "Anatomy Park". Fly in through any hole you like. Eleven rides, a lake, trampolines, comedy, food, and a disease problem.',
+      sky: ['#5a0a1a', '#c84a5a'], fog: '#7a2a3a', fogFar: 280, sun: '#ffd0d0', ambient: '#d06070',
       ground: ['#c84a5a', '#d85a6a', '#a83a4a'], accent: '#ffe066',
-      props: [['bloodcell', 40], ['bonepillar', 16], ['artery', 14]], npc: [['parkguest', 16], ['parkstaff', 4], ['bacteria', 4], ['drbloom', 1, 8, -12], ['annie', 1, -10, 8], ['hepc', 1, 12, 14], ['poncho', 1, -48, -48]], pickups: { g: 12, s: 4 }, mat: 'g',
+      props: [['bloodcell', 64], ['bonepillar', 24], ['artery', 22]], npc: [['parkguest', 28], ['parkstaff', 8], ['bacteria', 6], ['drbloom', 1, 8, -12], ['annie', 1, -10, 8], ['hepc', 1, 12, 14], ['poncho', 1, -48, -48]], pickups: { g: 12, s: 4 }, mat: 'g',
     },
     {
       id: 'pizzaworld', flat: 135, name: 'Pizza-Phone-Chair Dimension', code: 'PZ-35', seed: 3553, gravity: 24, amp: 3, scale: 0.012, outsideCurve: true,
@@ -176,6 +176,26 @@
       // Raiders out in the sand, Death Stalker cars roaming the tracks, the Death Stalkers on
       // the Ring's stands, and Hemorrhage by the garage.
       npc: [['raider', 8], ['stalkercar', 3], ['deathfan', 3, -17.5, 0, 2], ['deathfan', 3, 17.5, 0, 2], ['deathfan', 2, 0, -17.5, 2], ['hemorrhage', 1, 8, -25, 1]],
+    },
+    {
+      // Life-size for the Mega Gargantuans, who are a few millimetres tall: you come in tiny, so
+      // here you're their size. Giant leaves, giant ants, and a very proud little city.
+      id: 'gargantua', flat: 70, name: 'Mega Gargantua (tiny land)', code: 'MG-1', seed: 7117, gravity: 22, amp: 3, scale: 0.02, bound: 120, tinyWorld: true,
+      blurb: 'A whole civilisation on a mossy rock in Earth\'s woods, a few millimetres tall. The name is aspirational.',
+      sky: ['#5aa8e8', '#d8f0ff'], fog: '#b8e0c8', fogFar: 180, sun: '#fff4dc', ambient: '#a8d8b0',
+      ground: ['#4a8a3a', '#5a9a46', '#3e7a30'], accent: '#ffd84d',
+      props: [['bigleaf', 14], ['bigpebble', 10], ['bigmushroom', 8]], npc: [['gargantuan', 14], ['giantant', 5]], pickups: { c: 6, s: 6 }, mat: 's',
+    },
+    {
+      // "The Whirly Dirly Conspiracy": a resort inside an immortality field. Nothing can die
+      // inside the dome (you just pop back together); outside it, everything still can. The
+      // Whirly Dirly's track loops out past the edge for a few seconds.
+      id: 'resort', flat: 90, name: 'Immortality Field Resort', code: 'IF-5', seed: 3535, gravity: 24, amp: 2, scale: 0.012, bound: 150,
+      field: { x: 0, z: 0, r: 72 },
+      blurb: 'A luxury resort inside an immortality field. Nobody can die here, so the guests do whatever they want. Just stay inside the dome.',
+      sky: ['#48b4ff', '#e4f6ff'], fog: '#cdeeff', fogFar: 260, sun: '#fffbe8', ambient: '#bfe4ff',
+      ground: ['#e6d6a0', '#7ccc6c', '#d8c88e'], accent: '#ff7ad0',
+      props: [['palm', 30], ['sunlounger', 18], ['partylight', 10], ['flowerbed', 12]], npc: [['resortguest', 14], ['resortstaff', 4]], pickups: { k: 8, p: 6 }, mat: 'k',
     },
     {
       id: 'microverse', flat: 125, name: 'The Microverse', code: 'MV-1', seed: 5775, gravity: 22, amp: 3, scale: 0.014,
@@ -324,7 +344,7 @@
       sky: ['#6fb8f0', '#e2f2ff'], fog: '#d4e6f4', fogFar: 240, sun: '#fff4dc', ambient: '#a8c4e0',
       ground: ['#8a9a7a', '#96a684', '#7e8e70'], accent: '#ffffff',
       props: [], spawn: { x: 0, z: 8, spread: 6 },
-      npc: [['neighbor', 12], ['schoolkid', 3], ['cop', 4], ['crimelord', 1, 62, 52], ['crimelord', 1, 78, 50], ['crimelord', 1, 64, 68]], pickups: { s: 20, k: 3 }, mat: 's',
+      npc: [['neighbor', 12], ['schoolkid', 3], ['cop', 4], ['crimelord', 1, 62, 52], ['crimelord', 1, 78, 50], ['crimelord', 1, 64, 68], ['liusin', 1, 36, -4]], pickups: { s: 20, k: 3 }, mat: 's',
     },
     {
       id: 'dc', region: 'earth', flat: 172, name: 'Earth: Washington, D.C.', code: 'C-137', seed: 1776, gravity: 24, amp: 1, scale: 0.01,
@@ -721,6 +741,7 @@
     { id: 'uranus', name: 'Uranus', icon: '🧊', prime: 'uranus', solar: true, blurb: 'Nobody lives here.' },
     { id: 'neptune', name: 'Neptune', icon: '🔱', prime: 'neptune', solar: true, blurb: 'An ocean planet, and the god it is named after.' },
     { id: 'pluto', name: 'Pluto', icon: '🍄', prime: 'pluto', solar: true, blurb: 'Is it a planet? Do NOT ask a Plutonian that.' },
+    { id: 'resort', name: 'Immortality Field Resort', icon: '🏝️', prime: 'resort', unique: true, blurb: 'A holiday planet where nobody can die. Inside the dome.' },
     { id: 'beyond', name: 'Beyond the Curve', icon: 'Ω', prime: 'beyond', realm: true, unique: true, blurb: 'Outside the Central Finite Curve. There is only one of it, by definition.' },
   ];
   // Other timelines, as [id, of (the dimension), name, code, blurb, look].
@@ -835,7 +856,7 @@
   const SPACE = { suburbia: 'c137', downtown: 'c137', dc: 'c137', area51: 'c137', moon: 'c137', featherhold: 'c137', gazorp: 'c137', squanch: 'c137', purge: 'c137', gearworld: 'c137', unityworld: 'c137', federation: 'c137', blips: 'c137', bazaar: 'c137', snakeplanet: 'c137', megaseed: 'c137', plumbus: 'c137', giantland: 'c137', hamsterworld: 'c137', sun: 'c137', mercury: 'c137', venus: 'c137', mars: 'c137', jupiter: 'c137', saturn: 'c137', titan: 'c137', uranus: 'c137', neptune: 'c137', pluto: 'c137' };
   // The solar system is a short hop too: Rick flies to Pluto for an awards dinner.
   const NEAR = { suburbia: 1, downtown: 1, dc: 1, area51: 1, moon: 1, sun: 1, mercury: 1, venus: 1, mars: 1, jupiter: 1, saturn: 1, titan: 1, uranus: 1, neptune: 1, pluto: 1 };
-  const POCKET = { microverse: 1, miniverse: 1, teenyverse: 1, froopy: 1 };
+  const POCKET = { microverse: 1, miniverse: 1, teenyverse: 1, froopy: 1, gargantua: 1 };
   for (const d of MM.DIMS) { if (SPACE[d.id]) d.space = SPACE[d.id]; if (NEAR[d.id]) d.near = true; if (POCKET[d.id]) d.pocket = true; }
   // Public interdimensional stations, only where they exist in the lore.
   MM.DIM_BY_ID.citadel.station = { x: 0, z: -14, name: 'Citadel Portal Station', fee: { k: 3 }, free: ['genius', 'sidekick', 'evilmorty'] };
@@ -848,7 +869,7 @@
     o = o || {};
     if (!B || from === to) return 'You are already here.';
     if (B.hidden) return 'You can only get there through its door.';
-    if (B.pocket) return 'Only through its entrance: ' + (to === 'microverse' ? "the car battery in Rick's garage." : to === 'miniverse' ? "Zeep's battery, in the Microverse." : to === 'teenyverse' ? "Kyle's battery, in the Miniverse." : to === 'anatomy' ? 'Anatomy Park, inside Ruben, on Earth.' : 'the chalk door on Earth.');
+    if (B.pocket) return 'Only through its entrance: ' + (to === 'gargantua' ? 'a tiny city on a mossy rock in Earth\'s woods (shrink first).' : to === 'microverse' ? "the car battery in Rick's garage." : to === 'miniverse' ? "Zeep's battery, in the Microverse." : to === 'teenyverse' ? "Kyle's battery, in the Miniverse." : to === 'anatomy' ? 'Anatomy Park, inside Ruben, on Earth.' : 'the chalk door on Earth.');
     if (B.outsideCurve && !(method === 'portal' && o.gold)) return 'Outside the Central Finite Curve. Only a gold portal goes there.';
     if (method === 'portal' || method === 'station') return '';
     // Lightspeed: from space, in your ship. Planets you can see you can just fly into.
@@ -937,6 +958,12 @@
     scraptower:  { r: 2.0, h: 9, hp: 160, drop: { s: 5 } },
     cactus:      { r: 0.6, h: 3.4, hp: 25, drop: { g: 1 } },
     microtower:  { r: 2.0, h: 14, hp: 200, drop: { c: 2, s: 2 } },
+    // Mega Gargantua: the woods floor, at the size of a few-millimetre-tall people.
+    bigleaf:     { r: 3.2, h: 1.2, hp: 1e9, drop: {}, fixed: true },
+    bigpebble:   { r: 2.6, h: 3.2, hp: 1e9, drop: {}, fixed: true },
+    bigmushroom: { r: 2.4, h: 7, hp: 160, drop: { m: 1 } },
+    palm:        { r: 0.4, h: 7, hp: 50, drop: { s: 1 } },
+    sunlounger:  { r: 0.9, h: 0.8, hp: 20, drop: { s: 1 } },
     microdome:   { r: 3.0, h: 4, hp: 120, drop: { c: 2 } },
     cityblock:   { r: 4.5, h: 16, hp: 400, drop: { s: 4, c: 1 } },
     unitystatue: { r: 2.0, h: 9, hp: 300, drop: { k: 3 } },
@@ -1341,6 +1368,52 @@
       talk: ['They feed us twice a day. It is not terrible.', 'Do not let them take you to the vet.', 'I used to be an accountant. Now I fetch.', 'Psst. Is there a way out of here?'],
       moods: { line: 45, gift: 10, errand: 18, buff: 6, follow: 15, angry: 2, prank: 2, dance: 2 } },
     dogsoldier: { name: 'Mech Dog', hp: 75, speed: 4.6, hostile: true, dmg: 12, drop: { s: 3, p: 2 }, r: 0.9, h: 1.8 },
+    gargantuan: { name: 'Mega Gargantuan', hp: 35, speed: 2.6, hostile: false, dmg: 0, drop: { s: 1, c: 1 }, r: 0.6, h: 1.8,
+      human: { species: ['human'], top: ['vest', 'tshirt', 'polo'], acc: ['headband', 'none', 'crown'], colors: { topColor: '#3a8a5a', accColor: '#ffd84d' } },
+      names: ['Gargantua the Mighty', 'Colossa', 'Enormo', 'Titanica', 'Big Steve', 'Behemoth Jr.'],
+      talk: ['Welcome to Mega Gargantua! We are the Mega Gargantuans. The name is aspirational.', 'You are tiny too? Then you are our size. Welcome, giant!', 'Beware the ants. They are the size of houses. They are also the size of ants.', 'Our president will sign any treaty that comes with a selfie.', 'Last week a human stepped on the eastern district. We rebuilt by Tuesday.'],
+      moods: { line: 55, gift: 12, trade: 10, errand: 8, buff: 8, dance: 4, angry: 3 } },
+    giantant: { name: 'Giant Ant', hp: 70, speed: 4.8, hostile: true, dmg: 10, drop: { s: 2, m: 1 }, r: 1.1, h: 1.2 },
+    // ----- Batch 2 -----
+    giantbaby: { name: 'Giant Baby', hp: 3000, speed: 3.4, hostile: true, dmg: 25, drop: { k: 10, g: 6 }, r: 5, h: 12, aggro: 60, leash: 999, stomp: true },
+    // "A Ricker Runs Through It": somebody hacked the Smith house. Its lawn turrets and its
+    // drones fire on everyone, family included, until they are smashed (or a Rick reboots it).
+    housebot: { name: 'Hacked Lawn Turret', hp: 60, speed: 0, hostile: true, dmg: 0, drop: { s: 3 }, r: 0.7, h: 1.6, gun: 'housegun', aggro: 28, leash: 999 },
+    housedrone: { name: 'Hacked House Drone', hp: 35, speed: 6, hostile: true, dmg: 0, drop: { s: 2, c: 1 }, r: 0.6, h: 0.6, fly: 4, gun: 'housegun', aggro: 28, leash: 60 },
+    // "Rick Potion #9": everyone falls in love with Patient Zero, then turns into a mantis
+    // person, then into a Cronenberg. They only want the one person.
+    lover: { name: 'Lovestruck Local', hp: 40, speed: 5.2, hostile: true, dmg: 0, hug: true, ring: true, leash: 999, aggro: 999, drop: { p: 1 }, r: 0.6, h: 1.8,
+      human: { unarmed: true, species: ['human'], top: ['polo', 'sweater', 'tshirt'], acc: ['none'], eyes: ['wide'], colors: { topColor: '#ff7ab8' } },
+      names: ['Lovestruck Gary', 'Lovestruck Brenda', 'Lovestruck Doug', 'Lovestruck Pam', 'Lovestruck Todd', 'Lovestruck Marcy'] },
+    mantisman: { name: 'Mantis Person', hp: 60, speed: 5.6, hostile: true, dmg: 9, drop: { g: 2 }, r: 0.6, h: 2.0, aggro: 22,
+      human: { unarmed: true, species: ['insect'], top: ['none'], acc: ['none'], eyes: ['wide'], skin: '#7ac84a', colors: { pantsColor: '#4a8a2a', shoeColor: '#3a6a1a' } } },
+    // "Big Trouble in Little Sanchez": the school's gym coach is a vampire. Only Tiny Rick
+    // notices (talk to him as Tiny Rick).
+    coachferatu: { name: 'Coach Feratu', hp: 80, speed: 2.4, hostile: false, dmg: 0, drop: { s: 2 }, r: 0.6, h: 1.9,
+      human: { unarmed: true, species: ['human'], top: ['tshirt'], acc: ['none'], eyes: ['sleepy'], skin: '#d6d4e4', look: { hair: 'slick', hairColor: '#1a1a22', topColor: '#7a1a2a', shirtColor: '#7a1a2a', pantsColor: '#2a2a3a', mouth: 'grin', height: 1.25 } },
+      names: ['Coach Feratu'],
+      talk: ['Drop and give me twenty. I will watch from the shade.', 'Gym class is at night this semester. For your health.', 'I do not need a mirror to look this good.', 'Garlic is not allowed in my gym. School policy.'],
+      moods: { line: 80, buff: 10, angry: 10 } },
+    feratu: { name: 'Coach Feratu (vampire)', hp: 220, speed: 6.4, hostile: true, dmg: 14, drop: { k: 12, m: 1 }, r: 0.6, h: 2.0, leash: 999, aggro: 40,
+      human: { unarmed: true, species: ['human'], top: ['tshirt'], acc: ['none'], eyes: ['wide'], skin: '#c8c4dc', look: { hair: 'slick', hairColor: '#1a1a22', topColor: '#7a1a2a', shirtColor: '#7a1a2a', pantsColor: '#2a2a3a', mouth: 'open', brow: 'angry', height: 1.3 } } },
+    // "Rick Fu Hustle": a kung fu master in Downtown who teaches the Five-Step Death Punch.
+    liusin: { name: 'Liu Sin', hp: 400, speed: 0.8, hostile: false, dmg: 0, drop: {}, r: 0.6, h: 1.8,
+      human: { unarmed: true, species: ['human'], top: ['sweater'], acc: ['none'], eyes: ['sleepy'], look: { hair: 'bald', brow: 'normal', mouth: 'flat', topColor: '#c8302a', shirtColor: '#c8302a', pantsColor: '#1a1a1a', shoeColor: '#1a1a1a', skin: '#e8c8a0', height: 1.05 } },
+      names: ['Liu Sin'],
+      talk: ['Five steps. Never six.', 'The punch is easy. Knowing when to walk away is the lesson.', 'Punchy? Punchy is a good boy.'],
+      moods: { line: 100 } },
+    // The Immortality Field Resort: the guests, and the staff who are very relaxed about safety.
+    resortguest: { name: 'Resort Guest', hp: 30, speed: 2.4, hostile: false, dmg: 0, drop: { k: 1 }, r: 0.6, h: 1.8,
+      human: { unarmed: true, species: ['human', 'alien', 'alien'], top: ['tank', 'tshirt', 'polo'], acc: ['none', 'none', 'cap'] },
+      names: ['Guest', 'Mr. Splashy', 'Lounge Larry', 'Tanya', 'Gorpo', 'Zylix', 'Brad (immortal)'],
+      talk: ['I jumped off the hotel roof nine times today. Nine!', 'Nothing can hurt you in here. That is the whole point. Do not ask about the Whirly Dirly.', 'Stay inside the dome, honey. Outside, you can still die.',
+        'I lost a leg in a juggling accident this morning. It grew back before lunch.', 'The Whirly Dirly? Best ride in the galaxy. Mostly safe.'],
+      moods: { line: 55, gift: 12, trade: 8, errand: 8, buff: 10, follow: 3, prank: 2, dance: 2 } },
+    resortstaff: { name: 'Resort Staff', hp: 30, speed: 2.2, hostile: false, dmg: 0, drop: { k: 2 }, r: 0.6, h: 1.8,
+      human: { unarmed: true, species: ['alien'], top: ['polo'], acc: ['none'], colors: { topColor: '#ff7ad0', shirtColor: '#ff7ad0', pantsColor: '#f4f4f0' } },
+      names: ['Concierge Blorp', 'Lifeguard Zed', 'Manager Plinth'],
+      talk: ['Welcome to the Immortality Field Resort! Please do not leave the dome.', 'The Whirly Dirly leaves the field for only a few seconds. Our lawyers say that is fine.', 'Towels are free. Death is extra.'],
+      moods: { line: 60, gift: 15, buff: 15, trade: 10 } },
     seedbeast: { name: 'Seed Beast', hp: 65, speed: 4.4, hostile: true, dmg: 11, drop: { g: 2, m: 1 }, r: 1.0, h: 1.4 },
     butterbot: { name: 'Butter Robot', hp: 20, speed: 1.2, hostile: false, dmg: 0, drop: { s: 1 }, r: 0.4, h: 0.6,
       names: ['Butter Robot'], talk: ['What is my purpose?', 'I pass butter?', 'Oh my god.', 'Yeah, welcome to the club, pal.', 'I am still processing that.'],
@@ -1607,6 +1680,12 @@
     suburbia: [
       { id: 'party', name: 'Block Party!', text: 'The neighbours are throwing a block party. Free stuff if you chat.', spawn: [['neighbor', 6]], talkBoost: 1, dur: 70 },
       { id: 'invasion', name: 'Alien Invasion!', text: 'Invaders are landing in the suburbs. Defend the lawns (or join in).', spawn: [['invader', 7]], dur: 90 },
+      // The house defences turn on everyone. Smash them all, or a Rick reboots them at the console.
+      { id: 'hoghack', name: 'House Hacked!', text: 'Someone hacked the Smith house. Its turrets and drones are shooting at everyone. Smash them, or get a Rick to the console.', house: [['housebot', 4], ['housedrone', 3]], clear: { k: 6, s: 4 }, dur: 120 },
+      // A baby the size of a building crawls through town. Take it down together.
+      { id: 'giantbaby', name: 'Giant Baby!', text: 'A baby the size of a building is crawling through town, flattening everything. Nobody knows where it came from. Rick says: do not ask. Take it down!', boss: [['giantbaby', 1]], clear: { k: 20, m: 2, c: 6 }, dur: 240 },
+      // Rick Potion #9: one player is Patient Zero. Everyone wants them. Then it gets worse.
+      { id: 'love', name: 'Love Potion Outbreak!', text: 'The love potion got into the flu season. Everyone is in love with Patient Zero.', patient: 1, dur: 180 },
     ],
     meatlands: [
       { id: 'meatrain', name: 'Meat Rain', text: 'It is raining goo. Grab it while it is warm.', loot: ['g', 16], dur: 40 },
@@ -2268,7 +2347,7 @@
       });
     }
     // Anatomy Park's corpse floats above every Earth.
-    if (!tw && MM.BODY && (home === 'suburbia' || MM.DIM_BY_ID[home].variantOf === 'suburbia')) { const [bx, by, bz] = MM.BODY.at; planets.push({ dim: 'anatomy', body: true, x: bx, y: by, z: bz, r: 40 }); }
+    if (!tw && MM.BODY && (home === 'suburbia' || MM.DIM_BY_ID[home].variantOf === 'suburbia')) { const [bx, by, bz] = MM.BODY.at; planets.push({ dim: 'anatomy', body: true, x: bx, y: by, z: bz, r: 90 * (MM.BODY.scale || 1) }); }
     const H = MM.DIM_BY_ID[home];
     const d = {
       id, name: tw ? 'Space (' + (MM.PARALLEL_BY_K[tw] || {}).label + ')' : 'Space around ' + H.name, code: tw ? '?/' + tw : H.code, hidden: true, planets, spaceOf: key,

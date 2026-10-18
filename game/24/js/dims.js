@@ -2285,6 +2285,63 @@
       s.add(P.box, '#fff4d8', [-2.6, 2.2, 3.02], null, [2, 1.6, 0.04], true);
       for (let i = 0; i < 4; i++) s.add(P.sphereLo, ['#e8405a', '#8a3a5a', '#f0d870', '#ff8ac8'][i], [-3.3 + i * 0.5, 1.8, 3.08], null, [0.22, 0.25, 0.1]);
     },
+    // The Brain Zone: a giant pink brain on a bone plinth, its folds glowing with thoughts.
+    lm_brain(s) {
+      s.add(P.cyl, '#f0e4d0', [0, 1, 0], null, [8.5, 2, 8.5]);
+      for (const sx of [-1, 1]) {
+        s.add(P.sphere, '#f0a0b0', [sx * 3.2, 7, 0], null, [3.6, 4.4, 6.8]);
+        // The folds: bumps all over the surface of each half.
+        for (let i = 0; i < 26; i++) {
+          const u = i / 26 * Math.PI * 2 * 3.1, v = 0.15 + (i % 7) / 7 * 1.2;
+          const nx = Math.cos(u) * Math.sin(v), ny = Math.cos(v), nz = Math.sin(u) * Math.sin(v);
+          if (nx * sx < -0.6) continue;   // (not between the halves)
+          s.add(P.sphereLo, i % 2 ? '#e890a4' : '#f8b0c0', [sx * 3.2 + nx * 3.4, 7 + ny * 4.1, nz * 6.4], null, [1.3, 0.9, 1.6]);
+        }
+      }
+      s.add(P.sphere, '#c86a80', [0, 3.6, -5.5], null, [2.4, 2, 2.4]);   // the brain stem
+      for (let i = 0; i < 6; i++) s.add(P.sphereLo, '#ffe066', [Math.sin(i * 2.1) * 4, 12 + (i % 2), -4 + i * 1.6], null, [0.3, 0.3, 0.3], true);   // a thought, passing
+    },
+    // Liver Lake: a dark red lake in a liver-shaped bank, with a little jetty.
+    lm_liverlake(s) {
+      s.add(P.cyl, '#8a2a2a', [0, 0.12, 0], null, [15, 0.24, 12]);
+      s.add(P.cyl, '#6a1a22', [0, 0.2, 0], null, [13.6, 0.16, 10.6], true);
+      s.add(P.cyl, '#8a2a2a', [-6, 0.12, 6], null, [6, 0.24, 5]);
+      s.add(P.box, '#c8a878', [-16, 0.35, 0], null, [4, 0.2, 1.6]);   // the jetty
+      for (const z of [-0.6, 0.6]) s.add(P.cylLo, '#8a6a4a', [-14.2, 0.2, z], null, [0.12, 0.8, 0.12]);
+    },
+    // The Lungs: two big pink balloon lungs on a windpipe, the trampolines at their feet.
+    lm_lungs(s) {
+      s.add(P.cyl, '#e8c0c8', [0, 6, -2], null, [0.9, 12, 0.9]);
+      for (const sx of [-1, 1]) {
+        s.add(P.sphere, '#f0a0b0', [sx * 4, 7, -2], null, [3.6, 6, 3]);
+        for (let i = 0; i < 6; i++) s.add(P.capsule, '#d87a90', [sx * (2 + i * 0.5), 9 - i * 1.1, -0.6], [0, 0, sx * (0.6 + i * 0.1)], [0.25, 2, 0.25]);
+      }
+      s.add(P.sphere, '#e8c0c8', [0, 12.4, -2], null, [1.4, 1, 1.4]);
+    },
+    // The Funny Bone: a little club built from bones, a mic on a stage, a neon smile.
+    lm_comedyclub(s) {
+      s.add(P.box, '#3a1a2a', [0, 2.6, 0], null, [9, 5.2, 7]);
+      // Bones at the corners and over the door: a shaft with knobbly ends.
+      const bone = (A, B) => { limb(s, '#f0e4d0', 0.35, A, B); for (const E of [A, B]) for (const k of [-1, 1]) s.add(P.sphere, '#f4ead8', [E[0] + (A[1] === B[1] ? 0 : k * 0.3), E[1], E[2] + (A[1] === B[1] ? k * 0.3 : 0)], null, [0.45, 0.45, 0.45]); };
+      for (const sx of [-1, 1]) for (const sz of [-1, 1]) bone([sx * 4.6, 0.2, sz * 3.6], [sx * 4.6, 5.4, sz * 3.6]);
+      bone([-4.6, 5.6, 3.7], [4.6, 5.6, 3.7]);
+      s.add(P.box, '#ff6fd0', [0, 4.4, 3.56], null, [4.4, 0.3, 0.05], true);
+      s.add(P.box, '#1a0a12', [0, 1.4, 3.52], null, [1.8, 2.8, 0.05]);
+    },
+    // The Taste Bud Food Court: a long counter under a tongue-pink awning, and the taste buds.
+    lm_tastebuds(s) {
+      s.add(P.box, '#f2e8d0', [0, 0.7, 0], null, [12, 1.4, 2]);
+      s.add(P.box, '#e86a8a', [0, 3.6, -0.4], [0.15, 0, 0], [13, 0.2, 3.4]);
+      for (let i = -2; i <= 2; i++) { s.add(P.cylLo, '#8a8e94', [i * 2.8, 2.2, 1.1], null, [0.08, 3, 0.08]); s.add(P.sphere, ['#ffd84d', '#ff8ac8', '#7ad8ff', '#5dff8a', '#ff9a3a'][i + 2], [i * 2.6, 1.7, 0], null, [0.6, 0.4, 0.6]); }
+      for (let i = 0; i < 6; i++) s.add(P.cyl, '#d86a7a', [-5 + i * 2, 0.4, 3.4], null, [0.7, 0.8, 0.7]);   // stools (taste buds)
+    },
+    // The Tapeworm Petting Zoo: a fenced pen, and a very long, very friendly worm.
+    lm_tapeworm(s) {
+      for (let i = 0; i < 16; i++) { const a = i / 16 * Math.PI * 2; s.add(P.box, '#c8a878', [Math.cos(a) * 6.5, 0.5, Math.sin(a) * 6.5], [0, -a, 0], [0.2, 1, 2.6]); }
+      for (let i = 0; i < 14; i++) s.add(P.sphere, i % 2 ? '#f0e8c8' : '#e8dcb0', [Math.cos(i * 0.5) * (1 + i * 0.3), 0.6, Math.sin(i * 0.5) * (1 + i * 0.3)], null, [0.6, 0.5, 0.6]);
+      s.add(P.sphere, '#f0e8c8', [0, 1, 0], null, [0.8, 0.8, 0.8]);
+      for (const sx of [-1, 1]) s.add(P.sphereLo, '#111', [sx * 0.3, 1.2, 0.65], null, [0.12, 0.12, 0.08]);
+    },
     // A food stand: a cart with a striped umbrella.
     lm_foodstand(s) {
       s.add(P.box, '#f2e8d0', [0, 0.6, 0], null, [2.8, 1.2, 1.4]);
@@ -2647,6 +2704,75 @@
         for (const x of [-4.4, 4.4]) for (let k = 0; k < 3; k++) s.add(P.cyl, '#1e1e22', [x, 0.25 + k * 0.42, gz * 16.5], null, [0.55, 0.4, 0.55]);   // stacked tyres
         for (const x of [-3.3, 3.3]) s.add(P.cone, '#ff8a2a', [x, 8.2, gz * 13.8], null, [0.2, 0.5, 0.2], true);   // torches
       }
+    },
+    // A mossy rock in the woods with a whole city on it, a few millimetres tall: the Mega
+    // Gargantuans. Towers, domes, a flag and a little road down the side.
+    // A Tiny Rick vat: a teenage Rick clone floating in green, under a hood of pipes.
+    lm_tinyvat(s) {
+      s.add(P.cyl, '#59606e', [0, 0.2, 0], null, [1.2, 0.4, 1.2]);
+      s.add(P.cyl, '#5dff8a', [0, 1.4, 0], null, [1.05, 2.0, 1.05], true);
+      s.add(P.capsule, '#ddd7c9', [0, 1.15, 0], null, [0.2, 0.7, 0.16]);
+      s.add(P.sphere, '#ddd7c9', [0, 1.9, 0], null, [0.24, 0.28, 0.24]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.cone, '#6fd2df', [Math.cos(a) * 0.17, 2.12, Math.sin(a) * 0.17], [Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7], [0.07, 0.22, 0.07]); }
+      s.add(P.cyl, '#59606e', [0, 2.5, 0], null, [1.2, 0.3, 1.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.4, 2.9, 0], null, [0.12, 0.6, 0.12]);
+      s.add(P.box, '#3a3f4a', [0.75, 1.1, 0.5], null, [0.3, 0.6, 0.2]);
+      s.add(P.box, '#ff5a5a', [0.75, 1.25, 0.61], null, [0.12, 0.12, 0.02], true);
+    },
+    // The Immortality Hotel: a tall pink-and-white tower with a pool deck and a rooftop diving board.
+    lm_resorthotel(s) {
+      s.add(P.box, '#f4f0e8', [0, 0.4, 0], null, [15, 0.8, 13]);
+      s.add(P.box, '#f8e8f0', [0, 6, -1.5], null, [10, 11, 7]);
+      for (let f = 0; f < 5; f++) for (let i = -2; i <= 2; i++) s.add(P.box, '#7ad8ff', [i * 1.9, 2.4 + f * 2, 2.02], null, [1.2, 1.0, 0.05], true);
+      for (let f = 0; f < 5; f++) s.add(P.box, '#ff7ad0', [0, 1.6 + f * 2, 2.3], null, [10.2, 0.15, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 11.8, -1.5], null, [10.6, 0.6, 7.6]);
+      s.add(P.box, '#e8e4d8', [3.5, 11.9, 2.6], null, [0.8, 0.12, 3]);   // the diving board off the roof
+      s.add(P.box, '#4ab8ff', [0, 0.85, 5], null, [8, 0.1, 3.6], true);  // the pool
+      s.add(P.box, '#3a3f4a', [0, 1.6, 2.3], null, [2.4, 2.4, 0.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#f4f0e8', [sx * 6.2, 2.5, 5.6], null, [0.25, 5, 0.25]);
+    },
+    lm_tinyland(s) {
+      s.add(P.sphere, '#7a7a72', [0, 0.35, 0], null, [1.55, 0.6, 1.4]);
+      s.add(P.sphere, '#5a9a46', [0, 0.62, 0], null, [1.4, 0.32, 1.25]);
+      const tw = ['#e8ecf0', '#c8d8e8', '#f4e8c8'];
+      for (let i = 0; i < 14; i++) { const a = i * 2.4, r = 0.25 + (i % 4) * 0.22; s.add(P.box, tw[i % 3], [Math.cos(a) * r, 0.92 + (i % 3) * 0.04, Math.sin(a) * r * 0.85], [0, a, 0], [0.07, 0.12 + (i % 5) * 0.08, 0.07]); }
+      for (let i = 0; i < 6; i++) { const a = i * 1.1 + 0.4; s.add(P.hemi, '#a8e0ff', [Math.cos(a) * 0.75, 0.88, Math.sin(a) * 0.62], null, [0.07, 0.06, 0.07], true); }
+      s.add(P.cylLo, '#3a3a3a', [0.05, 1.2, 0.05], null, [0.006, 0.35, 0.006]);
+      s.add(P.box, '#ffd84d', [0.09, 1.33, 0.05], null, [0.08, 0.05, 0.004]);
+      s.add(P.box, '#c8b89a', [0.9, 0.5, 0.2], [0, 0, -0.6], [0.5, 0.02, 0.08]);   // the road down
+    },
+    // The Great Hall of the Mega Gargantuans: columns, a dome, banners, very proud.
+    lm_gargantuahall(s) {
+      s.add(P.box, '#e8e4d8', [0, 0.6, 0], null, [15, 1.2, 11]);
+      for (let i = -3; i <= 3; i++) s.add(P.cyl, '#f4f0e4', [i * 2.1, 4.4, 5], null, [0.5, 6.6, 0.5]);
+      s.add(P.box, '#e8e4d8', [0, 4.8, -1], null, [13, 7.2, 8]);
+      s.add(P.box, '#d8d2c2', [0, 8.1, 1.2], null, [15.2, 0.8, 9.6]);
+      s.add(P.hemi, '#ffd84d', [0, 8.5, -1], null, [4.4, 3.4, 4.4]);
+      for (const x of [-5.5, 5.5]) s.add(P.box, '#3a8a5a', [x, 5.2, 5.4], null, [1.4, 3.6, 0.06]);
+      s.add(P.box, '#3a4a6a', [0, 2.6, 3.05], null, [2.6, 3.8, 0.1]);
+    },
+    // The woods floor at the Mega Gargantuans' size.
+    bigleaf(s) {
+      s.add(P.sphere, '#4a8a2a', [0, 0.25, 0], [0, 0.4, 0], [3.2, 0.12, 1.6]);
+      s.add(P.box, '#5a7a2a', [0, 0.36, 0], [0, 0.4, 0], [6.0, 0.08, 0.14]);
+      for (let i = -2; i <= 2; i++) s.add(P.box, '#5a7a2a', [i * 0.9 * Math.cos(0.4), 0.34, -i * 0.9 * Math.sin(0.4)], [0, 0.4 + 0.9, 0], [2.2, 0.06, 0.08]);
+    },
+    bigpebble(s) { s.add(P.sphere, '#8a8a84', [0, 1.4, 0], null, [2.6, 1.7, 2.2]); s.add(P.sphere, '#9a9a92', [0.8, 2.2, 0.4], null, [1.2, 0.9, 1.1]); },
+    palm(s) {
+      for (let i = 0; i < 6; i++) s.add(P.cyl, i % 2 ? '#a07a4a' : '#8a6a3e', [Math.sin(i * 0.25) * 0.3, 0.6 + i * 1.05, 0], [0, 0, -0.08], [0.32 - i * 0.02, 1.1, 0.32 - i * 0.02]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.box, '#3aa04a', [0.4 + Math.cos(a) * 1.3, 6.6, Math.sin(a) * 1.3], [0, -a, -0.35], [2.6, 0.08, 0.6]); }
+      for (let i = 0; i < 3; i++) s.add(P.sphereLo, '#6a4a2a', [0.4 + Math.cos(i * 2) * 0.3, 6.3, Math.sin(i * 2) * 0.3], null, [0.22, 0.22, 0.22]);
+    },
+    sunlounger(s) {
+      s.add(P.box, '#f4f4f0', [0, 0.35, 0.2], null, [0.7, 0.1, 1.4]);
+      s.add(P.box, '#f4f4f0', [0, 0.6, -0.65], [-0.9, 0, 0], [0.7, 0.1, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 0.42, 0.2], null, [0.62, 0.05, 1.3]);
+      for (const sx of [-1, 1]) for (const z of [-0.4, 0.8]) s.add(P.cyl, '#c8c8c0', [sx * 0.3, 0.16, z], null, [0.05, 0.32, 0.05]);
+    },
+    bigmushroom(s) {
+      s.add(P.cyl, '#f0e8d8', [0, 2.8, 0], null, [0.7, 5.6, 0.7]);
+      s.add(P.hemi, '#d84a3a', [0, 5.4, 0], null, [2.4, 1.6, 2.4]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.sphereLo, '#fff4e8', [Math.cos(a) * 1.4, 6.2 + (i % 2) * 0.3, Math.sin(a) * 1.4], null, [0.28, 0.12, 0.28]); }
     },
     // Death Stalker cars, parked side by side with the keys in, and a board behind them.
     lm_carlot(s) {
@@ -3027,41 +3153,112 @@
     return all;
   }
 
-  // Anatomy Park's corpse, floating in space (shared/fun.js MM.BODY): spheres of pale skin,
-  // a bald head with a nose and ears, blue boxers, and a ring of light around every hole.
+  // Anatomy Park's corpse, floating in space (shared/fun.js MM.BODY): Ruben, who looks just
+  // like Santa: white beard, red suit, the hat, boots. Face down at Earth, eyes closed. A ring
+  // of light round every hole you can fly in through.
+  const UP = new T.Vector3(0, 1, 0), tmpQ = new T.Quaternion(), tmpE = new T.Euler();
+  function limb(s, color, r, A, B) {
+    const d = new T.Vector3(B[0] - A[0], B[1] - A[1], B[2] - A[2]), len = d.length();
+    tmpQ.setFromUnitVectors(UP, d.normalize()); tmpE.setFromQuaternion(tmpQ);
+    C.capsuleAt(s, color, r, len + r * 0.6, [A[0] - d.x * r * 0.3, A[1] - d.y * r * 0.3, A[2] - d.z * r * 0.3], [tmpE.x, tmpE.y, tmpE.z]);
+  }
+  function bodyShape() {
+    const B = MM.BODY, s = new C.Shape({ smooth: true }), P = C.prim;
+    const skin = '#f0bfa0', rosy = '#e88a7a', red = '#c8202a', redD = '#a81820', fur = '#f6f4ee', beard = '#f4f2ec', black = '#1e1a1a', gold = '#ffd84d';
+    const [head, bear, chest, belly, hips] = B.blobs;
+    // The suit: red jacket (chest, belly, arms), red trousers, black boots with fur cuffs.
+    s.add(P.sphere, red, chest.slice(0, 3), null, chest.slice(3));
+    s.add(P.sphere, red, belly.slice(0, 3), null, belly.slice(3));
+    s.add(P.sphere, redD, hips.slice(0, 3), null, hips.slice(3));
+    const [neck, la1, la2, lh, ra1, ra2, rh, ll1, ll2, lb, rl1, rl2, rb] = B.segs;
+    const seg = (q, c, r) => limb(s, c, r || q[6], q.slice(0, 3), q.slice(3, 6));
+    seg(neck, skin);
+    for (const q of [la1, la2, ra1, ra2]) seg(q, red);
+    for (const q of [lh, rh]) seg(q, skin);
+    for (const q of [ll1, rl1]) seg(q, redD);
+    for (const q of [ll2, rl2]) { seg([q[0], q[1], q[2], q[0] + (q[3] - q[0]) * 0.45, q[1], q[2] + (q[5] - q[2]) * 0.45], redD, q[6]); seg([q[0] + (q[3] - q[0]) * 0.45, q[1], q[2] + (q[5] - q[2]) * 0.45, q[3], q[4], q[5]], black, q[6] * 1.08); }
+    for (const q of [lb, rb]) { seg(q, black); s.add(P.sphere, black, [q[3] + 1, q[4] + 1, q[5]], null, [5, 4, 4.4]); }
+    for (const sz of [-1, 1]) {
+      s.add(P.torus, fur, [-50, -1, sz * 10], [0, Math.PI / 2, 0], [7.2, 7.2, 3]);            // boot cuffs
+      s.add(P.torus, fur, [6, 0, sz * 29], [0, Math.PI / 2, 0], [5.2, 5.2, 2.6]);             // sleeve cuffs
+      // Hands: fingers along the sides, a thumb on top.
+      for (let f = 0; f < 4; f++) limb(s, skin, 1.15, [-7, -0.5 + (f - 1.5) * 1.6, sz * 29.5], [-12.5, -0.8 + (f - 1.5) * 1.7, sz * 29.6]);
+      limb(s, skin, 1.35, [-3, 2.2, sz * 27.4], [-7, 3.5, sz * 26.4]);
+    }
+    // White fur down the front and round the hem, the black belt with its gold buckle.
+    for (let x = 28; x <= 49; x += 1.5) s.add(P.sphere, fur, [x, 1 + 12 * Math.sqrt(Math.max(0, 1 - ((x - 39) / 13) ** 2)) + 0.2, 0], null, [1.4, 0.9, 2.2]);   // fur down the front
+    s.add(P.cyl, fur, [1.5, 1, 0], [0, 0, Math.PI / 2], [12.2, 3.6, 17.2]);
+    s.add(P.cyl, black, [8, 3.5, 0], [0, 0, Math.PI / 2], [16.8, 3, 17.6]);
+    s.add(P.box, gold, [8, 21, 0], null, [3.6, 0.6, 5.4]);
+    s.add(P.box, black, [8, 21.3, 0], null, [2, 0.5, 3.4]);
+    // His tummy has escaped the jacket: a strip of skin, and the belly button.
+    s.add(P.sphere, skin, [17, 21.6, 0], null, [5, 1.8, 6.4]);
+    s.add(P.sphere, '#b87a64', [17, 23.1, 0], null, [1.3, 0.3, 1.3]);
+    // The head: a round face with rosy cheeks, a red nose, white brows, eyes shut.
+    s.add(P.sphere, skin, head.slice(0, 3), null, head.slice(3));
+    for (const sz of [-1, 1]) {
+      s.add(P.sphere, rosy, [64, 8.6, sz * 5.6], null, [3, 1.6, 2.6]);                        // cheeks
+      s.add(P.sphere, '#d89a84', [71.5, 9.4, sz * 4.2], null, [2, 0.9, 2]);                   // closed lids
+      s.add(P.box, '#7a4a3a', [71, 10.2, sz * 4.2], [0, 0, 0.2], [0.3, 0.3, 3]);              // lashes
+      s.add(P.sphere, beard, [74, 9.6, sz * 4.4], [0, 0, 0.2], [2.6, 1.4, 3.2]);              // bushy brows
+      s.add(P.sphere, skin, [67, 0.5, sz * 10.2], null, [3.2, 4.6, 1.6]);                     // ears
+    }
+    s.add(P.sphere, '#e07a6a', [67.5, 12, 0], null, [3.4, 2.8, 2.6]);                          // nose
+    for (const sz of [-1, 1]) s.add(P.sphereLo, '#5a2a22', [66.6, 13.6, sz * 1.6], null, [0.9, 0.6, 0.8]);
+    // The beard and moustache, over the chin and down the chest; his mouth in there.
+    s.add(P.sphere, beard, bear.slice(0, 3), null, bear.slice(3));
+    s.add(P.sphere, beard, [50, 7, 0], null, [8, 6, 8]);
+    for (const sz of [-1, 1]) s.add(P.sphere, beard, [63.5, 11.4, sz * 3.6], [0, sz * 0.4, 0], [2.2, 1.6, 4.6]);   // moustache
+    s.add(P.sphere, '#7a3030', [59.5, 12.6, 0], null, [1.8, 0.6, 3.2]);                          // mouth
+    // Hair round the back of his head, and the hat, flopped over above his head.
+    s.add(P.sphere, beard, [70, -3, 0], null, [10.5, 7, 10.6]);
+    s.add(P.cyl, fur, [77, 1, 0], [0, 0, Math.PI / 2], [10.6, 3.4, 10.6]);
+    limb(s, red, 8.5, [79, 1, 0], [89, 3, 0]);
+    limb(s, red, 5, [89, 3, 0], [96, 7, 3]);
+    limb(s, red, 2.6, [96, 7, 3], [99, 12, 6]);
+    s.add(P.sphere, fur, [99.5, 13, 6.5], null, [3.4, 3.4, 3.4]);
+    return s;
+  }
   function makeBody(P, tags) {
-    const B = MM.BODY, s = new C.Shape({ smooth: false }), skin = '#d8c4b0', g = new T.Group();
-    for (const [x, y, z, r] of B.parts) s.add(C.prim.sphere, skin, [x, y, z], null, [r, r * (Math.abs(z) > 20 || x < -20 ? 1 : 0.95), r]);
-    s.add(C.prim.sphere, '#3a5ab0', [-14, 0, 0], null, [20.5, 19.5, 20.5]);   // the boxers
-    for (let i = 0; i < 18; i++) { const a = i * 1.3, y = Math.sin(a) * 12, z = Math.cos(a) * 16; s.add(C.prim.sphereLo, '#f2f2f2', [-14 + (i % 3 - 1) * 6, y + 7 * Math.sign(y), z * 0.9], null, [1.2, 1.2, 1.2]); }
-    for (const z of [-5, 5]) s.add(C.prim.sphere, '#f0f0f0', [76, 9, z], null, [2.4, 1.2, 2.4]);   // closed eyelids
-    s.add(C.prim.box, '#8a5a5a', [77, 11.5, 0], null, [3, 0.6, 6]);   // lips
-    const m = C.meshOf(s.build(), 0.6);
-    g.add(m);
+    const B = MM.BODY, g = new T.Group(), k = B.scale || 1;
+    const m = C.meshOf(bodyShape().build(), 0.35);
+    m.scale.setScalar(k); g.add(m);
     for (const [id, name, at] of B.holes) {
-      const ring = new T.Mesh(new T.TorusGeometry(4.5, 0.6, 8, 32), new T.MeshBasicMaterial({ color: '#ff8ac8', fog: false }));
-      ring.position.set(at[0], at[1], at[2]);
-      const out = new T.Vector3(at[0] - (at[0] > 60 ? 70 : at[0]), at[1], at[2]).normalize();
+      const ring = new T.Mesh(new T.TorusGeometry(4.5 * k, 0.5 * k, 8, 32), new T.MeshBasicMaterial({ color: '#ff8ac8', fog: false }));
+      ring.position.set(at[0] * k, at[1] * k, at[2] * k);
+      // Facing out of the body: away from the nearest bit of it.
+      const c = id === 'lear' || id === 'rear' ? [at[0], at[1], 0] : id === 'back' ? [at[0], 0, 0] : [at[0], at[1] - 6, at[2]];
+      const out = new T.Vector3(at[0] - c[0], at[1] - c[1], at[2] - c[2]).normalize();
       ring.lookAt(ring.position.clone().add(out));
       g.add(ring);
       const tag = C.makeTag(name, '', '', '#ff8ac8'); tag.draw(-1);
       tag.sprite.scale.set(36, 9, 1); tag.sprite.material.fog = false;
-      const tp = new T.Vector3(at[0], at[1], at[2]).add(out.clone().multiplyScalar(9));
-      tag.sprite.position.copy(tp); g.add(tag.sprite);
+      tag.sprite.position.copy(ring.position).add(out.clone().multiplyScalar(9 * k));
+      g.add(tag.sprite);
       tags.push({ sprite: tag.sprite, near: 6, local: true });
     }
     // A billboard: the park's name, floating over the chest.
     const bill = C.makeTag('ANATOMY PARK', 'Fly in through any hole!', '', '#ffd84d'); bill.draw(-1);
-    bill.sprite.scale.set(120, 30, 1); bill.sprite.position.set(30, 70, 0); bill.sprite.material.fog = false; g.add(bill.sprite);
+    bill.sprite.scale.set(180, 45, 1); bill.sprite.position.set(30 * k, 44 * k, 0); bill.sprite.material.fog = false; g.add(bill.sprite);
     tags.push({ sprite: bill.sprite, near: 40, local: true });
-    g.position.set(P.x, P.y, P.z); g.rotation.y = B.yaw;
+    g.position.set(P.x, P.y, P.z); g.rotation.order = 'YXZ'; g.rotation.set(B.flip ? Math.PI : 0, B.yaw, 0);   // face down, at Earth
     return g;
   }
+  // From the ground: Ruben, small and high up in every Earth's sky.
+  C.bodyInSky = function () {
+    const m = C.meshOf(bodyShape().build(), 0);
+    m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } });
+    return m;
+  };
 
   // Big things in the sky that make each dimension recognisable.
   function skyDecor(dim, group) {
     const add = (shape, pos) => { const m = C.meshOf(shape.build(), 0); m.position.set(pos[0], pos[1], pos[2]); m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } }); group.add(m); return m; };
     if ((dim.shapeOf || dim.id) === 'suburbia') {
+      // Anatomy Park, floating far above (the same Ruben you can fly to from orbit).
+      // (Inside the 600 m sky dome, face down: looking at you.)
+      const ruben = C.bodyInSky(); ruben.scale.setScalar(1.5); ruben.position.set(-170, 360, -270);
+      ruben.rotation.order = 'YXZ'; ruben.rotation.set(Math.PI - 0.3, 0.9, 0.1); group.add(ruben);
       for (let i = 0; i < 14; i++) {
         const s = new C.Shape();
         for (let j = 0; j < 4; j++) s.add(P.sphereLo, '#ffffff', [j * 9 - 13, Math.sin(j * 2) * 2, (j % 2) * 4], null, [9, 5, 7], true);
@@ -3689,7 +3886,7 @@
     if (MM.NPCS[type].human) {
       const look = C.npcLook(type, seed || 1);
       const H = MM.NPCS[type].human;
-      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.variant || 'joe');
+      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.unarmed ? 'hive' : H.variant || 'joe');   // (Unity's build: bare hands)
       if (H.scale) { av.baseScale = H.scale; av.root.scale.setScalar(H.scale); }   // giants
       return { root: av.root, av };
     }
@@ -3708,6 +3905,52 @@
         s.add(P.box, '#3a2a1a', [0, 1.85, -0.05], null, [0.95, 0.12, 0.8]);
         s.add(P.cone, '#ff9a2a', [0, 1.3, -1.05], [-2.3, 0, 0], [0.12, 0.7, 0.12], true);
         void d;
+      } else if (type === 'giantbaby') {
+        // A baby the size of a building, on all fours: a huge head, a nappy, chubby everything.
+        const sk = '#f4c4a8', pk = '#ec9a8a';
+        s.add(P.sphere, sk, [0, 5.2, -0.6], null, [3.8, 3.4, 5]);                        // body
+        s.add(P.sphere, '#f8f8f4', [0, 4.8, -4.4], null, [4.1, 3.2, 3.2]);               // the nappy
+        s.add(P.box, '#7ad8ff', [0, 7.1, -3.2], null, [1.2, 0.3, 0.9]);                  // its safety pin
+        s.add(P.sphere, sk, [0, 8.4, 4.2], null, [4.4, 4.2, 4.2]);                       // head
+        for (const sx of [-1, 1]) {
+          limb(s, sk, 1.5, [sx * 2.9, 6.6, 2.2], [sx * 3.4, 0.9, 5.2]);                  // arms
+          s.add(P.sphere, sk, [sx * 3.4, 0.9, 5.8], null, [1.5, 1, 1.8]);               // hands
+          limb(s, sk, 1.8, [sx * 2.4, 4.2, -4.6], [sx * 2.8, 1.2, -2.2]);                // thighs
+          limb(s, sk, 1.5, [sx * 2.8, 1.2, -2.2], [sx * 2.8, 1.0, -6.6]);                // shins
+          s.add(P.sphere, sk, [sx * 2.8, 1.4, -7.2], null, [1.3, 1.1, 1.6]);            // feet
+          s.add(P.sphere, '#ffffff', [sx * 1.6, 9.2, 7.8], null, [1.1, 1.3, 0.7]);      // eyes
+          s.add(P.sphere, '#2a3a5a', [sx * 1.6, 9.2, 8.35], null, [0.6, 0.75, 0.3]);
+          s.add(P.sphere, pk, [sx * 2.6, 7.6, 7.2], null, [1, 0.7, 0.6]);               // cheeks
+          s.add(P.sphere, sk, [sx * 4.3, 8.6, 4], null, [0.7, 1.2, 1]);                 // ears
+        }
+        s.add(P.sphere, '#c85a5a', [0, 6.9, 8.1], null, [1.2, 0.8, 0.5]);                // a big open mouth
+        s.add(P.sphere, sk, [0, 8, 8.5], null, [0.7, 0.55, 0.5]);                       // button nose
+        limb(s, '#f0d070', 0.35, [0, 12.4, 4.4], [0.4, 13.6, 5.4]);                      // one curl of hair
+        limb(s, '#f0d070', 0.3, [0.4, 13.6, 5.4], [-0.3, 14, 6]);
+      } else if (type === 'housebot') {
+        // A lawn turret from the Smith house, hacked: red eye, twin barrels, a lot of attitude.
+        s.add(P.cyl, '#59606e', [0, 0.4, 0], null, [0.9, 0.8, 0.9]);
+        s.add(P.cyl, '#7a8290', [0, 1.0, 0], null, [0.25, 0.6, 0.25]);
+        s.add(P.sphere, '#9aa3ab', [0, 1.35, 0], null, [0.55, 0.42, 0.55]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 1.42, 0.45], null, [0.16, 0.16, 0.1], true);
+        for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.18, 1.32, 0.75], [Math.PI / 2, 0, 0], [0.08, 0.6, 0.08]);
+      } else if (type === 'housedrone') {
+        s.add(P.sphere, '#9aa3ab', [0, 0.3, 0], null, [0.45, 0.25, 0.45]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 0.28, 0.38], null, [0.12, 0.12, 0.08], true);
+        for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; s.add(P.box, '#59606e', [Math.cos(a) * 0.45, 0.42, Math.sin(a) * 0.45], [0, -a, 0], [0.5, 0.05, 0.08]); s.add(P.cyl, '#3a3f4a', [Math.cos(a) * 0.7, 0.48, Math.sin(a) * 0.7], null, [0.3, 0.03, 0.3]); }
+        s.add(P.cyl, '#3a3f4a', [0, 0.1, 0.3], [Math.PI / 2, 0, 0], [0.06, 0.4, 0.06]);
+      } else if (type === 'giantant') {
+        // An ant the size of a car (to someone a few millimetres tall).
+        const c = '#3a1e14';
+        s.add(P.sphere, c, [0, 0.7, -0.9], null, [0.55, 0.45, 0.75]);
+        s.add(P.sphere, c, [0, 0.65, 0], null, [0.32, 0.3, 0.42]);
+        s.add(P.sphere, c, [0, 0.8, 0.65], null, [0.38, 0.34, 0.36]);
+        for (const sx of [-1, 1]) {
+          for (const z of [-0.25, 0, 0.25]) C.capsuleAt(s, c, 0.04, 0.9, [sx * 0.25, 0.65, z], [0, 0, sx * 2.1]);
+          C.capsuleAt(s, c, 0.025, 0.6, [sx * 0.12, 1.05, 0.85], [-0.6, 0, sx * 0.4]);
+          s.add(P.sphereLo, '#111111', [sx * 0.2, 0.9, 0.9], null, [0.08, 0.08, 0.06]);
+          s.add(P.cone, c, [sx * 0.1, 0.62, 1.0], [Math.PI / 2, 0, sx * 0.4], [0.05, 0.22, 0.05]);
+        }
       } else if (type === 'meatblob') {
         s.add(P.sphere, '#d9677a', [0, 0.8, 0], null, [0.95, 0.8, 0.9]);
         for (let i = 0; i < 5; i++) s.add(P.sphereLo, '#c4505f', [Math.sin(i * 1.3) * 0.7, 0.5 + (i % 2) * 0.6, Math.cos(i * 1.3) * 0.6], null, [0.4, 0.35, 0.4]);
@@ -4095,6 +4338,18 @@
   };
 
   // ---------- A whole dimension ----------
+  // An immortality field: a faint glassy dome with a glowing ring where it meets the ground.
+  function makeField(dim) {
+    const F = dim.field, g = new T.Group(), y = MM.heightAt(dim.id, F.x, F.z) - 1;
+    const dome = new T.Mesh(new T.SphereGeometry(F.r, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#bfe4ff', transparent: true, opacity: 0.1, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(F.x, y, F.z);
+    const ring = new T.Mesh(new T.TorusGeometry(F.r, 0.35, 6, 96), new T.MeshBasicMaterial({ color: '#7ad8ff', transparent: true, opacity: 0.8 }));
+    ring.rotation.x = Math.PI / 2; ring.position.set(F.x, y + 1.2, F.z);
+    g.add(dome, ring);
+    g.userData.type = 'field';
+    return g;
+  }
   C.buildDimension = function (dimId, quality) {
     const dim = MM.DIM_BY_ID[dimId];
     const group = new T.Group();
@@ -4104,6 +4359,7 @@
     if (dim.planets) group.add(makeSpace(dim, group));
     else if (!dim.interior) {
       skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain);
+      if (dim.field) group.add(makeField(dim));
       if (dim.regions) group.add(makeSea(dim));
       if (dim.regions) group.add(makeWires(dimId));
     }

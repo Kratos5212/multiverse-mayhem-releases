@@ -1,8 +1,8 @@
 {
- "build": 23,
- "date": "2026-10-18T12:53:59.801Z",
+ "build": 24,
+ "date": "2026-10-18T13:22:59.322Z",
  "game": {
-  "base": "game/23/",
+  "base": "game/24/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -186,8 +186,8 @@
    },
    {
     "p": "js/dims.js",
-    "h": "ad7ed07d66a5113b203267a707d107df5f14d5b8b1c6fa70407cc09a1e526253",
-    "s": 308200
+    "h": "57ef4b502ee3c452951994aa067b4a7661d21551386a939bd6ef32524c330f26",
+    "s": 316130
    },
    {
     "p": "js/fx.js",
@@ -251,8 +251,8 @@
    },
    {
     "p": "shared/fun.js",
-    "h": "10385fcbd2ba648d20236b659f634d57a7e403bb720070aea837c294c0138d7a",
-    "s": 25798
+    "h": "6006ac424b2f79f1ed95f70290d23d9e311c8ab3d1b738fc8fed62744c85c2ad",
+    "s": 29616
    },
    {
     "p": "shared/house.js",
@@ -266,8 +266,8 @@
    },
    {
     "p": "shared/layouts.js",
-    "h": "7bc9b4bbea595ac4eee01c4118273d88c19ea45099c2b1cb8e49c9e70eb37e99",
-    "s": 31566
+    "h": "cccbb9f632169b4df25de14dc2cbd112c0da28baf2814bb93b43bbb6fce0d74d",
+    "s": 31778
    },
    {
     "p": "shared/portals.js",
@@ -286,13 +286,13 @@
    },
    {
     "p": "shared/rules.js",
-    "h": "6bef0b4c6feeec0b4963eb8bcb74fb4e2533584e3c584c010016d3fcb3272641",
-    "s": 102112
+    "h": "f15f5493397ef7fb6eeabd1d1d2d09ee7b66fd91b9e1f4c0f025f465ce110db8",
+    "s": 103633
    },
    {
     "p": "shared/world.js",
-    "h": "81ba4e620bf63cb1d754b928bcc0e9c701e09af2b7c728214a9b91f8ede84ab2",
-    "s": 215336
+    "h": "84f3e8f96983f84387338f5b187b2b7f519737d100d5356a45bb910721edc966",
+    "s": 215906
    },
    {
     "p": "sim/bot.js",
@@ -301,8 +301,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "88cbf401b362068d679153a9a42425992ffee716932491fb9d483211f49c503a",
-    "s": 180788
+    "h": "eab458bfcc09d75aae5eb3673c96a0c48ff61070d949def7bf8e8a5c7f90858c",
+    "s": 181458
    },
    {
     "p": "vendor/three.LICENSE",
@@ -316,7 +316,7 @@
    },
    {
     "p": "version.json",
-    "h": "c55d28f3eb752cae167dbebfa6706d7166c788251045fe282f71c471a9a2a2d4",
+    "h": "7d29ec6c30ae75fd2208bcde0556914f0efb02fc65a2cd60b8993f65fcbf2594",
     "s": 13
    }
   ]
