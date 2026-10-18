@@ -2648,6 +2648,75 @@
         for (const x of [-3.3, 3.3]) s.add(P.cone, '#ff8a2a', [x, 8.2, gz * 13.8], null, [0.2, 0.5, 0.2], true);   // torches
       }
     },
+    // A mossy rock in the woods with a whole city on it, a few millimetres tall: the Mega
+    // Gargantuans. Towers, domes, a flag and a little road down the side.
+    // A Tiny Rick vat: a teenage Rick clone floating in green, under a hood of pipes.
+    lm_tinyvat(s) {
+      s.add(P.cyl, '#59606e', [0, 0.2, 0], null, [1.2, 0.4, 1.2]);
+      s.add(P.cyl, '#5dff8a', [0, 1.4, 0], null, [1.05, 2.0, 1.05], true);
+      s.add(P.capsule, '#ddd7c9', [0, 1.15, 0], null, [0.2, 0.7, 0.16]);
+      s.add(P.sphere, '#ddd7c9', [0, 1.9, 0], null, [0.24, 0.28, 0.24]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.cone, '#6fd2df', [Math.cos(a) * 0.17, 2.12, Math.sin(a) * 0.17], [Math.sin(a) * 0.7, 0, -Math.cos(a) * 0.7], [0.07, 0.22, 0.07]); }
+      s.add(P.cyl, '#59606e', [0, 2.5, 0], null, [1.2, 0.3, 1.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.4, 2.9, 0], null, [0.12, 0.6, 0.12]);
+      s.add(P.box, '#3a3f4a', [0.75, 1.1, 0.5], null, [0.3, 0.6, 0.2]);
+      s.add(P.box, '#ff5a5a', [0.75, 1.25, 0.61], null, [0.12, 0.12, 0.02], true);
+    },
+    // The Immortality Hotel: a tall pink-and-white tower with a pool deck and a rooftop diving board.
+    lm_resorthotel(s) {
+      s.add(P.box, '#f4f0e8', [0, 0.4, 0], null, [15, 0.8, 13]);
+      s.add(P.box, '#f8e8f0', [0, 6, -1.5], null, [10, 11, 7]);
+      for (let f = 0; f < 5; f++) for (let i = -2; i <= 2; i++) s.add(P.box, '#7ad8ff', [i * 1.9, 2.4 + f * 2, 2.02], null, [1.2, 1.0, 0.05], true);
+      for (let f = 0; f < 5; f++) s.add(P.box, '#ff7ad0', [0, 1.6 + f * 2, 2.3], null, [10.2, 0.15, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 11.8, -1.5], null, [10.6, 0.6, 7.6]);
+      s.add(P.box, '#e8e4d8', [3.5, 11.9, 2.6], null, [0.8, 0.12, 3]);   // the diving board off the roof
+      s.add(P.box, '#4ab8ff', [0, 0.85, 5], null, [8, 0.1, 3.6], true);  // the pool
+      s.add(P.box, '#3a3f4a', [0, 1.6, 2.3], null, [2.4, 2.4, 0.2]);
+      for (const sx of [-1, 1]) s.add(P.cyl, '#f4f0e8', [sx * 6.2, 2.5, 5.6], null, [0.25, 5, 0.25]);
+    },
+    lm_tinyland(s) {
+      s.add(P.sphere, '#7a7a72', [0, 0.35, 0], null, [1.55, 0.6, 1.4]);
+      s.add(P.sphere, '#5a9a46', [0, 0.62, 0], null, [1.4, 0.32, 1.25]);
+      const tw = ['#e8ecf0', '#c8d8e8', '#f4e8c8'];
+      for (let i = 0; i < 14; i++) { const a = i * 2.4, r = 0.25 + (i % 4) * 0.22; s.add(P.box, tw[i % 3], [Math.cos(a) * r, 0.92 + (i % 3) * 0.04, Math.sin(a) * r * 0.85], [0, a, 0], [0.07, 0.12 + (i % 5) * 0.08, 0.07]); }
+      for (let i = 0; i < 6; i++) { const a = i * 1.1 + 0.4; s.add(P.hemi, '#a8e0ff', [Math.cos(a) * 0.75, 0.88, Math.sin(a) * 0.62], null, [0.07, 0.06, 0.07], true); }
+      s.add(P.cylLo, '#3a3a3a', [0.05, 1.2, 0.05], null, [0.006, 0.35, 0.006]);
+      s.add(P.box, '#ffd84d', [0.09, 1.33, 0.05], null, [0.08, 0.05, 0.004]);
+      s.add(P.box, '#c8b89a', [0.9, 0.5, 0.2], [0, 0, -0.6], [0.5, 0.02, 0.08]);   // the road down
+    },
+    // The Great Hall of the Mega Gargantuans: columns, a dome, banners, very proud.
+    lm_gargantuahall(s) {
+      s.add(P.box, '#e8e4d8', [0, 0.6, 0], null, [15, 1.2, 11]);
+      for (let i = -3; i <= 3; i++) s.add(P.cyl, '#f4f0e4', [i * 2.1, 4.4, 5], null, [0.5, 6.6, 0.5]);
+      s.add(P.box, '#e8e4d8', [0, 4.8, -1], null, [13, 7.2, 8]);
+      s.add(P.box, '#d8d2c2', [0, 8.1, 1.2], null, [15.2, 0.8, 9.6]);
+      s.add(P.hemi, '#ffd84d', [0, 8.5, -1], null, [4.4, 3.4, 4.4]);
+      for (const x of [-5.5, 5.5]) s.add(P.box, '#3a8a5a', [x, 5.2, 5.4], null, [1.4, 3.6, 0.06]);
+      s.add(P.box, '#3a4a6a', [0, 2.6, 3.05], null, [2.6, 3.8, 0.1]);
+    },
+    // The woods floor at the Mega Gargantuans' size.
+    bigleaf(s) {
+      s.add(P.sphere, '#4a8a2a', [0, 0.25, 0], [0, 0.4, 0], [3.2, 0.12, 1.6]);
+      s.add(P.box, '#5a7a2a', [0, 0.36, 0], [0, 0.4, 0], [6.0, 0.08, 0.14]);
+      for (let i = -2; i <= 2; i++) s.add(P.box, '#5a7a2a', [i * 0.9 * Math.cos(0.4), 0.34, -i * 0.9 * Math.sin(0.4)], [0, 0.4 + 0.9, 0], [2.2, 0.06, 0.08]);
+    },
+    bigpebble(s) { s.add(P.sphere, '#8a8a84', [0, 1.4, 0], null, [2.6, 1.7, 2.2]); s.add(P.sphere, '#9a9a92', [0.8, 2.2, 0.4], null, [1.2, 0.9, 1.1]); },
+    palm(s) {
+      for (let i = 0; i < 6; i++) s.add(P.cyl, i % 2 ? '#a07a4a' : '#8a6a3e', [Math.sin(i * 0.25) * 0.3, 0.6 + i * 1.05, 0], [0, 0, -0.08], [0.32 - i * 0.02, 1.1, 0.32 - i * 0.02]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.box, '#3aa04a', [0.4 + Math.cos(a) * 1.3, 6.6, Math.sin(a) * 1.3], [0, -a, -0.35], [2.6, 0.08, 0.6]); }
+      for (let i = 0; i < 3; i++) s.add(P.sphereLo, '#6a4a2a', [0.4 + Math.cos(i * 2) * 0.3, 6.3, Math.sin(i * 2) * 0.3], null, [0.22, 0.22, 0.22]);
+    },
+    sunlounger(s) {
+      s.add(P.box, '#f4f4f0', [0, 0.35, 0.2], null, [0.7, 0.1, 1.4]);
+      s.add(P.box, '#f4f4f0', [0, 0.6, -0.65], [-0.9, 0, 0], [0.7, 0.1, 0.7]);
+      s.add(P.box, '#ff7ad0', [0, 0.42, 0.2], null, [0.62, 0.05, 1.3]);
+      for (const sx of [-1, 1]) for (const z of [-0.4, 0.8]) s.add(P.cyl, '#c8c8c0', [sx * 0.3, 0.16, z], null, [0.05, 0.32, 0.05]);
+    },
+    bigmushroom(s) {
+      s.add(P.cyl, '#f0e8d8', [0, 2.8, 0], null, [0.7, 5.6, 0.7]);
+      s.add(P.hemi, '#d84a3a', [0, 5.4, 0], null, [2.4, 1.6, 2.4]);
+      for (let i = 0; i < 7; i++) { const a = i * 0.9; s.add(P.sphereLo, '#fff4e8', [Math.cos(a) * 1.4, 6.2 + (i % 2) * 0.3, Math.sin(a) * 1.4], null, [0.28, 0.12, 0.28]); }
+    },
     // Death Stalker cars, parked side by side with the keys in, and a board behind them.
     lm_carlot(s) {
       for (const [x, body] of [[-1.25, '#8a3a1e'], [1.25, '#6a5a2a']]) {
@@ -3027,41 +3096,86 @@
     return all;
   }
 
-  // Anatomy Park's corpse, floating in space (shared/fun.js MM.BODY): spheres of pale skin,
-  // a bald head with a nose and ears, blue boxers, and a ring of light around every hole.
+  // Anatomy Park's corpse, floating in space (shared/fun.js MM.BODY): Ruben on his back, a
+  // big bald man in polka-dot boxers, eyes closed, hands at his sides, toes up. A ring of
+  // light round every hole you can fly in through.
+  const UP = new T.Vector3(0, 1, 0), tmpQ = new T.Quaternion(), tmpE = new T.Euler();
+  function limb(s, color, r, A, B) {
+    const d = new T.Vector3(B[0] - A[0], B[1] - A[1], B[2] - A[2]), len = d.length();
+    tmpQ.setFromUnitVectors(UP, d.normalize()); tmpE.setFromQuaternion(tmpQ);
+    C.capsuleAt(s, color, r, len + r * 0.6, [A[0] - d.x * r * 0.3, A[1] - d.y * r * 0.3, A[2] - d.z * r * 0.3], [tmpE.x, tmpE.y, tmpE.z]);
+  }
+  function bodyShape() {
+    const B = MM.BODY, s = new C.Shape({ smooth: true }), skin = '#e0a888', shade = '#c48a6c', P = C.prim;
+    for (const [x, y, z, rx, ry, rz] of B.blobs) s.add(P.sphere, skin, [x, y, z], null, [rx, ry, rz]);
+    for (const [ax, ay, az, bx, by, bz, r] of B.segs) limb(s, skin, r, [ax, ay, az], [bx, by, bz]);
+    // The boxers: blue with white polka dots, and a waistband.
+    s.add(P.sphere, '#3a5ab0', [-4, 0.2, 0], null, [12.6, 11.6, 19.2]);
+    for (const sx of [-1, 1]) limb(s, '#3a5ab0', 9.2, [-8, 0, sx * 9], [-19, -0.5, sx * 9.6]);
+    s.add(P.cyl, '#f2f2f2', [5.5, 0.2, 0], [0, 0, Math.PI / 2], [11.4, 1.6, 18.6]);
+    for (let i = 0; i < 26; i++) { const a = i * 2.4, u = (i % 5) / 4; s.add(P.sphereLo, '#f2f2f2', [-14 + u * 16, Math.sin(a) * 11.5, Math.cos(a) * 17.6], null, [1.1, 1.1, 1.1]); }
+    // The face, looking up: closed eyes, brows, a big nose, ears, lips, a double chin.
+    for (const sz of [-1, 1]) {
+      s.add(P.sphere, shade, [72, 10.2, sz * 4.6], null, [2.6, 1.2, 2.2]);         // closed lids
+      s.add(P.box, '#5a3a2a', [74.6, 11, sz * 4.6], [0, 0, 0.15], [0.8, 0.5, 3.4]);  // brows
+      s.add(P.sphere, skin, [67, 0.5, sz * 12.4], null, [3, 4.6, 1.6]);             // ears
+      s.add(P.sphere, '#b88a74', [67, 1, sz * 13.3], null, [1.4, 2.4, 0.6]);        // ear holes
+    }
+    s.add(P.sphere, skin, [67.5, 12.6, 0], null, [4.2, 3.4, 2.8]);                  // nose
+    for (const sz of [-1, 1]) s.add(P.sphereLo, '#7a4a3a', [66.6, 14.6, sz * 1.8], null, [1, 0.9, 0.8]);
+    s.add(P.sphere, '#a86a5e', [59.5, 10.4, 0], null, [1.6, 0.9, 5]);               // lips
+    s.add(P.sphere, skin, [55.5, 4.5, 0], null, [5, 6, 9]);                         // chins
+    // Chest and belly: nipples, a belly button, a little hair.
+    for (const sz of [-1, 1]) s.add(P.sphere, '#b8786a', [37, 11.6, sz * 9], null, [1.8, 0.6, 1.8]);
+    s.add(P.sphere, '#a06a5a', [14, 14.6, 0], null, [1.6, 0.4, 1.6]);
+    for (let i = 0; i < 14; i++) s.add(P.cone, '#6a4a3a', [22 + (i % 7) * 3.2, 12.2 + (i % 3) * 0.2, (i < 7 ? -1 : 1) * (2 + (i % 4))], [0, 0, -0.4], [0.18, 1.4, 0.18]);
+    // Hands (fingers along the sides) and toes.
+    for (const sz of [-1, 1]) {
+      for (let f = 0; f < 4; f++) limb(s, skin, 1.1, [-9, -4 + (f - 1.5) * 1.7, sz * 26], [-14, -4.4 + (f - 1.5) * 1.8, sz * 26.2]);
+      limb(s, skin, 1.3, [-6, -1, sz * 23.6], [-10, 0.5, sz * 22.4]);                // thumb
+      for (let t = 0; t < 5; t++) s.add(P.sphere, skin, [-74.5, 12.4 - t * 0.2, sz * (7.2 + t * 1.5)], null, [1.4, 1.2, 0.9]);
+      s.add(P.cyl, '#f4f4f0', [-2, -4, sz * 26], [0, 0, Math.PI / 2], [4.7, 1.5, 4.7]);  // hospital wristband
+    }
+    return s;
+  }
   function makeBody(P, tags) {
-    const B = MM.BODY, s = new C.Shape({ smooth: false }), skin = '#d8c4b0', g = new T.Group();
-    for (const [x, y, z, r] of B.parts) s.add(C.prim.sphere, skin, [x, y, z], null, [r, r * (Math.abs(z) > 20 || x < -20 ? 1 : 0.95), r]);
-    s.add(C.prim.sphere, '#3a5ab0', [-14, 0, 0], null, [20.5, 19.5, 20.5]);   // the boxers
-    for (let i = 0; i < 18; i++) { const a = i * 1.3, y = Math.sin(a) * 12, z = Math.cos(a) * 16; s.add(C.prim.sphereLo, '#f2f2f2', [-14 + (i % 3 - 1) * 6, y + 7 * Math.sign(y), z * 0.9], null, [1.2, 1.2, 1.2]); }
-    for (const z of [-5, 5]) s.add(C.prim.sphere, '#f0f0f0', [76, 9, z], null, [2.4, 1.2, 2.4]);   // closed eyelids
-    s.add(C.prim.box, '#8a5a5a', [77, 11.5, 0], null, [3, 0.6, 6]);   // lips
-    const m = C.meshOf(s.build(), 0.6);
-    g.add(m);
+    const B = MM.BODY, g = new T.Group(), k = B.scale || 1;
+    const m = C.meshOf(bodyShape().build(), 0.35);
+    m.scale.setScalar(k); g.add(m);
     for (const [id, name, at] of B.holes) {
-      const ring = new T.Mesh(new T.TorusGeometry(4.5, 0.6, 8, 32), new T.MeshBasicMaterial({ color: '#ff8ac8', fog: false }));
-      ring.position.set(at[0], at[1], at[2]);
-      const out = new T.Vector3(at[0] - (at[0] > 60 ? 70 : at[0]), at[1], at[2]).normalize();
+      const ring = new T.Mesh(new T.TorusGeometry(4.5 * k, 0.5 * k, 8, 32), new T.MeshBasicMaterial({ color: '#ff8ac8', fog: false }));
+      ring.position.set(at[0] * k, at[1] * k, at[2] * k);
+      // Facing out of the body: away from the nearest bit of it.
+      const c = id === 'lear' || id === 'rear' ? [at[0], at[1], 0] : id === 'back' ? [at[0], 0, 0] : [at[0], at[1] - 6, at[2]];
+      const out = new T.Vector3(at[0] - c[0], at[1] - c[1], at[2] - c[2]).normalize();
       ring.lookAt(ring.position.clone().add(out));
       g.add(ring);
       const tag = C.makeTag(name, '', '', '#ff8ac8'); tag.draw(-1);
       tag.sprite.scale.set(36, 9, 1); tag.sprite.material.fog = false;
-      const tp = new T.Vector3(at[0], at[1], at[2]).add(out.clone().multiplyScalar(9));
-      tag.sprite.position.copy(tp); g.add(tag.sprite);
+      tag.sprite.position.copy(ring.position).add(out.clone().multiplyScalar(9 * k));
+      g.add(tag.sprite);
       tags.push({ sprite: tag.sprite, near: 6, local: true });
     }
     // A billboard: the park's name, floating over the chest.
     const bill = C.makeTag('ANATOMY PARK', 'Fly in through any hole!', '', '#ffd84d'); bill.draw(-1);
-    bill.sprite.scale.set(120, 30, 1); bill.sprite.position.set(30, 70, 0); bill.sprite.material.fog = false; g.add(bill.sprite);
+    bill.sprite.scale.set(160, 40, 1); bill.sprite.position.set(30 * k, 42 * k, 0); bill.sprite.material.fog = false; g.add(bill.sprite);
     tags.push({ sprite: bill.sprite, near: 40, local: true });
     g.position.set(P.x, P.y, P.z); g.rotation.y = B.yaw;
     return g;
   }
+  // From the ground: Ruben, small and high up in every Earth's sky.
+  C.bodyInSky = function () {
+    const m = C.meshOf(bodyShape().build(), 0);
+    m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } });
+    return m;
+  };
 
   // Big things in the sky that make each dimension recognisable.
   function skyDecor(dim, group) {
     const add = (shape, pos) => { const m = C.meshOf(shape.build(), 0); m.position.set(pos[0], pos[1], pos[2]); m.traverse(o => { if (o.material) { o.material = o.material.clone(); o.material.fog = false; } }); group.add(m); return m; };
     if ((dim.shapeOf || dim.id) === 'suburbia') {
+      // Anatomy Park, floating far above (the same Ruben you can fly to from orbit).
+      const ruben = C.bodyInSky(); ruben.scale.setScalar(1.6); ruben.position.set(-260, 520, -420); ruben.rotation.set(0.25, 0.9, 0.12); group.add(ruben);
       for (let i = 0; i < 14; i++) {
         const s = new C.Shape();
         for (let j = 0; j < 4; j++) s.add(P.sphereLo, '#ffffff', [j * 9 - 13, Math.sin(j * 2) * 2, (j % 2) * 4], null, [9, 5, 7], true);
@@ -3689,7 +3803,7 @@
     if (MM.NPCS[type].human) {
       const look = C.npcLook(type, seed || 1);
       const H = MM.NPCS[type].human;
-      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.variant || 'joe');
+      const av = C.buildAvatar(look, type === 'invader' ? 'trooper' : type === 'birdcitizen' ? 'birdfolk' : type === 'meeseeks' ? 'meeseeks' : H.unarmed ? 'hive' : H.variant || 'joe');   // (Unity's build: bare hands)
       if (H.scale) { av.baseScale = H.scale; av.root.scale.setScalar(H.scale); }   // giants
       return { root: av.root, av };
     }
@@ -3708,6 +3822,30 @@
         s.add(P.box, '#3a2a1a', [0, 1.85, -0.05], null, [0.95, 0.12, 0.8]);
         s.add(P.cone, '#ff9a2a', [0, 1.3, -1.05], [-2.3, 0, 0], [0.12, 0.7, 0.12], true);
         void d;
+      } else if (type === 'housebot') {
+        // A lawn turret from the Smith house, hacked: red eye, twin barrels, a lot of attitude.
+        s.add(P.cyl, '#59606e', [0, 0.4, 0], null, [0.9, 0.8, 0.9]);
+        s.add(P.cyl, '#7a8290', [0, 1.0, 0], null, [0.25, 0.6, 0.25]);
+        s.add(P.sphere, '#9aa3ab', [0, 1.35, 0], null, [0.55, 0.42, 0.55]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 1.42, 0.45], null, [0.16, 0.16, 0.1], true);
+        for (const sx of [-1, 1]) s.add(P.cyl, '#3a3f4a', [sx * 0.18, 1.32, 0.75], [Math.PI / 2, 0, 0], [0.08, 0.6, 0.08]);
+      } else if (type === 'housedrone') {
+        s.add(P.sphere, '#9aa3ab', [0, 0.3, 0], null, [0.45, 0.25, 0.45]);
+        s.add(P.sphereLo, '#ff2a2a', [0, 0.28, 0.38], null, [0.12, 0.12, 0.08], true);
+        for (let i = 0; i < 4; i++) { const a = i * Math.PI / 2 + Math.PI / 4; s.add(P.box, '#59606e', [Math.cos(a) * 0.45, 0.42, Math.sin(a) * 0.45], [0, -a, 0], [0.5, 0.05, 0.08]); s.add(P.cyl, '#3a3f4a', [Math.cos(a) * 0.7, 0.48, Math.sin(a) * 0.7], null, [0.3, 0.03, 0.3]); }
+        s.add(P.cyl, '#3a3f4a', [0, 0.1, 0.3], [Math.PI / 2, 0, 0], [0.06, 0.4, 0.06]);
+      } else if (type === 'giantant') {
+        // An ant the size of a car (to someone a few millimetres tall).
+        const c = '#3a1e14';
+        s.add(P.sphere, c, [0, 0.7, -0.9], null, [0.55, 0.45, 0.75]);
+        s.add(P.sphere, c, [0, 0.65, 0], null, [0.32, 0.3, 0.42]);
+        s.add(P.sphere, c, [0, 0.8, 0.65], null, [0.38, 0.34, 0.36]);
+        for (const sx of [-1, 1]) {
+          for (const z of [-0.25, 0, 0.25]) C.capsuleAt(s, c, 0.04, 0.9, [sx * 0.25, 0.65, z], [0, 0, sx * 2.1]);
+          C.capsuleAt(s, c, 0.025, 0.6, [sx * 0.12, 1.05, 0.85], [-0.6, 0, sx * 0.4]);
+          s.add(P.sphereLo, '#111111', [sx * 0.2, 0.9, 0.9], null, [0.08, 0.08, 0.06]);
+          s.add(P.cone, c, [sx * 0.1, 0.62, 1.0], [Math.PI / 2, 0, sx * 0.4], [0.05, 0.22, 0.05]);
+        }
       } else if (type === 'meatblob') {
         s.add(P.sphere, '#d9677a', [0, 0.8, 0], null, [0.95, 0.8, 0.9]);
         for (let i = 0; i < 5; i++) s.add(P.sphereLo, '#c4505f', [Math.sin(i * 1.3) * 0.7, 0.5 + (i % 2) * 0.6, Math.cos(i * 1.3) * 0.6], null, [0.4, 0.35, 0.4]);
@@ -4095,6 +4233,18 @@
   };
 
   // ---------- A whole dimension ----------
+  // An immortality field: a faint glassy dome with a glowing ring where it meets the ground.
+  function makeField(dim) {
+    const F = dim.field, g = new T.Group(), y = MM.heightAt(dim.id, F.x, F.z) - 1;
+    const dome = new T.Mesh(new T.SphereGeometry(F.r, 48, 20, 0, Math.PI * 2, 0, Math.PI / 2),
+      new T.MeshBasicMaterial({ color: '#bfe4ff', transparent: true, opacity: 0.1, side: T.DoubleSide, depthWrite: false }));
+    dome.position.set(F.x, y, F.z);
+    const ring = new T.Mesh(new T.TorusGeometry(F.r, 0.35, 6, 96), new T.MeshBasicMaterial({ color: '#7ad8ff', transparent: true, opacity: 0.8 }));
+    ring.rotation.x = Math.PI / 2; ring.position.set(F.x, y + 1.2, F.z);
+    g.add(dome, ring);
+    g.userData.type = 'field';
+    return g;
+  }
   C.buildDimension = function (dimId, quality) {
     const dim = MM.DIM_BY_ID[dimId];
     const group = new T.Group();
@@ -4104,6 +4254,7 @@
     if (dim.planets) group.add(makeSpace(dim, group));
     else if (!dim.interior) {
       skyDecor(dim, group); terrain = makeTerrain(dim); group.add(terrain);
+      if (dim.field) group.add(makeField(dim));
       if (dim.regions) group.add(makeSea(dim));
       if (dim.regions) group.add(makeWires(dimId));
     }
