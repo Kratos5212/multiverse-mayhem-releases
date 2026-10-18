@@ -825,8 +825,7 @@
       for (const x of [-6.2, 5.6]) s.add(P.sphere, '#3f8a34', [x, 0.6, d / 2 + 0.8], null, [1.1, 0.8, 0.8]);   // bushes by the porch
     },
     // The back yard: lawn, a grey brick wall round three sides, Rick's white shed with a brown
-    // roof in the far corner, the big tree, and under it the two graves where Rick and Morty
-    // buried this Earth's Rick and Morty ("Rick Potion #9"). Front (+z) = toward the house.
+    // roof in the far corner and the big tree. Front (+z) = toward the house.
     lm_backyard(s) {
       const brick = '#8e8c88', cap = '#a8a6a0', mortar = '#77756f';
       s.add(P.box, '#62b444', [0, 0.02, 0.2], null, [26.8, 0.04, 17.2]);
@@ -847,18 +846,12 @@
       s.add(P.prism, '#6a4430', [sx, 2.4, sz], null, [3.6, 1.2, 3.2]);
       s.add(P.box, '#8a6a4a', [sx + 0.4, 1.0, sz + 1.32], null, [1.0, 2.0, 0.04]);
       s.add(P.box, '#bfdcec', [sx - 0.9, 1.6, sz + 1.32], null, [0.6, 0.5, 0.03]);
-      // The big tree, and the two graves in its shade: low mounds of turned earth.
+      // The big tree (the graves in its shade are their own model, lm_graves: not every Earth has them).
       const tx = -1.5, tz = -6.5;
       s.add(P.cylLo, '#6e4a2c', [tx, 1.8, tz], null, [0.42, 3.6, 0.42]);
       s.add(P.cylLo, '#6e4a2c', [tx + 0.6, 3.8, tz], [0, 0, -0.6], [0.2, 1.8, 0.2]);
       s.add(P.cylLo, '#6e4a2c', [tx - 0.6, 3.9, tz + 0.1], [0.2, 0, 0.55], [0.2, 1.7, 0.2]);
       for (const [x, y, z, r] of [[0, 5.8, 0, 3.0], [1.9, 5.3, 0.6, 2.0], [-1.9, 5.4, -0.3, 2.0], [0.4, 5.5, 1.9, 1.9], [-0.3, 5.4, -1.9, 1.9], [0.6, 7.3, 0.2, 2.0]]) s.add(P.sphere, y > 6.5 ? '#58b048' : '#47963a', [tx + x, y, tz + z], null, [r, r * 0.85, r]);
-      for (const gx of [-5.0, -3.6]) {
-        s.add(P.box, '#6a4a30', [gx, 0.12, -5.4], null, [0.9, 0.24, 2.0]);
-        s.add(P.sphere, '#7a5838', [gx, 0.2, -5.4], null, [0.5, 0.18, 1.0]);
-      }
-      s.add(P.sphere, '#ff6a8a', [-5.0, 0.34, -4.7], null, [0.12, 0.08, 0.12]);   // somebody left flowers
-      s.add(P.sphere, '#ffe066', [-3.6, 0.34, -4.6], null, [0.12, 0.08, 0.12]);
       s.add(P.box, '#8a6a4a', [-6.4, 0.6, -4.0], [0, 0.4, -0.2], [0.08, 1.2, 0.4]);  // the shovel, against the shed
       // The swimming pool (new this season), with a ladder and Jerry's cheap Pool Bot.
       const px = 6.0, pz = -3.0;
@@ -2626,6 +2619,50 @@
       s.add(P.box, '#a03a1a', [-4, 0.8, 3], null, [3.6, 1.0, 1.8]); s.add(P.box, '#a03a1a', [-4, 1.6, 3.2], null, [2, 0.8, 1.4]);
       for (const x of [-5.3, -2.7]) for (const z of [2.2, 3.8]) s.add(P.cyl, '#1a1a1a', [x, 0.5, z], [0, 0, Math.PI / 2], [0.5, 0.4, 0.5]);
     },
+    // The Ring of Death: a sand floor (with stains), a wall of welded scrap with spikes along the
+    // top, three tiers of stands, a tall fence at the back, and a gate north and south under a
+    // beam with skulls (the sign hangs from the south one). The walls match MM.PROPS.lm_deathring.
+    lm_deathring(s) {
+      const n = 24, step = Math.PI * 2 / n, gate = a => Math.abs(Math.atan2(Math.sin(a), Math.cos(a))) < 0.2 || Math.abs(Math.atan2(Math.sin(a - Math.PI), Math.cos(a - Math.PI))) < 0.2;
+      s.add(P.cyl, '#b07e52', [0, 0.03, 0], null, [11.9, 0.06, 11.9]);
+      for (const [x, z, r] of [[3, 2, 1.4], [-4, -3, 1.1], [1, -6, 0.9], [-6, 4, 0.8], [6, -2, 0.7]]) s.add(P.cyl, '#7a2a1a', [x, 0.07, z], null, [r, 0.02, r * 0.7]);
+      const panel = ['#7a6a5a', '#8a5a3a', '#6a6e74', '#9a6a3a'];
+      for (let i = 0; i < n; i++) {
+        const a = (i + 0.5) * step;
+        if (gate(a)) continue;
+        const len = 2 * Math.sin(step / 2), sx = Math.sin(a), cz = Math.cos(a);
+        // The fighting wall, with spikes along its top.
+        s.add(P.box, panel[i % 4], [sx * 12, 1.3, cz * 12], [0, a, 0], [12 * len + 0.15, 2.6, 0.3]);
+        for (const t of [-0.3, 0.3]) s.add(P.cone, '#c8c8c8', [sx * 12 + cz * t * 2.5, 2.85, cz * 12 - sx * t * 2.5], null, [0.08, 0.5, 0.08]);
+        // Three tiers of stands behind it, then the back fence.
+        for (let k = 0; k < 3; k++) { const R = 12.75 + k * 0.95; s.add(P.box, k % 2 ? '#7a6250' : '#6a5444', [sx * R, 0.45 + k * 0.45, cz * R], [0, a, 0], [R * len + 0.1, 0.9 + k * 0.9, 0.95]); }
+        s.add(P.box, panel[(i + 2) % 4], [sx * 15.6, 2.2, cz * 15.6], [0, a, 0], [15.6 * len + 0.15, 4.4, 0.3]);
+        if (i % 3 === 0) { s.add(P.cylLo, '#3a3a3a', [sx * 15.6, 5.2, cz * 15.6], null, [0.05, 2.2, 0.05]); s.add(P.box, i % 2 ? '#c8402a' : '#2a2420', [sx * 15.6 + cz * 0.45, 5.9, cz * 15.6 - sx * 0.45], [0, a + Math.PI / 2, 0], [0.9, 0.6, 0.03]); }   // flags
+      }
+      // The gates: a post either side and a beam over the top with skulls on it.
+      for (const gz of [1, -1]) {
+        for (const x of [-3.3, 3.3]) { s.add(P.box, '#5a4a3a', [x, 3.6, gz * 13.8], null, [0.55, 7.2, 0.55]); s.add(P.cone, '#c8c8c8', [x, 7.6, gz * 13.8], null, [0.15, 0.8, 0.15]); }
+        s.add(P.box, '#4a3a2a', [0, 7.0, gz * 13.8], null, [7.3, 0.6, 0.6]);
+        for (const x of [-2.2, 0, 2.2]) { s.add(P.sphere, '#e8e0d0', [x, 7.55, gz * 14.1], null, [0.3, 0.28, 0.24]); for (const ex of [-0.1, 0.1]) s.add(P.sphereLo, '#111111', [x + ex, 7.6, gz * 14.32], null, [0.07, 0.07, 0.03]); }
+        for (const x of [-4.4, 4.4]) for (let k = 0; k < 3; k++) s.add(P.cyl, '#1e1e22', [x, 0.25 + k * 0.42, gz * 16.5], null, [0.55, 0.4, 0.55]);   // stacked tyres
+        for (const x of [-3.3, 3.3]) s.add(P.cone, '#ff8a2a', [x, 8.2, gz * 13.8], null, [0.2, 0.5, 0.2], true);   // torches
+      }
+    },
+    // Death Stalker cars, parked side by side with the keys in, and a board behind them.
+    lm_carlot(s) {
+      for (const [x, body] of [[-1.25, '#8a3a1e'], [1.25, '#6a5a2a']]) {
+        s.add(P.box, body, [x, 0.62, 0], null, [1.9, 0.5, 4.1]);
+        s.add(P.box, '#5a2a16', [x, 0.98, 1.2], null, [1.75, 0.26, 1.6]);
+        s.add(P.box, '#9aa0a6', [x, 1.22, 1.1], null, [0.62, 0.3, 0.6]);
+        for (const z of [1.3, -1.4]) for (const sx of [-1, 1]) s.add(P.cyl, '#1e1e22', [x + sx * 1.0, 0.45, z], [0, 0, Math.PI / 2], [0.45, 0.38, 0.45]);
+        s.add(P.box, '#9aa0a6', [x, 0.55, 2.1], null, [2.0, 0.22, 0.12]);
+        for (let i = 0; i < 4; i++) s.add(P.cone, '#c8c8c8', [x - 0.75 + i * 0.5, 0.55, 2.35], [Math.PI / 2, 0, 0], [0.07, 0.4, 0.07]);
+        s.add(P.sphere, '#e8e0d0', [x, 0.86, 2.1], null, [0.2, 0.18, 0.1]);
+        for (const sx of [-0.65, 0.65]) s.add(P.box, '#4a4a50', [x + sx, 1.5, -0.9], null, [0.09, 1.0, 0.09]);
+        s.add(P.box, '#4a4a50', [x, 2.0, -0.9], null, [1.4, 0.09, 0.09]);
+      }
+      for (const x of [-1.6, 1.6]) s.add(P.cylLo, '#5a4a3a', [x, 1.4, -2.7], null, [0.07, 2.8, 0.07]);
+    },
     lm_unitycore(s) {
       s.add(P.cyl, '#d8e0e8', [0, 0.4, 0], null, [5.5, 0.8, 5.5]);
       s.add(P.cone, '#e8eef4', [0, 7, 0], null, [3.4, 12, 3.4]);
@@ -2695,6 +2732,16 @@
     sludgepool(s) {
       s.add(P.cyl, '#7ae02a', [0, 0.05, 0], null, [3, 0.1, 3], true);
       for (let i = 0; i < 5; i++) s.add(P.sphereLo, '#a8ff3a', [Math.sin(i * 2.1) * 1.8, 0.15, Math.cos(i * 1.7) * 1.8], null, [0.3, 0.12, 0.3], true);
+    },
+    // Under the big tree in the back yard: the two graves where Rick and Morty buried this
+    // Earth's Rick and Morty ("Rick Potion #9"), low mounds of turned earth with flowers.
+    lm_graves(s) {
+      for (const gx of [-0.7, 0.7]) {
+        s.add(P.box, '#6a4a30', [gx, 0.12, 0], null, [0.9, 0.24, 2.0]);
+        s.add(P.sphere, '#7a5838', [gx, 0.2, 0], null, [0.5, 0.18, 1.0]);
+      }
+      s.add(P.sphere, '#ff6a8a', [-0.7, 0.34, 0.7], null, [0.12, 0.08, 0.12]);   // somebody left flowers
+      s.add(P.sphere, '#ffe066', [0.7, 0.34, 0.8], null, [0.12, 0.08, 0.12]);
     },
     lm_marker(s) {
       const ring = new T.TorusGeometry(0.55, 0.05, 6, 32);
@@ -3633,6 +3680,12 @@
     return look;
   };
   C.npcModel = function (type, seed) {
+    if (MM.NPCS[type].car) {
+      // A Death Stalker at the wheel of his car.
+      const av = C.buildAvatar(C.npcLook('raider', seed || 1), 'joe');
+      C.setCar(av, true);
+      return { root: av.root, av };
+    }
     if (MM.NPCS[type].human) {
       const look = C.npcLook(type, seed || 1);
       const H = MM.NPCS[type].human;

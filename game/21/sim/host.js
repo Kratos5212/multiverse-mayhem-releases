@@ -50,7 +50,7 @@
     if (Array.isArray(raw.grants)) p.grants = raw.grants.filter(g => MM.RECIPES[g]).slice(0, 40);
     if (typeof raw.title === 'string' && raw.title === MM.ARCHETYPES[arch].life.breakout) p.title = raw.title;
     const c = raw.cnt || {};
-    if (c.use && typeof c.use === 'object') for (const k in c.use) if (MM.TASKS[k]) p.cnt.use[k] = num(c.use[k], 1e6);
+    if (c.use && typeof c.use === 'object') for (const k in c.use) if (MM.TASKS[k] || MM.LANDMARK_BY_ID[k]) p.cnt.use[k] = num(c.use[k], 1e6);   // daily tasks, and wins at places (the Ring of Death)
     if (Array.isArray(c.dims)) p.cnt.dims = c.dims.filter(d => MM.DIM_BY_ID[d]).slice(0, 20);
     if (Array.isArray(c.crafted)) p.cnt.crafted = c.crafted.filter(r => MM.RECIPES[r]).slice(0, 40);
     if (Array.isArray(c.at)) p.cnt.at = c.at.filter(l => MM.LANDMARK_BY_ID[l]).slice(0, 20);
@@ -72,6 +72,9 @@
     if (raw.rides && typeof raw.rides === 'object') { p.rides = {}; for (const k in raw.rides) if (MM.RIDE_BY_ID && MM.RIDE_BY_ID[k]) p.rides[k] = num(raw.rides[k], 1e6); }
     if (raw.fish && typeof raw.fish === 'object' && MM.FISH) { const names = new Set([].concat(...Object.values(MM.FISH)).map(f => f[0])); p.fish = {}; for (const k in raw.fish) if (names.has(k)) p.fish[k] = num(raw.fish[k], 1e6); }
     if (Array.isArray(raw.eggs) && MM.EGG_BY_ID) p.eggs = raw.eggs.filter(e => MM.EGG_BY_ID[e]).slice(0, 200);
+    // Strong-arm Morty (MM.ARM): the arm stays until she has her revenge; how many times she has.
+    if (arch === 'sidekick' && raw.arm && typeof raw.arm === 'object') p.arm = { n: num(raw.arm.n, MM.ARM.bounties.length) };
+    if (raw.armDone) p.armDone = num(raw.armDone, 1e6);
     p.chaos = num(raw.chaos, 1e9);
     return p;
   }
@@ -136,8 +139,8 @@
     spawnCastNpc(rec, at, announce) {
       if (!at) {
         // The Smiths are at home (Rick in his garage); everyone else somewhere around.
-        const l = MM.LANDMARKS.find(q => q.dim === this.dimId && MM.isAt(q, rec.arch === 'genius' ? 'garage' : 'home'));
-        if (l && MM.EARTH_ARCHS.includes(rec.arch)) {
+        const spot = MM.CAST_SPOT[rec.key], l = MM.LANDMARKS.find(q => q.dim === this.dimId && MM.isAt(q, spot || (rec.arch === 'genius' ? 'garage' : 'home')));
+        if (l && (spot || MM.EARTH_ARCHS.includes(rec.arch))) {
           // In front of it (its front faces rot), out of its walls.
           const r = l.rot !== undefined ? l.rot : 0, d = (l.r || 5) + 2 + Math.random() * 3, side = (Math.random() - 0.5) * 6;
           at = { x: l.x + Math.sin(r) * d + Math.cos(r) * side, z: l.z + Math.cos(r) * d - Math.sin(r) * side };
@@ -279,6 +282,7 @@
         }
         if (!hit) for (const n of this.npcs.values()) {
           if (n.owner === pr.owner && n.ownerUntil > now) continue;
+          if (pr.byNpc && n.T.hostile) continue;   // monsters don't shoot each other
           const rr = n.T.r + (pr.rad || 0.15);
           if (segDist2(ox, oy, oz, pr.x, pr.y, pr.z, n.x, n.y + n.T.h / 2, n.z) < rr * rr) { hit = { n }; break; }
         }
@@ -376,7 +380,7 @@
         n.target = owner.id;
         // Locals you hit hit back (if they are the fighting kind).
         if (!n.T.hostile && n.T.human && Math.random() < 0.5) { n.angry = owner.id; n.angryUntil = this.host.time + 15; }
-        if (n.T.hostile) { n.angry = owner.id; n.angryUntil = this.host.time + 12; }
+        if (n.T.hostile && !n.bout) { n.angry = owner.id; n.angryUntil = this.host.time + 12; }   // a Ring fighter keeps to the fighter
         // Police, Secret Service and Marines protect people (and each other).
         if (!n.T.hostile && (n.T.human || n.T.guard)) for (const g of this.npcs.values()) {
           if (g.T.guard && !(g.owner && g.ownerUntil > this.host.time) && dist2(g.x, g.z, n.x, n.z) < 40 * 40) { g.angry = owner.id; g.angryUntil = this.host.time + 25; }
@@ -395,6 +399,7 @@
       }
       this.npcs.delete(n.id);
       this.ev({ k: 'npc-', id: n.id, die: 1 });
+      if (n.armFor) this.host.armKill(n, owner);
       let i = 0;
       for (const k in n.T.drop) this.spawnPickup(k, true, { x: n.x + (i++ - 0.5) * 1.4, z: n.z }, n.T.drop[k]);
       if (owner) { owner.prog.chaos += 2; this.host.progress(owner, 'kill', n.type); }
@@ -491,22 +496,32 @@
           // Monsters mind their own business: they go for you only if you come close
           // (or hit them), and give up once you are well away from their patch.
           let best = null, bd = MM.AGGRO_RANGE * MM.AGGRO_RANGE, decoy = null;
+          const leash = T.leash || MM.LEASH;
           // A hologram draws them off.
           for (const m of this.npcs.values()) if (m.T.decoy && now < m.ownerUntil && dist2(m.x, m.z, n.x, n.z) < bd) { decoy = m; break; }
           if (decoy) { goal = decoy; if (dist2(decoy.x, decoy.z, n.x, n.z) < (T.r + 1.1) ** 2 && now >= n.cd) { n.cd = now + 1.2; this.ev({ k: 'bite', n: n.id }); } }
           else if (n.angry && now < n.angryUntil) { const p = this.host.players.get(n.angry); if (p && p.inst === this && !p.dead) best = p, bd = dist2(p.x, p.z, n.x, n.z); }
-          else if (dist2(n.x, n.z, n.home.x, n.home.z) < MM.LEASH * MM.LEASH) for (const p of this.players.values()) {
+          else if (!T.ring && dist2(n.x, n.z, n.home.x, n.home.z) < leash * leash) for (const p of this.players.values()) {   // Ring fighters only fight the fighter
             if (!this.visible(p, now)) continue;
-            const d = dist2(p.x, p.z, n.x, n.z);
-            if (d < bd) { bd = d; best = p; }
+            // A Death Stalker car spots another car from far off, someone on foot closer.
+            const d = dist2(p.x, p.z, n.x, n.z), reach = T.aggro ? (p.car ? T.aggro : 16) : MM.AGGRO_RANGE;
+            if (d < reach * reach && d < (best ? bd : Infinity)) { bd = d; best = p; }
           }
-          if (best && (dist2(n.x, n.z, n.home.x, n.home.z) > MM.LEASH * MM.LEASH * 1.6 || bd > 30 * 30)) { best = null; n.angry = 0; }
+          if (best && (dist2(n.x, n.z, n.home.x, n.home.z) > leash * leash * 1.6 || bd > Math.max(30, T.aggro || 0) ** 2)) { best = null; n.angry = 0; }
           if (best) {
             goal = best; speed *= 1.15;
             if (bd < (T.r + 1.1) * (T.r + 1.1) && now >= n.cd && Math.abs(best.y - n.y) < 3) {
               n.cd = now + 1.2;
               this.ev({ k: 'bite', n: n.id });
               this.host.hurtPlayer(this, best, T.dmg || 6, null, n.type);
+            }
+            // Some shoot too (a Death Stalker from his car).
+            const W = T.gun && MM.WEAPONS[T.gun];
+            if (W && bd < W.range * W.range && now >= (n.gcd || 0)) {
+              n.gcd = now + W.cd * (0.8 + Math.random() * 0.6);
+              const oy = n.y + 1.3, dx = best.x - n.x, dy = best.y + 1 - oy, dz = best.z - n.z, l = Math.hypot(dx, dy, dz) || 1;
+              const pr = this.host.fireProjectile(this, { owner: 0, kind: T.gun, x: n.x + dx / l * 1.9, y: oy, z: n.z + dz / l * 1.9, dx: dx / l, dy: dy / l, dz: dz / l, speed: W.speed, range: W.range, dmg: W.dmg });
+              pr.byNpc = n.id;
             }
           }
         } else if (now < n.flee) {
@@ -821,6 +836,7 @@
         case 'talk': this.onTalk(p, m.n); break;
         case 'ans': this.onAnswer(p, m.a); break;
         case 'ship': this.onShip(p, m.on); break;
+        case 'car': this.onCar(p, m.on); break;
         case 'pvp': p.pvp = m.on; this.toast(p, m.on ? 'Fights on: players who also turned fights on can hurt you, and you them.' : 'Fights off: no other player can hurt you.'); break;
         case 'drive': this.onDrive(p, m.d); break;
         case 'orbit': this.onOrbit(p); break;
@@ -917,7 +933,7 @@
     info(p) {
       const up = p.prog.up;
       return { id: p.id, name: p.name, home: p.home, clone: p.clone ? 1 : 0, look: p.look, arch: p.arch, bot: p.bot, title: p.prog.title || '',
-        gear: { ratsuit: !!up.ratsuit, wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs } };
+        gear: { ratsuit: !!up.ratsuit, wings: !!up.wings, jet: !!up.jetpack && !up.wings, engine: !!up.engine, lasers: !!up.lasers, cyberarm: !!up.cyberarm, cyberlegs: !!up.cyberlegs, strongarm: !!p.prog.arm } };
     }
 
     // ----- Life progress -----
@@ -967,6 +983,8 @@
     // Move a player into a dimension (a portal, the kiosk, a ship, or joining).
     travel(p, dimId, at, preferInst, first) {
       if (p.ship && MM.DIM_BY_ID[dimId] && MM.DIM_BY_ID[dimId].interior) p.ship = false;   // you park the ship to go indoors
+      p.car = false;   // a car stays in its world: you park it
+      if (p.bout) this.endBout(p, false, 'You left the Ring of Death.');
       const from = p.inst;
       p.pp = [null, null];   // your portal pair stays behind (and closes)
       if (p.ride) { p.ride = null; if (from) from.ev({ k: 'rd', id: p.id, r: '' }); }
@@ -1020,6 +1038,7 @@
       if (now < p.fx.cuff) b |= 1024;
       if (now < p.fx.cloak) b |= 2048;
       if (p.pvp) b |= 4096;
+      if (p.car) b |= 8192;
       return b;
     }
 
@@ -1027,7 +1046,7 @@
     speedOf(p) {
       const now = this.time;
       if (now < p.fx.cuff) return 1;
-      const base = p.ship ? p.st.ship.speed * MM.SHIP_BOOST : p.st.speed * (p.st.fly ? 1.35 : 1) * (p.st.sprint || 1);   // the most you can go: sprinting
+      const base = p.ship ? p.st.ship.speed * MM.SHIP_BOOST : p.car ? MM.CAR.speed * MM.CAR.boost : p.st.speed * (p.st.fly ? 1.35 : 1) * (p.st.sprint || 1);   // the most you can go: sprinting
       return base * (now < p.fx.sprint ? 1.8 : 1) * (now < p.fx.shrink ? 0.75 : 1) * (now < p.fx.guilt ? 0.6 : 1) * (now < p.fx.daze ? 0.5 : 1);
     }
 
@@ -1060,8 +1079,10 @@
         return;
       }
       if (p.strikes > 0 && (this.tickN % 60 === 0)) p.strikes -= 1;
+      const ox = p.x, oz = p.z;
       p.x = x; p.y = y; p.z = z; p.r = m.r; p.a = m.a === MM.ANIM.dead ? 0 : m.a;
       p.lastSt = now;
+      if (p.car) this.carRam(p, ox, oz, dt);
       if (p.race || MM.racesIn(p.inst.dimId).length) this.raceStep(p);
       // Diving deep off an Earth's beach: down to that Earth's Atlantis.
       if (!p.ship && !p.dead && p.inst.dim.regions && p.z > MM.SEA_Z + 20 && p.y < MM.SEA_LEVEL + MM.DIVE_DEPTH) {
@@ -1105,6 +1126,8 @@
     // The weapon in use: ship lasers in a ship that has them, a pea shooter in one that doesn't.
     weaponOf(p) {
       if (p.ship) return p.st.ship.lasers ? 'lasers' : 'blaster';
+      if (p.car) return 'carguns';
+      if (p.prog.arm) return 'armpunch';   // the arm does the punching
       return p.A.weapon;
     }
 
@@ -1117,8 +1140,8 @@
       p.lastFight = now;
       const s = this.scaleOf(p);
       if (w.melee) { this.melee(p, m, w, wid); return; }
-      const oy = p.ship ? 1.2 : 1.35 * s;
-      this.fireProjectile(p.inst, { owner: p.id, kind: wid, x: p.x + m.dx * (p.ship ? 2 : 0.7), y: p.y + oy + m.dy * 0.7, z: p.z + m.dz * (p.ship ? 2 : 0.7),
+      const oy = p.ship ? 1.2 : p.car ? 1.15 : 1.35 * s, fwd = p.ship || p.car ? 2 : 0.7;
+      this.fireProjectile(p.inst, { owner: p.id, kind: wid, x: p.x + m.dx * fwd, y: p.y + oy + m.dy * 0.7, z: p.z + m.dz * fwd,
         dx: m.dx, dy: m.dy, dz: m.dz, speed: w.speed, range: w.range, dmg: Math.round(w.dmg * this.dmgMult(p)) });
     }
 
@@ -1158,6 +1181,7 @@
       if (p.arch === 'sidekick' && Math.random() < 0.2) { inst.ev({ k: 'dodge', id: p.id }); return; }
       if (now < p.fx.shield) amt *= 0.3;
       if (p.ship) amt *= 0.6;
+      if (p.car) amt *= MM.CAR.armour;
       if (inst.dim.quirk === 'bouncy') amt *= 0.5;   // Froopyland: nothing here can hurt you. Much.
       amt = Math.max(1, Math.round(amt));
       p.hp -= amt;
@@ -1170,6 +1194,7 @@
       p.hp = 0; p.dead = true; p.deaths++;
       p.respawnAt = this.time + MM.RESPAWN_TIME;
       if (p.ship) { p.ship = false; inst.ev({ k: 'ship', id: p.id, on: false }); }
+      if (p.car) { p.car = false; inst.ev({ k: 'car', id: p.id, on: false }); inst.ev({ k: 'boom', x: r2(p.x), y: r2(p.y + 0.5), z: r2(p.z), r: 4 }); }   // the car goes up with you
       const lost = Math.floor(p.inv.s / 2);
       if (lost > 0) { p.inv.s -= lost; inst.spawnPickup('s', true, { x: p.x, z: p.z }, lost); }
       if (src && src !== p) {
@@ -1411,6 +1436,7 @@
     onShip(p, on) {
       if (on && MM.helpless(p.arch, p.prog.up)) { this.toast(p, MM.HELPLESS_TEXT); return; }
       if (p.dead || !p.st.ship || p.ship === on) return;
+      if (on && p.car) { this.toast(p, 'Get out of the car first (B).'); return; }
       if (on && p.inst.dim.interior) { this.toast(p, 'No room to fly in here. Take the ship outside.'); return; }
       p.ship = on;
       p.kbUntil = this.time + 1;     // stepping out mid-air: let the fall happen
@@ -1698,6 +1724,153 @@
       this.dirty(p);
     }
 
+    // ----- Death Stalker cars (Post-Apocalyptic Earth) -----
+    // Get in at the car lot, out anywhere (B or F). It is parked when you travel or die.
+    onCar(p, on) {
+      if (p.dead || !!p.car === on) return;
+      if (on) {
+        const l = MM.LANDMARKS.find(q => q.dim === p.inst.dimId && q.car);
+        if (!l || p.ship || p.ride || MM.helpless(p.arch, p.prog.up) || dist2(l.x, l.z, p.x, p.z) > (l.r + MM.USE_RADIUS + 2) ** 2) return;
+        if (p.bout) { this.toast(p, 'No cars in the Ring of Death.'); return; }
+      }
+      p.car = on;
+      p.inst.ev({ k: 'car', id: p.id, on });
+      this.toast(p, on ? 'Keys in. W/S to drive, A/D to steer, Shift for nitro. The hood guns fire where you aim, and ramming hurts. B or F to get out.' : 'You parked the car.');
+      this.dirty(p);
+    }
+    // A car going fast hurts and throws whatever it runs into: people (who fight), monsters, junk.
+    carRam(p, ox, oz, dt) {
+      const vx = (p.x - ox) / dt, vz = (p.z - oz) / dt, sp = Math.hypot(vx, vz);
+      if (sp < MM.CAR.ramMin) return;
+      const inst = p.inst, now = this.time, dmg = Math.round(sp * MM.CAR.ram * this.dmgMult(p)), fx = vx / sp, fz = vz / sp;
+      const hits = p.rams && Object.keys(p.rams).length < 60 ? p.rams : (p.rams = {});
+      const ahead = (x, z, r) => { const dx = x - p.x, dz = z - p.z; return Math.hypot(dx, dz) < 2.2 + r && dx * fx + dz * fz > -0.5; };
+      for (const o of [...inst.players.values()]) {
+        if (o === p || o.dead || !this.canHurt(p, o) || Math.abs(o.y - p.y) > 2 || (hits['p' + o.id] || 0) > now || !ahead(o.x, o.z, 0.5)) continue;
+        hits['p' + o.id] = now + 0.8;
+        this.hurtPlayer(inst, o, dmg, p, 'car');
+        if (!o.dead && !o.ship) this.knock(o, fx * sp * 0.7, 6, fz * sp * 0.7);
+      }
+      for (const n of [...inst.npcs.values()]) {
+        if ((n.owner === p.id && n.ownerUntil > now) || Math.abs(n.y - p.y) > 3 || (hits['n' + n.id] || 0) > now || !ahead(n.x, n.z, n.T.r)) continue;
+        hits['n' + n.id] = now + 0.8;
+        inst.hurtNpc(n, dmg, p);
+      }
+      for (const pr of MM.propsNear(inst.dimId, p.x, p.z, 5)) {
+        if (inst.props[pr.id].hp <= 0 || MM.PROPS[pr.type].fixed || (hits['r' + pr.id] || 0) > now || !ahead(pr.x, pr.z, pr.r)) continue;
+        hits['r' + pr.id] = now + 0.8;
+        inst.hurtProp(pr.id, dmg, p);
+      }
+    }
+
+    // ----- Strong-arm Morty: the Muscle Memory Serum (MM.ARM) -----
+    armUp(p) {
+      p.prog.arm = { n: 0 };
+      p.progDirty = true;
+      p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
+      this.priv(p, { k: 'arm', on: 1 });
+      this.dirty(p);
+    }
+    // Her bounties are in Post-Apocalyptic Earth, one at a time, far out in the sand.
+    tickArm(p, now) {
+      if (now < (p.armT || 0)) return;
+      p.armT = now + 1;
+      const A = p.prog.arm, inst = p.inst;
+      if (inst.dimId !== MM.ARM.dim) {
+        if (now > (p.armNag || 0)) { p.armNag = now + 120; this.priv(p, { k: 'armsay', text: 'The arm keeps pointing somewhere. She wants to go back to Post-Apocalyptic Earth.' }); }
+        return;
+      }
+      if (p.armTarget && p.armTarget.inst === inst && inst.npcs.has(p.armTarget.id)) {
+        if (now > (p.armNag || 0)) { p.armNag = now + 50 + Math.random() * 40; this.priv(p, { k: 'armsay', text: pick(MM.ARM.say) }); }
+        return;
+      }
+      const i = A.n, last = i >= MM.ARM.bounties.length, def = last ? MM.ARM.killer : MM.ARM.bounties[i];
+      const at = MM.randomSpot(inst.dimId, Math.random, 70, 150);
+      const n = inst.spawnNpc(last ? 'armkiller' : 'bounty', false, { at, until: now + 1500 });
+      n.name = def.name; n.armFor = p.id; n.armI = i; n.home = { x: n.x, z: n.z, y: n.y };
+      inst.ev({ k: 'npc+', n: inst.npcRow(n) });
+      p.armTarget = { inst, id: n.id };
+      this.priv(p, { k: 'bounty', id: n.id, name: def.name, why: def.why, x: r2(n.x), z: r2(n.z), i, of: MM.ARM.bounties.length + 1, last: last ? 1 : 0 });
+    }
+    armKill(n, owner) {
+      const p = this.players.get(n.armFor);
+      if (!p || !p.prog.arm || n.armI !== p.prog.arm.n) return;
+      p.armTarget = null;
+      if (owner !== p) { this.priv(p, { k: 'armsay', text: 'Someone else got ' + n.name + '. The arm is furious. She will find another.' }); return; }
+      if (n.armI >= MM.ARM.bounties.length) { this.armCure(p, n.name); return; }
+      p.prog.arm.n++;
+      const G = MM.ARM.give;
+      for (const k in G) p.inv[k] = (p.inv[k] || 0) + G[k];
+      p.progDirty = true;
+      this.priv(p, { k: 'bounty', done: n.name, give: G, left: MM.ARM.bounties.length + 1 - p.prog.arm.n });
+      this.dirty(p);
+    }
+    // Revenge: she lets go. The arm is Morty's own again.
+    armCure(p, name) {
+      p.prog.arm = null;
+      p.prog.armDone = (p.prog.armDone || 0) + 1;
+      const G = MM.ARM.done;
+      for (const k in G) p.inv[k] = (p.inv[k] || 0) + G[k];
+      p.progDirty = true;
+      p.inst.ev({ k: 'gear', id: p.id, gear: this.info(p).gear });
+      this.priv(p, { k: 'arm', off: 1, name, give: G });
+      this.dirty(p);
+    }
+
+    // ----- The Ring of Death (Post-Apocalyptic Earth) -----
+    // Step in and fight three rounds, the champion last. One fighter at a time in each copy of
+    // the world; everyone else watches from the stands. Leave the Ring, or go down, and you lose.
+    startBout(p) {
+      const inst = p.inst, l = MM.LANDMARKS.find(q => q.dim === inst.dimId && q.bout);
+      if (!l || p.dead) return;
+      if (p.bout) { this.toast(p, 'You are in the middle of a fight. Win it!'); return; }
+      if (p.car || p.ship) { this.toast(p, 'No cars in the Ring. Get out and fight on foot.'); return; }
+      const busy = [...inst.players.values()].find(q => q.bout);
+      if (busy) { this.toast(p, busy.name + ' is fighting in the Ring. Watch from the stands, then go next.'); return; }
+      if (dist2(p.x, p.z, l.x, l.z) > (MM.BOUT.r - 1) ** 2) this.teleport(p, l.x, MM.heightAt(inst.dimId, l.x, l.z + 7), l.z + 7);
+      p.bout = { l, inst, round: -1, npcs: [], out: 0 };
+      for (const q of inst.players.values()) if (q !== p) this.toast(q, p.name + ' steps into the Ring of Death!');
+      this.nextRound(p);
+    }
+    nextRound(p) {
+      const B = p.bout, inst = B.inst, R = MM.BOUT.rounds[++B.round];
+      if (!R) { this.endBout(p, true); return; }
+      const [type, count] = R, now = this.time;
+      B.npcs = [];
+      for (let i = 0; i < count; i++) {
+        // They come in through the far (north) gate.
+        const a = Math.PI + (i - (count - 1) / 2) * 0.6;
+        const n = inst.spawnNpc(type, true, { at: { x: B.l.x + Math.sin(a) * 8, z: B.l.z + Math.cos(a) * 8 }, until: now + 600 });
+        n.angry = p.id; n.angryUntil = now + 600; n.bout = p.id; n.home = { x: B.l.x, z: B.l.z, y: n.y };
+        B.npcs.push(n.id);
+      }
+      const champ = type === 'ringchamp' ? inst.npcs.get(B.npcs[0]) : null;
+      this.priv(p, { k: 'bout', round: B.round + 1, of: MM.BOUT.rounds.length, n: count, champ: champ ? champ.name : '' });
+    }
+    tickBout(p, dt) {
+      const B = p.bout;
+      if (p.dead) { this.endBout(p, false, 'You went down in the Ring of Death. The crowd loved it.'); return; }
+      if (p.inst !== B.inst) { this.endBout(p, false, 'You left the Ring of Death.'); return; }
+      if (dist2(p.x, p.z, B.l.x, B.l.z) > (MM.BOUT.r + 0.5) ** 2) {
+        if ((B.out += dt) > MM.BOUT.leave) { this.endBout(p, false, 'You ran out of the Ring. The crowd booed you all the way out.'); return; }
+      } else B.out = 0;
+      if (B.npcs.every(id => !B.inst.npcs.has(id))) this.nextRound(p);
+    }
+    endBout(p, won, why) {
+      const B = p.bout;
+      if (!B) return;
+      p.bout = null;
+      for (const id of B.npcs) if (B.inst.npcs.has(id)) { B.inst.npcs.delete(id); B.inst.ev({ k: 'npc-', id }); }
+      if (!won) { this.priv(p, { k: 'bout', lost: 1, why: why || '' }); return; }
+      const G = MM.BOUT.give;
+      for (const k in G) p.inv[k] = (p.inv[k] || 0) + G[k];
+      p.prog.chaos += 10;
+      this.progress(p, 'use', 'deathring');
+      this.priv(p, { k: 'bout', won: p.prog.cnt.use.deathring, give: G });
+      for (const q of B.inst.players.values()) if (q !== p) this.toast(q, p.name + ' won in the Ring of Death! The crowd goes wild.');
+      this.dirty(p);
+    }
+
     // ----- Rick's house: whose it is, hacking it, and its defences (shared/house.js) -----
     // Which Earth's house you are at: this Earth, or (inside the house, the garage, the lab,
     // the sublevels) the Earth you came in from.
@@ -1706,8 +1879,9 @@
       if (D.interior || D.pocket) return p.doorBack || 'suburbia';
       return MM.worldOf(p.inst.dimId) === 'earth' && !D.timeline ? p.inst.dimId : null;
     }
-    // Each Earth's house is its own Rick's (C-137's is Rick C-137's; clones count, they are him).
-    rickOwns(p, earth) { return p.arch === 'genius' && !!earth && MM.castHome('genius', p.home) === earth; }
+    // Each Earth's house is its own Rick's (C-137's is Rick C-137's). His clones are not him:
+    // like any other Rick, they have to hack it.
+    rickOwns(p, earth) { return p.arch === 'genius' && !p.clone && !!earth && MM.castHome('genius', p.home) === earth; }
     rickMay(p, earth) { return this.rickOwns(p, earth) || (p.arch === 'genius' && !!earth && (p.hacked && p.hacked[earth] || 0) > this.time); }
     // Not yours: anyone but a Rick is told no; another Rick starts hacking (stay close).
     rickRefuse(p, l) {
@@ -1863,7 +2037,7 @@
     // sees the same ones.
     onRide(p, R) {
       const now = this.time, inst = p.inst;
-      if (!R || p.ride || p.ship || !MM.ridesIn(inst.dimId).includes(R)) return;
+      if (!R || p.ride || p.ship || p.car || !MM.ridesIn(inst.dimId).includes(R)) return;
       let t0 = MM.nextDeparture(R, now), seat;
       for (let k = 0; k < 6 && seat === undefined; k++, t0 += seat === undefined ? MM.rideEvery(R) : 0) {
         const used = new Set([...inst.players.values()].filter(o => o.ride && o.ride.id === R.id && Math.abs(o.ride.t0 - t0) < 0.01).map(o => o.ride.seat));
@@ -2021,6 +2195,8 @@
       if (this.labClosed(p, l)) return;
       if (l.rick && !this.rickMay(p, this.earthOfHere(p))) { this.rickRefuse(p, l); return; }
       if (MM.isAt(l, 'housecon')) { this.priv(p, { k: 'hmenu', own: this.rickOwns(p, this.earthOfHere(p)) }); return; }
+      if (l.car) { this.onCar(p, true); return; }
+      if (l.bout) { this.startBout(p); return; }
       const mine = Object.keys(MM.TASKS).filter(t => MM.isAt(l, MM.TASKS[t].at) && MM.taskFor(t, p.arch));
       const id = taskId && mine.includes(taskId) ? taskId : mine[0];
       if (!id) { if (l.door) this.onDoor(p, lid); else this.toast(p, 'Nothing for you to do at the ' + l.name + '. You could still build things here (C).'); return; }
@@ -2079,6 +2255,13 @@
           return;
         }
       }
+      // A Rick offers a Morty the Muscle Memory Serum (MM.ARM).
+      if (n.cast && n.cast.arch === 'genius' && p.arch === 'sidekick' && !p.prog.arm && !p.offer) {
+        p.offer = { n: n.id, serum: true, want: {}, get: {}, until: now + 25 };
+        say(pick(['Morty, roll up your sleeve. Muscle memory serum: a dead warrior\'s arm, in a syringe. You\'ll be un-*burp*-stoppable.', 'Here, Morty. It makes your arm a fighter\'s arm. Side effects: the arm has opinions.']));
+        this.priv(p, { k: 'offer', n: n.id, name: n.name, serum: 1, want: {}, get: {} });
+        return;
+      }
       // Otherwise something random happens. Locals are like that.
       const w = Object.assign({}, T.moods);
       if (inst.boosted()) { w.gift = (w.gift || 0) * 2.5; w.trade = (w.trade || 0) * 1.5; }
@@ -2088,7 +2271,7 @@
       for (const k in w) total += w[k];
       let r = Math.random() * total, mood = 'line';
       for (const k in w) { r -= w[k]; if (r <= 0) { mood = k; break; } }
-      const line = n.cast ? pick(MM.CAST_TALK[n.cast.arch] || ['...']) : T.talk ? pick(T.talk) : '...';
+      const line = n.cast ? pick(MM.CAST_TALK_AT[n.cast.key] || MM.CAST_TALK[n.cast.arch] || ['...']) : T.talk ? pick(T.talk) : '...';
       const mat = inst.dim.mat;
       switch (mood) {
         case 'gift': {
@@ -2159,6 +2342,7 @@
       const o = p.offer;
       p.offer = null;
       if (!o || this.time > o.until || !a) return;
+      if (o.serum) { if (p.arch === 'sidekick' && !p.prog.arm) this.armUp(p); return; }
       for (const k in o.want) if ((p.inv[k] || 0) < o.want[k]) { this.toast(p, 'You do not have enough ' + MM.MATERIALS[k].name + '.'); return; }
       for (const k in o.want) p.inv[k] -= o.want[k];
       for (const k in o.get) p.inv[k] = (p.inv[k] || 0) + o.get[k];
@@ -2179,7 +2363,7 @@
       return { t: 'y', hp: Math.max(0, Math.round(p.hp)), max: p.maxHp, inv: p.inv,
         ch: p.charges, chMax: p.st.gun ? p.st.gun.charges : 0, bor: p.borrow || 0, chIn: p.chargeAt ? r2(p.chargeAt - now) : 0,
         ab: r2(Math.max(0, p.cdAb - now)), chaos: p.prog.chaos, kills: p.kills, deaths: p.deaths, dead: p.dead,
-        rsIn: p.dead ? r2(Math.max(0, p.respawnAt - now)) : 0, fx: this.fxBits(p, now), ship: p.ship };
+        rsIn: p.dead ? r2(Math.max(0, p.respawnAt - now)) : 0, fx: this.fxBits(p, now), ship: p.ship, car: !!p.car };
     }
 
     // Your life path, upgrades and errands (sent when they change).
@@ -2187,7 +2371,7 @@
       const pr = p.prog, wall = this.wall(), tasks = {};
       for (const t of p.A.life.daily) tasks[t] = Math.max(0, Math.ceil(((pr.tasks[t] || 0) - wall) / 1000));
       return { t: 'pg', up: pr.up, step: pr.step, grants: pr.grants, cnt: pr.cnt, errands: pr.errands, tasks, title: pr.title || '', st: p.st, found: pr.found || [],
-        stamps: pr.stamps || [], rides: pr.rides || {}, fish: pr.fish || {}, best: pr.best || {}, eggs: pr.eggs || [] };
+        stamps: pr.stamps || [], rides: pr.rides || {}, fish: pr.fish || {}, best: pr.best || {}, eggs: pr.eggs || [], arm: pr.arm || null, armDone: pr.armDone || 0 };
     }
 
     // ----- The main loop -----
@@ -2207,6 +2391,8 @@
         }
         if (p.hack) this.tickHack(p);
         if (p.ride) this.tickRide(p);
+        if (p.bout) this.tickBout(p, dt);
+        if (p.prog.arm && !p.dead) this.tickArm(p, now);
         if (p.arch === 'mutant' && !p.dead && p.hp < p.maxHp && this.tickN % 10 === 0) { p.hp = Math.min(p.maxHp, p.hp + 1); this.dirty(p); }
         // World rules: the living flesh heals you; the toxic air hurts (never below a tenth).
         const q = p.inst && p.inst.dim.quirk;
@@ -2264,6 +2450,7 @@
   }
 
   MM.Host = Host;
+  MM.cleanProgress = cleanProgress;   // (tests)
   MM.cleanProgress = cleanProgress;
   if (typeof module !== 'undefined' && module.exports) module.exports = MM;
 })(typeof globalThis !== 'undefined' ? globalThis : this);
