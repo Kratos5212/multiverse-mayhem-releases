@@ -1,8 +1,8 @@
 {
- "build": 28,
- "date": "2026-10-18T15:05:51.401Z",
+ "build": 29,
+ "date": "2026-10-18T15:10:30.799Z",
  "game": {
-  "base": "game/28/",
+  "base": "game/29/",
   "files": [
    {
     "p": "assets/characters/beth.mms",
@@ -186,8 +186,8 @@
    },
    {
     "p": "js/dims.js",
-    "h": "a18823baa488c72bc8207d97d84e3078389872b0557cf6e65c53be421596f5e7",
-    "s": 316009
+    "h": "7c7a60ca8563aebc474ec22337ef7188a7895df1252f12da13368dad5ee70877",
+    "s": 316127
    },
    {
     "p": "js/fx.js",
@@ -196,8 +196,8 @@
    },
    {
     "p": "js/game.js",
-    "h": "972580a4d9aa7ad7ba2fa61489c9adfc2535fd0aa1b990d2610909bd3e28e603",
-    "s": 204764
+    "h": "eab28634d8c18f3a322350481aac1b6918cdda59f31c25fcded207b95043c3b9",
+    "s": 204976
    },
    {
     "p": "js/life.js",
@@ -296,8 +296,8 @@
    },
    {
     "p": "shared/world.js",
-    "h": "59695f491bcb536c9cf29218f7ba647ba3e77537dcc590545cce4bf7c4723edb",
-    "s": 217680
+    "h": "ac6eb6b04d24cf860430c00546472ab7bc4ee6ac01572aaf60796444690a247f",
+    "s": 218089
    },
    {
     "p": "sim/bot.js",
@@ -306,8 +306,8 @@
    },
    {
     "p": "sim/host.js",
-    "h": "dfb2c813b84720b11214d44dcea07e41099e0bf0caf764f4f29ba1ca220a5765",
-    "s": 206721
+    "h": "ba23243bcd0e1750ee000be0b019d0b712ede27d87e2a05e0a5e3b2de2cf952d",
+    "s": 208968
    },
    {
     "p": "vendor/three.LICENSE",
@@ -321,7 +321,7 @@
    },
    {
     "p": "version.json",
-    "h": "da3b048a1dbb519d1b9ccc8c09dea7d08289fc416ed6ee92c5b241b859e6c1df",
+    "h": "be19f8467b573d350585485b76348ef0ee23152acc6d7ab7444328db140b5e65",
     "s": 13
    }
   ]

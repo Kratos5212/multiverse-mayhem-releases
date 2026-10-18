@@ -1246,6 +1246,12 @@
     tammy: { name: 'Tammy', hp: 70, speed: 2.6, hostile: false, guard: true, dmg: 12, drop: { k: 2 }, r: 0.6, h: 1.75,
       human: { species: ['human'], top: ['tshirt'], acc: ['none'], look: { hair: 'ponytail', brow: 'normal', eyes: 'normal', mouth: 'grin', face: 'round', height: 1.0, width: 0.9, head: 1.0, skin: '#f2d2b6', hairColor: '#c8402a', topColor: '#5ab0e8', shirtColor: '#5ab0e8', pantsColor: '#3a3a5a', shoeColor: '#f2f2f2', accColor: '#c8402a' } },
       names: ['Tammy'], talk: ['Oh my God, I love weddings! Totally normal guest here.', 'I am not a Federation agent. Why would you even ask that?', 'Birdperson is soooo dreamy.'] },
+    // The other timeline, merged into this one: the people a Morty killed or wronged there (and
+    // their families). They come for him, wherever he goes, until the vat of acid.
+    wronged: { name: 'Wronged Local', hp: 60, speed: 6.2, hostile: false, dmg: 9, drop: { k: 1 }, r: 0.6, h: 1.8, leash: 99999, aggro: 99999,
+      human: { species: ['human', 'human', 'alien'], top: ['tshirt', 'polo', 'sweater'], acc: ['none', 'cap'] },
+      names: ['Someone you wronged'],
+      talk: ['You! I remember now. You did that to me!', 'Two timelines, Morty. I remember BOTH.', 'There he is! Get him!', 'You thought you could just load a save?'] },
     jessica: { name: 'Jessica', hp: 50, speed: 2.6, hostile: false, dmg: 0, drop: { f: 1 }, r: 0.6, h: 1.7,
       human: { species: ['human'], top: ['tshirt'], acc: ['none'], look: { hair: 'ponytail', brow: 'normal', eyes: 'normal', mouth: 'grin', face: 'round', height: 0.95, width: 0.9, head: 1.0, skin: '#f8dcc4', hairColor: '#d8502a', topColor: '#f2a03a', shirtColor: '#f2a03a', pantsColor: '#3a4a7a', shoeColor: '#f2f2f2', accColor: '#d8502a' } },
       names: ['Jessica'], talk: ['Oh, hi! Are you a friend of Morty\'s?', 'Morty is sweet. A little weird. Mostly weird.', 'Brad and I are just friends. Like, mostly.'] },
@@ -1379,6 +1385,8 @@
     turkeypres: { name: 'The Turkey President', hp: 600, speed: 3.6, hostile: true, dmg: 18, drop: { k: 15, f: 4, m: 1 }, r: 1.2, h: 2.6, gun: 'rifle', turkey: true, aggro: 30, leash: 60 },
     carrotnpc: { name: 'A carrot', hp: 10, speed: 0.6, hostile: false, dmg: 0, drop: { f: 1 }, r: 0.4, h: 0.9, talk: ['...', '*rustles leaves*', 'I used to be somebody.'], moods: { line: 100 } },
     // ----- Batch 2 -----
+    // It is always out there, asleep, floating in its corner of space (MM.BABY). Come within
+    // `wake` metres (or shoot it) and it wakes up: the Giant Baby event.
     giantbaby: { name: 'Giant Baby', hp: 4000, speed: 12, hostile: true, dmg: 25, drop: { k: 10, g: 6 }, r: 18, h: 42, aggro: 320, leash: 9999, stomp: true, space: true, scale: 3.5 },   // floats in space (T.space), model x3.5
     // "A Ricker Runs Through It": somebody hacked the Smith house. Its lawn turrets and its
     // drones fire on everyone, family included, until they are smashed (or a Rick reboots it).
@@ -1680,11 +1688,12 @@
   // Random world events, one at a time per dimension copy, every few minutes.
   //   spawn: temporary NPCs [type, count]   loot: material pickups rained near players
   //   booms: random explosions near players   talkBoost: locals are extra generous
+  MM.BABY = { at: { x: -650, y: 330, z: 420 }, wake: 170, respawn: 600 };   // where the Giant Baby sleeps; how close wakes it; minutes back after it goes down
   MM.EVENTS = {
     // Out in space, round any world: a baby the size of a skyscraper, floating, and hungry.
     // Take it down from your ships.
     space: [
-      { id: 'giantbaby', name: 'Giant Baby!', text: 'A baby the size of a skyscraper is floating through space, swatting ships out of the sky. Nobody knows where it came from. Rick says: do not ask. Take it down!', boss: [['giantbaby', 1]], clear: { k: 20, m: 2, c: 6 }, dur: 240 },
+      { id: 'giantbaby', name: 'Giant Baby!', text: 'You woke the Giant Baby. It is floating your way, swatting ships out of the sky. Nobody knows where it came from. Rick says: do not ask. Take it down, or get far away!', boss: [['giantbaby', 1]], clear: { k: 20, m: 2, c: 6 }, dur: 240, manual: true },   // starts when someone comes near it (Instance.tickBaby)
     ],
     suburbia: [
       { id: 'party', name: 'Block Party!', text: 'The neighbours are throwing a block party. Free stuff if you chat.', spawn: [['neighbor', 6]], talkBoost: 1, dur: 70 },
@@ -1692,7 +1701,7 @@
       // The house defences turn on everyone. Smash them all, or a Rick reboots them at the console.
       { id: 'hoghack', name: 'House Hacked!', text: 'Someone hacked the Smith house. Its turrets and drones are shooting at everyone. Smash them, or get a Rick to the console.', house: [['housebot', 4], ['housedrone', 3]], clear: { k: 6, s: 4 }, dur: 120 },
       // Rick Potion #9: one player is Patient Zero. Everyone wants them. Then it gets worse.
-      { id: 'love', name: 'Love Potion Outbreak!', text: 'The love potion got into the flu season. Everyone is in love with Patient Zero.', patient: 1, dur: 180 },
+      { id: 'love', name: 'Love Potion Outbreak!', text: 'Morty\'s love potion got into the flu season. Everyone is in love with him.', patient: 1, dur: 180, manual: true },   // only when a Morty uses the love potion on Jessica
     ],
     meatlands: [
       { id: 'meatrain', name: 'Meat Rain', text: 'It is raining goo. Grab it while it is warm.', loot: ['g', 16], dur: 40 },
